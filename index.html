@@ -177,7 +177,8 @@ body{
 .auv-head .ttl{font-family:var(--display);font-size:18px;font-weight:600;color:var(--ink);}
 .auv-content{flex:1;overflow-y:auto;padding:16px;}
 .auv-gallery{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px;}
-.auv-photo{aspect-ratio:1/1;border-radius:14px;background-size:cover;background-position:center;background-color:var(--gray-bg);}
+.auv-photo{aspect-ratio:1/1;border-radius:14px;background-size:cover;background-position:center;background-color:var(--gray-bg);position:relative;cursor:pointer;}
+.auv-del{position:absolute;top:5px;right:5px;width:26px;height:26px;border-radius:50%;border:none;background:rgba(192,27,60,.92);color:#fff;font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,.3);}
 .auv-name{font-family:var(--display);font-size:21px;font-weight:600;color:var(--ink);margin-bottom:12px;}
 .auv-name span{font-family:var(--sans);font-size:12.5px;font-weight:600;color:var(--gray-2);}
 .av-photos{display:flex;gap:7px;margin:10px 0;overflow-x:auto;cursor:pointer;}
@@ -293,6 +294,15 @@ body{
 .dv-verify{font-family:var(--body);font-size:11px;font-weight:800;background:rgba(47,168,116,.92);padding:5px 10px;border-radius:30px;}
 .dv-loc{font-size:14px;opacity:.92;margin-top:8px;font-weight:500;}
 .detail-body{flex:1;overflow-y:auto;padding:18px 20px 16px;}
+.dv-gallery{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px;}
+.dv-photo{aspect-ratio:1/1;border-radius:13px;background-size:cover;background-position:center;background-color:var(--gray-bg);cursor:pointer;}
+.dv-stats{display:flex;gap:10px;margin-bottom:6px;}
+.dv-stat{flex:1;background:var(--pink-bg);border-radius:13px;padding:11px;text-align:center;}
+.dv-stat .v{font-family:var(--display);font-size:21px;font-weight:700;color:var(--red-deep);}
+.dv-stat .l{font-size:11px;color:var(--gray-2);font-weight:600;margin-top:2px;}
+.lightbox{position:fixed;inset:0;z-index:200;background:rgba(10,2,6,.92);display:none;align-items:center;justify-content:center;padding:20px;cursor:zoom-out;}
+.lightbox.open{display:flex;}
+.lightbox img{max-width:100%;max-height:100%;border-radius:14px;box-shadow:0 20px 60px rgba(0,0,0,.6);}
 .dv-section{font-family:var(--display);font-size:15px;color:var(--red-deep);font-weight:600;margin:6px 0 8px;}
 .dv-bio{font-size:14.5px;line-height:1.6;color:var(--gray);font-weight:500;margin-bottom:8px;}
 .dv-tags{display:flex;flex-wrap:wrap;gap:8px;}
@@ -605,7 +615,8 @@ body{
         <div class="seg"><button class="on" onclick="pickGender('m',this)">Эрэгтэй</button><button onclick="pickGender('f',this)">Эмэгтэй</button></div>
       </div>
       <div class="form-group"><label>Нас</label><input id="rAge" type="number" placeholder="Жишээ нь 25"></div>
-      <div class="form-group"><label>Өндөр (см) <span style="color:var(--gray-2);font-weight:500">(заавал биш)</span></label><input id="rHeight" type="number" placeholder="Жишээ нь 170"></div>
+      <div class="form-group"><label>Өндөр (см)</label><input id="rHeight" type="number" placeholder="Жишээ нь 170"></div>
+      <div class="form-group"><label>Жин (кг)</label><input id="rWeight" type="number" placeholder="Жишээ нь 65"></div>
       <div class="form-group"><label>Утасны дугаар</label><input id="rPhone" type="tel" placeholder="8800-0000"></div>
       <div class="form-group"><label>Нууц үг</label>
         <div class="pw-wrap"><input id="rPass" type="password" placeholder="Дор хаяж 6 тэмдэгт">
@@ -763,6 +774,7 @@ body{
       <div class="form-group"><label>Нэр</label><input id="eName" placeholder="Таны нэр"></div>
       <div class="form-group"><label>Нас</label><input id="eAge" type="number" placeholder="25"></div>
       <div class="form-group"><label>Өндөр (см)</label><input id="eHeight" type="number" placeholder="170"></div>
+      <div class="form-group"><label>Жин (кг)</label><input id="eWeight" type="number" placeholder="65"></div>
       <div class="form-group"><label>Зургууд (5 хүртэл) — эхний зураг нь нүүр зураг</label>
         <div class="ephotos" id="ePhotos"></div>
         <input type="file" id="ePhotoInput" accept="image/*" style="display:none" onchange="addEditPhoto(this)">
@@ -817,8 +829,6 @@ body{
     <div class="tab" id="t-matches">
       <div class="scroll">
         <div id="frWrap"></div>
-        <div class="sec-title">Шинэ тохироо</div>
-        <div class="newm" id="newMatches"></div>
         <div class="sec-title">Чат</div>
         <div id="chatList"></div>
       </div>
@@ -829,9 +839,9 @@ body{
       <div class="prof-hero" id="profHero" style="background:linear-gradient(135deg,var(--red),var(--pink))"><div class="grad"></div><div class="prof-name">Миний профайл</div></div>
       <div class="prof-body">
         <div class="stat-row">
-          <div class="stat"><div class="v">0</div><div class="l">Лайк</div></div>
-          <div class="stat"><div class="v">0</div><div class="l">Тохироо</div></div>
-          <div class="stat"><div class="v">0</div><div class="l">Болзоо</div></div>
+          <div class="stat"><div class="v" id="statLikes">0</div><div class="l">Лайк</div></div>
+          <div class="stat"><div class="v" id="statMatches">0</div><div class="l">Найз</div></div>
+          <div class="stat"><div class="v" id="statDates">0</div><div class="l">Болзоо</div></div>
         </div>
         <div class="vip-card">
           <div class="crown">👑 ХОЁУЛАА БОЛЗИЙ VIP</div>
@@ -854,6 +864,7 @@ body{
           <div class="st-text"><b>Найзын хүсэлт зөвшөөрөх</b><span>Идэвхтэй үед бусад хэрэглэгч танд найзын хүсэлт илгээх боломжтой. Унтраавал хэн ч хүсэлт илгээж чадахгүй.</span></div>
           <div class="toggle on" id="frToggle" onclick="toggleFRSetting()"><span class="track"></span><span class="knob"></span></div>
         </div>
+        <div class="setting" onclick="enableNotifs()">🔔 Утасны мэдэгдэл асаах ›</div>
         <div class="setting" onclick="openEditProfile()">Профайл засах ›</div>
         <div class="setting" onclick="openPwModal()">Нууц үг солих ›</div>
         <div class="setting" onclick="verifyStatus()">Баталгаажуулалтын төлөв ›</div>
@@ -873,15 +884,14 @@ body{
         </div>
       </div>
       <div class="detail-body">
+        <div class="dv-gallery" id="dvGallery"></div>
+        <div class="dv-stats" id="dvStats"></div>
         <div class="dv-section">Танилцуулга</div>
         <p class="dv-bio" id="dvBio"></p>
         <div class="dv-section">Сонирхол</div>
         <div class="dv-tags" id="dvTags"></div>
       </div>
-      <div class="detail-actions">
-        <button class="da-pass" onclick="sendFriendReq()">👤 Найзын хүсэлт</button>
-        <button class="da-like" onclick="likeUser()">❤️ Таалагдлаа</button>
-      </div>
+      <div class="detail-actions" id="dvActions"></div>
     </div>
 
     <!-- VIP lock overlay -->
@@ -1008,6 +1018,9 @@ body{
     <div class="np-list" id="notifList"></div>
   </div>
 
+  <!-- ============ IMAGE LIGHTBOX ============ -->
+  <div class="lightbox" id="lightbox" onclick="closeLightbox()"><img id="lightboxImg" alt=""></div>
+
   <div class="toast" id="toast"></div>
 </div>
 
@@ -1021,7 +1034,7 @@ const SB_KEY='sb_publishable_A_vkQLuUaEUXFWBjQY_zEQ_Q1x0G5JY';
 const sb=window.supabase.createClient(SB_URL,SB_KEY);
 let me=null;  // нэвтэрсэн хэрэглэгчийн профайл
 function phEmail(ph){return normPhone(ph)+'@bolzii.app';}
-function mapProfile(p){return {id:p.id,n:p.name,a:p.age,h:p.height||null,g:p.gender,city:p.city||'',d:'ойролцоо',v:true,vip:!!p.is_vip,bio:p.bio||'',tags:p.tags||[],ph:p.photo_url||''};}
+function mapProfile(p){return {id:p.id,n:p.name,a:p.age,h:p.height||null,w:p.weight||null,g:p.gender,city:p.city||'',d:'ойролцоо',v:true,vip:!!p.is_vip,bio:p.bio||'',tags:p.tags||[],ph:p.photo_url||'',photos:p.photos||[]};}
 async function loadMe(){
   try{
     const {data:{user}}=await sb.auth.getUser();
@@ -1040,10 +1053,15 @@ async function enterApp(){
     else route('login');
     return;
   }
+  if(me.warning){
+    const wmsg=me.warning;
+    notify('⚠️','Админы анхааруулга',wmsg);
+    try{await sb.from('profiles').update({warning:null}).eq('id',me.id);me.warning=null;}catch(e){}
+  }
   if(me.is_admin){route('adminPanel');admTab('verify');return;}
   if(me.blocked){await sb.auth.signOut();me=null;route('landing');toast('Таны бүртгэл блоклогдсон байна');return;}
   if(!me.verified){await loadSettings();route('pending');showPending();return;}
-  route('mainapp');await initApp();
+  route('mainapp');await initApp();ensureNotifPermission();
 }
 function showPending(){
   const pay=document.getElementById('pendingPay');if(!pay)return;
@@ -1075,6 +1093,7 @@ function openEditProfile(){
   document.getElementById('eName').value=me.name||'';
   document.getElementById('eAge').value=me.age||'';
   document.getElementById('eHeight').value=me.height||'';
+  document.getElementById('eWeight').value=me.weight||'';
   document.getElementById('eBio').value=me.bio||'';
   editPhotos=(me.photos&&me.photos.length)?me.photos.slice():(me.photo_url?[me.photo_url]:[]);
   renderEditPhotos();
@@ -1103,10 +1122,11 @@ async function saveProfile(){
   if(!editPhotos.length){toast('Дор хаяж нэг зураг (нүүр зураг) оруулна уу');return;}
   const age=parseInt(document.getElementById('eAge').value)||null;
   const height=parseInt(document.getElementById('eHeight').value)||null;
+  const weight=parseInt(document.getElementById('eWeight').value)||null;
   const bio=document.getElementById('eBio').value.trim();
   const tags=[...document.querySelectorAll('#eChips .chip.on')].map(c=>c.textContent.trim());
   toast('Хадгалж байна…');
-  const {error}=await sb.from('profiles').update({name,age,height,bio,tags,photos:editPhotos,photo_url:editPhotos[0]}).eq('id',me.id);
+  const {error}=await sb.from('profiles').update({name,age,height,weight,bio,tags,photos:editPhotos,photo_url:editPhotos[0]}).eq('id',me.id);
   if(error){toast('Алдаа: '+error.message);return;}
   await loadMe();
   applyProfileUI();
@@ -1115,8 +1135,13 @@ async function saveProfile(){
 }
 function applyProfileUI(){
   if(!me)return;
-  const pn=document.querySelector('#t-profile .prof-name');if(pn)pn.textContent=me.name+(me.age?', '+me.age:'')+(me.height?' · '+me.height+'см':'');
+  const pn=document.querySelector('#t-profile .prof-name');if(pn)pn.textContent=me.name+(me.age?', '+me.age:'')+(me.height?' · '+me.height+'см':'')+(me.weight?' · '+me.weight+'кг':'');
   const ph=document.getElementById('profHero');if(ph){ph.style.cssText='position:relative;height:210px;flex:0 0 auto;background-size:cover;background-position:center;'+(me.photo_url?`background-image:url('${imgUrl(me.photo_url)}')`:'background:linear-gradient(135deg,var(--red),var(--pink))');}
+  renderProfileStats();
+}
+function renderProfileStats(){
+  const set=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v;};
+  set('statLikes',myLikes);set('statMatches',chats.length);set('statDates',dates.length);
 }
 function verifyStatus(){
   if(!me){toast('Эхлээд нэвтэрнэ үү');return;}
@@ -1177,7 +1202,7 @@ function renderFriendReqs(){
   w.innerHTML=`<div class="sec-title">Найзын хүсэлт (${friendReqs.length})</div>`+
     friendReqs.map((r,i)=>`<div class="fr-card"><div class="ph" style="${photoBg(r.ph)}"></div><div class="b"><div class="nm">${r.n}</div><div class="sub">танд найзын хүсэлт илгээлээ</div><div class="fr-btns"><button class="acc" onclick="acceptFR(${i})">Зөвшөөрөх</button><button class="dec" onclick="declineFR(${i})">Татгалзах</button></div></div></div>`).join('');
 }
-function sendFriendReq(){const p=people[curProfile];closeProfile();closeLock();toast('👤 '+p.n+'-д найзын хүсэлт илгээлээ');}
+function sendFriendReq(){const p=people[curProfile];closeProfile();closeLock();toast('👤 '+p.n+'-д найзын хүсэлт илгээлээ');notify('👋','Найзын хүсэлт',p.n+'-д найзын хүсэлт илгээлээ');}
 function acceptFR(i){
   const r=friendReqs[i];friendReqs.splice(i,1);
   if(!chats.find(c=>c.n===r.n))chats.unshift({n:r.n,ph:r.ph,last:'Найз боллоо — сайн уу гэж бичээрэй 👋',time:'Одоо',unread:0,on:true,msgs:[]});
@@ -1390,8 +1415,10 @@ let regPhotoFile=null;
 function validateReg(){
   const val=id=>{const e=document.getElementById(id);return e?(e.value||'').trim():'';};
   const age=parseInt(val('rAge'))||0;
+  const height=parseInt(val('rHeight'))||0;
+  const weight=parseInt(val('rWeight'))||0;
   const interests=document.querySelectorAll('#register .chip.on').length;
-  const ok = !!val('rName') && age>=18 && !!val('rPhone') && val('rPass').length>=6
+  const ok = !!val('rName') && age>=18 && height>0 && weight>0 && !!val('rPhone') && val('rPass').length>=6
     && !!val('rAimag') && !!val('rSoum') && interests>=1 && !!regPhotoFile && !!rulesAgreed;
   const btn=document.getElementById('regBtn');
   if(btn){btn.disabled=!ok;btn.textContent=ok?'Бүртгэл үүсгэх':'Бүх талбарыг бөглөнө үү';}
@@ -1422,6 +1449,8 @@ async function doRegister(){
   if(!pass||pass.length<6){toast('Нууц үг дор хаяж 6 тэмдэгт байх ёстой');return;}
   const ageN=parseInt(document.getElementById('rAge').value)||0;
   if(ageN<18){toast('Нас 18-аас дээш байх ёстой');return;}
+  if(!(parseInt(document.getElementById('rHeight').value)>0)){toast('Өндрөө оруулна уу');return;}
+  if(!(parseInt(document.getElementById('rWeight').value)>0)){toast('Жингээ оруулна уу');return;}
   if(document.querySelectorAll('#register .chip.on').length<1){toast('Дор хаяж нэг сонирхол сонгоно уу');return;}
   if(!document.getElementById('rAimag').value){toast('Аймгаа сонгоно уу');return;}
   if(!document.getElementById('rSoum').value){toast('Сум/дүүргээ сонгоно уу');return;}
@@ -1454,6 +1483,7 @@ async function doRegister(){
     id:uid, name, phone:normPhone(phone), gender:regGender,
     age:parseInt(document.getElementById('rAge').value)||null,
     height:parseInt(document.getElementById('rHeight').value)||null,
+    weight:parseInt(document.getElementById('rWeight').value)||null,
     city:document.getElementById('rAimag').value,
     soum:document.getElementById('rSoum').value,
     bio:document.getElementById('rBio').value.trim(),
@@ -1488,6 +1518,7 @@ function renderGrid(){
 }
 let curProfile=0;
 let myVip=false;
+let myLikes=0;
 function openProfile(i){
   const p=people[i];curProfile=i;window._lastMatch=p.n;
   if(p.vip && !myVip){openLock(i);return;}
@@ -1495,8 +1526,21 @@ function openProfile(i){
   document.getElementById('dvName').textContent=`${p.n}, ${p.a}`;
   document.getElementById('dvVerify').style.display=p.v?'inline-flex':'none';
   document.getElementById('dvLoc').textContent=`📍 ${p.city} · ${p.d}`+(p.h?` · ${p.h}см`:'');
-  document.getElementById('dvBio').textContent=p.bio;
-  document.getElementById('dvTags').innerHTML=p.tags.map(t=>`<span class="tag-d">${t}</span>`).join('');
+  // зургийн галерей (5 хүртэл)
+  const photos=(p.photos&&p.photos.length)?p.photos:(p.ph?[p.ph]:[]);
+  document.getElementById('dvGallery').innerHTML=photos.map(u=>`<div class="dv-photo" style="background-image:url('${imgUrl(u)}')" onclick="openLightbox('${imgUrl(u)}')"></div>`).join('');
+  // статистик (өндөр/жин)
+  const st=[];
+  if(p.h)st.push(`<div class="dv-stat"><div class="v">${p.h}</div><div class="l">Өндөр см</div></div>`);
+  if(p.w)st.push(`<div class="dv-stat"><div class="v">${p.w}</div><div class="l">Жин кг</div></div>`);
+  document.getElementById('dvStats').innerHTML=st.join('');
+  document.getElementById('dvBio').textContent=p.bio||'—';
+  document.getElementById('dvTags').innerHTML=(p.tags||[]).map(t=>`<span class="tag-d">${t}</span>`).join('');
+  // үйлдэл: найз бол чатлах, эс бол хүсэлт/таалагдах
+  const isFriend=chats.some(c=>c.n===p.n);
+  document.getElementById('dvActions').innerHTML=isFriend
+    ? `<button class="da-like" style="flex:1" onclick="closeProfile();openChatByName(${JSON.stringify(p.n)})">💬 Чат бичих</button>`
+    : `<button class="da-pass" onclick="sendFriendReq()">👤 Найзын хүсэлт</button><button class="da-like" onclick="likeUser()">❤️ Таалагдлаа</button>`;
   document.getElementById('detailView').classList.add('open');
 }
 function openLock(i){
@@ -1533,6 +1577,7 @@ function updateVipUI(){const b=document.getElementById('vipBtn');if(b&&myVip){b.
 function closeProfile(){document.getElementById('detailView').classList.remove('open');}
 function likeUser(){
   const p=people[curProfile];closeProfile();
+  myLikes++;renderProfileStats();
   toast('💌 '+p.n+'-д таалагдсанаа илэрхийллээ');
   setTimeout(()=>{if(Math.random()<0.6)showMatch(p);},400);
 }
@@ -1551,7 +1596,7 @@ function sayHi(){hideMatch();tab('matches',document.querySelectorAll('.nav butto
 
 /* ============================================================ MATCHES / CHAT ============================================================ */
 function renderMatches(){
-  document.getElementById('newMatches').innerHTML=chats.slice(0,6).map((c,i)=>`<div class="nm-card" onclick="openChat(${i})"><div class="ph" style="${photoBg(c.ph)}"></div><div class="lbl">${c.n}</div></div>`).join('');
+  const nm=document.getElementById('newMatches');if(nm)nm.innerHTML=chats.slice(0,6).map((c,i)=>`<div class="nm-card" onclick="openChat(${i})"><div class="ph" style="${photoBg(c.ph)}"></div><div class="lbl">${c.n}</div></div>`).join('');
   document.getElementById('chatList').innerHTML=chats.length?chats.map((c,i)=>`<div class="chat-row" onclick="openChat(${i})"><div class="ph" style="${photoBg(c.ph)}">${c.on?'<span class="on"></span>':''}</div><div class="body"><div class="top"><span class="nme">${c.n}</span><span class="tm">${c.time}</span></div><div class="msg">${c.last}</div></div>${c.unread?`<span class="badge-unread">${c.unread}</span>`:''}</div>`).join(''):`<div style="text-align:center;color:var(--gray-2);font-size:13px;padding:30px 10px;">Одоогоор чат алга</div>`;
 }
 function openChat(i){curChat=i;const c=chats[i];c.unread=0;bumpUnread();renderMatches();document.getElementById('cvName').textContent=c.n;document.getElementById('cvPh').style.cssText='background-size:cover;background-position:center;'+(c.ph?`background-image:url('${imgUrl(c.ph)}')`:'background:linear-gradient(135deg,var(--red),var(--pink))');renderMsgs();document.getElementById('chatView').classList.add('open');}
@@ -1582,7 +1627,7 @@ function tab(name,btn){
   document.getElementById('t-'+name).classList.add('active');
   document.querySelectorAll('.nav button').forEach(b=>b.classList.remove('active'));
   if(btn)btn.classList.add('active');else{const map={discover:0,dates:1,matches:2,profile:3};const nb=document.querySelectorAll('.nav button')[map[name]];if(nb)nb.classList.add('active');}
-  if(name==='matches'){renderMatches();renderFriendReqs();}if(name==='dates'){renderDates();renderPkgs();renderBlind();}
+  if(name==='matches'){renderMatches();renderFriendReqs();}if(name==='dates'){renderDates();renderPkgs();renderBlind();}if(name==='profile'){renderProfileStats();}
 }
 function bumpUnread(){const n=chats.reduce((a,c)=>a+c.unread,0),el=document.getElementById('navUnread');el.style.display=n?'flex':'none';el.textContent=n;}
 function bumpDates(){const el=document.getElementById('navDates'),n=dates.length;el.style.display=n?'flex':'none';el.textContent=n;}
@@ -1631,7 +1676,7 @@ async function admTab(t,btn){
         sb.from('profiles').select('*').eq('verified',false).eq('blocked',false).order('created_at',{ascending:false}),
         sb.from('profiles').select('*').eq('verified',true)
       ]);
-      admData.verify=(v.data||[]).filter(x=>!x.is_admin).map(x=>({id:x.id,name:x.name,g:x.gender,age:x.age||'-',height:x.height,phone:x.phone,city:x.city,soum:x.soum,bio:x.bio,tags:x.tags,ph:x.photo_url||'',photos:x.photos||[],plan:x.gender==='f'?'Бүсгүй · төлбөргүй':'Эрэгтэй · төлбөртэй'}));
+      admData.verify=(v.data||[]).filter(x=>!x.is_admin).map(x=>({id:x.id,name:x.name,g:x.gender,age:x.age||'-',height:x.height,weight:x.weight,phone:x.phone,city:x.city,soum:x.soum,bio:x.bio,tags:x.tags,ph:x.photo_url||'',photos:x.photos||[],plan:x.gender==='f'?'Бүсгүй · төлбөргүй':'Эрэгтэй · төлбөртэй'}));
       admData.users=(u.data||[]).filter(x=>!x.is_admin).map(x=>({...x,n:x.name,m:`${x.age||''} · ${x.city||''}`,ph:x.photo_url||'',blocked:!!x.blocked}));
     }catch(e){console.error('admTab load',e);body.innerHTML='<div style="text-align:center;color:var(--red);padding:30px;">Ачаалахад алдаа гарлаа</div>';return;}
   }
@@ -1646,7 +1691,7 @@ async function admTab(t,btn){
       <div class="av-avatar" style="background-size:cover;background-position:center;${x.ph?`background-image:url('${imgUrl(x.ph)}')`:''}">${x.ph?'':(x.name||'?').charAt(0)}</div>
       <div><div class="av-name">${x.name} <span>${x.g==='f'?'♀ Эмэгтэй':'♂ Эрэгтэй'}</span></div><div class="av-plan">${x.plan}</div></div>
     </div>
-    ${x.photos&&x.photos.length?`<div class="av-photos" onclick="admViewPending(${i})">${x.photos.slice(0,5).map(u=>`<div class="av-photo" style="background-image:url('${imgUrl(u)}')"></div>`).join('')}</div>`:''}
+    ${x.photos&&x.photos.length?`<div class="av-photos" onclick="admViewPending(${i})">${x.photos.slice(0,5).map(u=>`<div class="av-photo" style="background-image:url('${imgUrl(u)}')" onclick="event.stopPropagation();openLightbox('${imgUrl(u)}')"></div>`).join('')}</div>`:''}
     <div class="av-rows">
       <div><span>Нас</span><b>${x.age}</b></div>
       <div><span>Утас</span><b>${x.phone}</b></div>
@@ -1714,28 +1759,49 @@ function admAct(btn,msg){btn.closest('.adm-card').style.opacity='.4';toast(msg);
 function admViewUser(i){
   const x=admData.users[i];if(!x)return;
   const photos=(x.photos&&x.photos.length)?x.photos:(x.photo_url?[x.photo_url]:[]);
-  const gallery=photos.length?photos.map(u=>`<div class="auv-photo" style="background-image:url('${imgUrl(u)}')"></div>`).join(''):'<div style="grid-column:1/-1;text-align:center;color:var(--gray-2);font-size:13px;padding:24px;">Зураг алга</div>';
+  const gallery=photos.length?photos.map((u,pi)=>`<div class="auv-photo" style="background-image:url('${imgUrl(u)}')" onclick="openLightbox('${imgUrl(u)}')"><button class="auv-del" onclick="event.stopPropagation();admDeleteUserPhoto(${i},${pi})" title="Зураг устгах">🗑</button></div>`).join(''):'<div style="grid-column:1/-1;text-align:center;color:var(--gray-2);font-size:13px;padding:24px;">Зураг алга</div>';
   document.getElementById('auvBody').innerHTML=`
     <div class="auv-gallery">${gallery}</div>
     <div class="auv-name">${x.name} <span>${x.gender==='f'?'♀ Эмэгтэй':'♂ Эрэгтэй'}${x.is_vip?' · VIP':''}</span></div>
     <div class="av-rows">
       <div><span>Нас</span><b>${x.age||'-'}</b></div>
       ${x.height?`<div><span>Өндөр</span><b>${x.height}см</b></div>`:''}
+      ${x.weight?`<div><span>Жин</span><b>${x.weight}кг</b></div>`:''}
       <div><span>Утас</span><b>${x.phone||'-'}</b></div>
       <div><span>Байршил</span><b>${x.city||'-'}${x.soum?', '+x.soum:''}</b></div>
       <div><span>Төлөв</span><b>${x.blocked?'🚫 Блоклогдсон':(x.verified?'✓ Баталгаажсан':'⏳ Хүлээгдэж буй')}</b></div>
       ${x.bio?`<div><span>Танилцуулга</span><b>${x.bio}</b></div>`:''}
       ${x.tags&&x.tags.length?`<div><span>Сонирхол</span><b>${x.tags.join(', ')}</b></div>`:''}
     </div>
-    <button class="btn btn-primary" style="width:100%;margin-top:14px;" onclick="toggleVip(${i});closeAdmUser()">${x.is_vip?'👑 VIP цуцлах':'👑 VIP болгох'}</button>
+    <button class="btn btn-primary" style="width:100%;margin-top:14px;background:var(--gold);color:#7a4a00" onclick="sendWarning(${i})">⚠️ Анхааруулга илгээх</button>
+    <button class="btn btn-primary" style="width:100%;margin-top:10px;" onclick="toggleVip(${i});closeAdmUser()">${x.is_vip?'👑 VIP цуцлах':'👑 VIP болгох'}</button>
     <button class="btn btn-primary" style="width:100%;margin-top:10px;${x.blocked?'':'background:var(--red)'}" onclick="toggleBlock(${i});closeAdmUser()">${x.blocked?'🔓 Блокоос гаргах':'🚫 Блоклох'}</button>`;
   document.getElementById('admUserView').classList.add('open');
+}
+async function admDeleteUserPhoto(i,pi){
+  const x=admData.users[i];if(!x)return;
+  const photos=(x.photos||[]).slice();
+  if(pi<0||pi>=photos.length)return;
+  photos.splice(pi,1);
+  const photo_url=photos[0]||'';
+  const {error}=await sb.from('profiles').update({photos,photo_url}).eq('id',x.id);
+  if(error){toast('Алдаа гарлаа');return;}
+  x.photos=photos;x.photo_url=photo_url;x.ph=photo_url;
+  toast('🗑 Зураг устгагдлаа');
+  admViewUser(i);
+}
+async function sendWarning(i){
+  const x=admData.users[i];if(!x)return;
+  const msg='⚠️ Анхааруулга: Бусдыг доромжлох, нэр хүндэд халдах зэрэг үйлдэл гаргавал таны бүртгэлийг шууд блоклоно. Дүрмээ сахина уу.';
+  const {error}=await sb.from('profiles').update({warning:msg}).eq('id',x.id);
+  if(error){toast('Алдаа: '+error.message);return;}
+  toast('⚠️ '+x.name+'-д анхааруулга илгээлээ');
 }
 function closeAdmUser(){document.getElementById('admUserView').classList.remove('open');}
 function admViewPending(i){
   const x=admData.verify[i];if(!x)return;
   const photos=(x.photos&&x.photos.length)?x.photos:(x.ph?[x.ph]:[]);
-  const gallery=photos.length?photos.map(u=>`<div class="auv-photo" style="background-image:url('${imgUrl(u)}')"></div>`).join(''):'<div style="grid-column:1/-1;text-align:center;color:var(--gray-2);font-size:13px;padding:24px;">Зураг алга</div>';
+  const gallery=photos.length?photos.map(u=>`<div class="auv-photo" style="background-image:url('${imgUrl(u)}')" onclick="openLightbox('${imgUrl(u)}')"></div>`).join(''):'<div style="grid-column:1/-1;text-align:center;color:var(--gray-2);font-size:13px;padding:24px;">Зураг алга</div>';
   document.getElementById('auvBody').innerHTML=`
     <div class="auv-gallery">${gallery}</div>
     <div class="auv-name">${x.name} <span>${x.g==='f'?'♀ Эмэгтэй':'♂ Эрэгтэй'}</span></div>
@@ -1743,6 +1809,7 @@ function admViewPending(i){
     <div class="av-rows">
       <div><span>Нас</span><b>${x.age}</b></div>
       ${x.height?`<div><span>Өндөр</span><b>${x.height}см</b></div>`:''}
+      ${x.weight?`<div><span>Жин</span><b>${x.weight}кг</b></div>`:''}
       <div><span>Утас</span><b>${x.phone}</b></div>
       <div><span>Байршил</span><b>${x.city||'-'}${x.soum?', '+x.soum:''}</b></div>
       ${x.bio?`<div><span>Танилцуулга</span><b>${x.bio}</b></div>`:''}
@@ -1786,11 +1853,37 @@ function notify(icon,title,body){
   notifs.unshift({icon,title,body,time:'Одоо',read:false});
   if(notifs.length>50)notifs.length=50;
   playDing();bumpBell();showNotifBanner(icon,title,body);
+  showOSNotification(icon,title,body);
+}
+function showOSNotification(icon,title,body){
+  try{
+    if(!('Notification' in window)||Notification.permission!=='granted')return;
+    if(document.visibilityState==='visible')return; // апп нээлттэй бол зөвхөн дотоод банер хангалттай
+    if(navigator.serviceWorker&&navigator.serviceWorker.ready){
+      navigator.serviceWorker.ready.then(reg=>{
+        reg.showNotification(icon+' '+title,{body,icon:'icon-192.png',badge:'icon-192.png',tag:'bolzii',renotify:true,vibrate:[80,40,80]});
+      }).catch(()=>{});
+    }
+  }catch(e){}
+}
+function ensureNotifPermission(){
+  try{
+    if('Notification' in window && Notification.permission==='default'){Notification.requestPermission();}
+  }catch(e){}
+}
+function enableNotifs(){
+  try{
+    if(!('Notification' in window)){toast('Энэ төхөөрөмж мэдэгдэл дэмжихгүй байна');return;}
+    if(Notification.permission==='granted'){toast('✓ Мэдэгдэл аль хэдийн асаалттай');return;}
+    if(Notification.permission==='denied'){toast('Браузерын тохиргооноос мэдэгдлийг зөвшөөрнө үү');return;}
+    Notification.requestPermission().then(p=>{toast(p==='granted'?'🔔 Мэдэгдэл асаалаа!':'Мэдэгдэл идэвхжсэнгүй');});
+  }catch(e){toast('Алдаа гарлаа');}
 }
 function bumpBell(){
   const n=notifs.filter(x=>!x.read).length;
   const b=document.getElementById('bellBadge');
   if(b){b.textContent=n>99?'99+':n;b.style.display=n?'flex':'none';}
+  try{ if(navigator.setAppBadge){ n>0?navigator.setAppBadge(n):navigator.clearAppBadge(); } }catch(e){}
 }
 function playDing(){
   try{
@@ -1821,12 +1914,15 @@ function openNotifs(){
   document.getElementById('notifPanel').classList.add('open');
 }
 function closeNotifs(){document.getElementById('notifPanel').classList.remove('open');}
+/* Зураг томруулж харах */
+function openLightbox(url){if(!url)return;const im=document.getElementById('lightboxImg');im.src=url;document.getElementById('lightbox').classList.add('open');}
+function closeLightbox(){document.getElementById('lightbox').classList.remove('open');}
 fillAimags();renderBank();
 applyTheme();
 loadSettings();
 restoreSession();
 /* Бүртгэлийн талбар бүрд listener — бөглөх бүрт товчийг шалгана */
-['rName','rAge','rPhone','rPass','rBio','rAimag','rSoum'].forEach(id=>{
+['rName','rAge','rHeight','rWeight','rPhone','rPass','rBio','rAimag','rSoum'].forEach(id=>{
   const e=document.getElementById(id);
   if(e){e.addEventListener('input',validateReg);e.addEventListener('change',validateReg);}
 });

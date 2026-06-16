@@ -1,5 +1,5 @@
 /* Хоёулаа Болзий — Service Worker */
-const CACHE = 'bolzii-v13';
+const CACHE = 'bolzii-v16';
 const ASSETS = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', e => {
@@ -35,5 +35,32 @@ self.addEventListener('fetch', e => {
       } catch (_) {}
       return resp;
     }).catch(() => cached))
+  );
+});
+
+/* Мэдэгдэл дээр дарвал аппыг нээх/идэвхжүүлэх */
+self.addEventListener('notificationclick', e => {
+  e.notification.close();
+  e.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(list => {
+      for (const c of list) { if ('focus' in c) return c.focus(); }
+      if (self.clients.openWindow) return self.clients.openWindow('./');
+    })
+  );
+});
+
+/* Web Push (сервер push) — ирээдүйд backend холбоход ажиллана */
+self.addEventListener('push', e => {
+  let data = { title: 'Хоёулаа Болзий', body: 'Шинэ мэдэгдэл' };
+  try { if (e.data) data = Object.assign(data, e.data.json()); } catch (_) {}
+  e.waitUntil(
+    self.registration.showNotification(data.title, {
+      body: data.body,
+      icon: './icon-192.png',
+      badge: './icon-192.png',
+      tag: data.tag || 'bolzii',
+      renotify: true,
+      data: data
+    })
   );
 });
