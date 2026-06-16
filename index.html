@@ -87,6 +87,11 @@ body{
 @keyframes tw{0%,100%{opacity:.35;transform:scale(.85)}50%{opacity:1;transform:scale(1.15)}}
 
 /* ================= LANDING (нүүр) ================= */
+#pending{align-items:center;justify-content:center;text-align:center;padding:34px;background:linear-gradient(170deg,var(--pink-soft) 0%,var(--cream) 55%,var(--pink-bg) 100%);}
+.pending-wrap{max-width:340px;}
+.pending-ic{font-size:54px;}
+.pending-wrap h2{font-family:var(--display);font-size:25px;font-weight:600;color:var(--ink);margin:14px 0 10px;}
+.pending-wrap p{font-size:13.5px;color:var(--gray);font-weight:500;line-height:1.6;margin-bottom:24px;}
 #landing{background:linear-gradient(170deg,var(--pink-soft) 0%,var(--cream) 45%,var(--pink-bg) 100%);align-items:center;justify-content:center;text-align:center;padding:calc(50px + env(safe-area-inset-top)) 34px calc(50px + env(safe-area-inset-bottom));overflow-y:auto;}
 #landing .glow{position:absolute;top:-60px;left:50%;transform:translateX(-50%);width:320px;height:320px;border-radius:50%;background:radial-gradient(circle,rgba(226,62,87,.22),transparent 70%);z-index:0;}
 .brand{position:relative;z-index:5;animation:rise .6s ease both;}
@@ -655,6 +660,29 @@ body{
     </div>
   </section>
 
+  <!-- ============ PENDING (баталгаажуулалт хүлээж буй) ============ -->
+  <section class="page" id="pending">
+    <div class="pending-wrap">
+      <div class="pending-ic">⏳</div>
+      <h2>Баталгаажуулалт хүлээж байна</h2>
+      <p>Таны бүртгэлийг админ хянаж байна. Зөвшөөрсний дараа аппад орох боломжтой болно. Ихэвчлэн 24 цагийн дотор шалгадаг.</p>
+      <button class="btn btn-primary" style="width:100%" onclick="recheckPending()">🔄 Дахин шалгах</button>
+      <button class="btn btn-ghost" style="width:100%;margin-top:10px" onclick="logout()">Гарах</button>
+    </div>
+  </section>
+
+  <!-- ============ EDIT PROFILE ============ -->
+  <section class="page" id="editProfile">
+    <div class="sub-head"><button class="back" onclick="route('mainapp');tab('profile')">‹</button><div class="ttl">Профайл засах</div></div>
+    <div class="sub-body">
+      <div class="form-group"><label>Нэр</label><input id="eName" placeholder="Таны нэр"></div>
+      <div class="form-group"><label>Нас</label><input id="eAge" type="number" placeholder="25"></div>
+      <div class="form-group"><label>Танилцуулга</label><textarea id="eBio" rows="3" placeholder="Өөрийнхөө тухай хэдэн үг..."></textarea></div>
+      <div class="form-group"><label>Сонирхол</label><div class="chips" id="eChips"></div></div>
+      <button class="btn btn-primary" style="width:100%" onclick="saveProfile()">💾 Хадгалах</button>
+    </div>
+  </section>
+
   <!-- ============ MAIN APP ============ -->
   <section class="page" id="mainapp">
     <div class="topbar">
@@ -735,11 +763,10 @@ body{
           <div class="st-text"><b>Найзын хүсэлт зөвшөөрөх</b><span>Идэвхтэй үед бусад хэрэглэгч танд найзын хүсэлт илгээх боломжтой. Унтраавал хэн ч хүсэлт илгээж чадахгүй.</span></div>
           <div class="toggle on" id="frToggle" onclick="toggleFRSetting()"><span class="track"></span><span class="knob"></span></div>
         </div>
-        <div class="setting" onclick="toast('Профайл засах')">Профайл засах ›</div>
-        <div class="setting" onclick="toast('Хайлтын тохиргоо')">Хайлтын тохиргоо ›</div>
-        <div class="setting" onclick="toast('Баталгаажуулалт')">Баталгаажуулалт ›</div>
+        <div class="setting" onclick="openEditProfile()">Профайл засах ›</div>
+        <div class="setting" onclick="verifyStatus()">Баталгаажуулалтын төлөв ›</div>
         <div class="setting" onclick="route('info')">Тусламж & холбоо ›</div>
-        <div class="setting danger" onclick="route('landing')">Гарах</div>
+        <div class="setting danger" onclick="logout()">Гарах</div>
       </div>
     </div>
 
@@ -865,7 +892,7 @@ body{
 
   <!-- ============ ADMIN PANEL ============ -->
   <section class="page" id="adminPanel">
-    <div class="admin-head"><div class="ttl">Хоёулаа Болзий — Админ</div><button class="out" onclick="route('landing')">Гарах</button></div>
+    <div class="admin-head"><div class="ttl">Хоёулаа Болзий — Админ</div><button class="out" onclick="logout()">Гарах</button></div>
     <div class="admin-tabs">
       <button class="on" onclick="admTab('verify',this)">Баталгаажуулалт</button>
       <button onclick="admTab('users',this)">Хэрэглэгчид</button>
@@ -879,9 +906,79 @@ body{
   <div class="toast" id="toast"></div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 /* ============================================================
-   DATA  (цаашид backend-ээс татна: Supabase/Firebase)
+   SUPABASE — backend холболт
+   ============================================================ */
+const SB_URL='https://kypwjajzhmmbnurtkexu.supabase.co';
+const SB_KEY='sb_publishable_A_vkQLuUaEUXFWBjQY_zEQ_Q1x0G5JY';
+const sb=window.supabase.createClient(SB_URL,SB_KEY);
+let me=null;  // нэвтэрсэн хэрэглэгчийн профайл
+function phEmail(ph){return normPhone(ph)+'@bolzii.app';}
+function mapProfile(p){return {id:p.id,n:p.name,a:p.age,g:p.gender,city:p.city||'',d:'ойролцоо',v:true,vip:!!p.is_vip,bio:p.bio||'',tags:p.tags||[],ph:p.photo_url||''};}
+async function loadMe(){
+  const {data:{user}}=await sb.auth.getUser();
+  if(!user){me=null;return null;}
+  const {data}=await sb.from('profiles').select('*').eq('id',user.id).single();
+  me=data||null; if(me){myVip=!!me.is_vip;} return me;
+}
+/* Нэвтэрсний дараа хаашаа орохыг шийднэ: админ / хүлээгдэж буй / гол апп */
+async function enterApp(){
+  await loadMe();
+  if(!me){route('login');return;}
+  if(me.is_admin){route('adminPanel');admTab('verify');return;}
+  if(me.blocked){await sb.auth.signOut();me=null;route('landing');toast('Таны бүртгэл блоклогдсон байна');return;}
+  if(!me.verified){route('pending');return;}
+  route('mainapp');await initApp();
+}
+async function recheckPending(){
+  toast('Шалгаж байна…');
+  await loadMe();
+  if(me&&me.verified){route('mainapp');await initApp();}
+  else if(me&&me.blocked){await logout();toast('Бүртгэл блоклогдсон байна');}
+  else toast('Одоогоор баталгаажаагүй байна. Түр хүлээнэ үү 🙏');
+}
+/* Профайл засах */
+const INTERESTS=['☕ Кофе','📚 Ном','🏔 Аялал','🎵 Хөгжим','🎬 Кино','🏃 Спорт','🎨 Дизайн','🐱 Амьтан','🍜 Хоол','💻 IT','🧘 Йог','🎮 Гэйм'];
+function openEditProfile(){
+  if(!me){toast('Эхлээд нэвтэрнэ үү');return;}
+  document.getElementById('eName').value=me.name||'';
+  document.getElementById('eAge').value=me.age||'';
+  document.getElementById('eBio').value=me.bio||'';
+  const mine=me.tags||[];
+  document.getElementById('eChips').innerHTML=INTERESTS.map(t=>`<span class="chip${mine.includes(t)?' on':''}" onclick="this.classList.toggle('on')">${t}</span>`).join('');
+  route('editProfile');
+}
+async function saveProfile(){
+  if(!me){toast('Эхлээд нэвтэрнэ үү');return;}
+  const name=document.getElementById('eName').value.trim();
+  if(!name){toast('Нэрээ оруулна уу');return;}
+  const age=parseInt(document.getElementById('eAge').value)||null;
+  const bio=document.getElementById('eBio').value.trim();
+  const tags=[...document.querySelectorAll('#eChips .chip.on')].map(c=>c.textContent.trim());
+  toast('Хадгалж байна…');
+  const {error}=await sb.from('profiles').update({name,age,bio,tags}).eq('id',me.id);
+  if(error){toast('Алдаа: '+error.message);return;}
+  await loadMe();
+  const pn=document.querySelector('#t-profile .prof-name');if(pn)pn.textContent=me.name+(me.age?', '+me.age:'');
+  toast('✓ Профайл хадгалагдлаа');
+  route('mainapp');tab('profile');
+}
+function verifyStatus(){
+  if(!me){toast('Эхлээд нэвтэрнэ үү');return;}
+  toast(me.verified?'✓ Таны бүртгэл баталгаажсан':'⏳ Баталгаажуулалт хүлээгдэж байна');
+}
+/* Хуудас дахин ачаалахад нэвтрэлтийг сэргээх (хадгалагдсан session) */
+async function restoreSession(){
+  try{
+    const {data:{session}}=await sb.auth.getSession();
+    if(session) await enterApp();
+  }catch(e){console.error('restoreSession',e);}
+}
+
+/* ============================================================
+   DATA
    ============================================================ */
 const F='https://images.unsplash.com/';
 const people=[
@@ -902,7 +999,21 @@ function route(p){
   document.getElementById(p).classList.add('active');
   if(p==='register')renderBank();
 }
-function initApp(){renderGrid();renderMatches();renderDates();renderPkgs();renderFriendReqs();bumpUnread();bumpDates();}
+async function initApp(){
+  await loadSettings();
+  await loadPeople();
+  renderMatches();renderDates();renderPkgs();renderFriendReqs();bumpUnread();bumpDates();
+  if(me){const pn=document.querySelector('#t-profile .prof-name');if(pn)pn.textContent=me.name+(me.age?', '+me.age:'');}
+}
+async function loadPeople(){
+  try{
+    const {data,error}=await sb.from('profiles').select('*').eq('verified',true).eq('blocked',false);
+    if(error)throw error;
+    people.length=0;
+    (data||[]).filter(p=>!me||p.id!==me.id).forEach(p=>people.push(mapProfile(p)));
+  }catch(e){console.error('loadPeople',e);}
+  renderGrid();
+}
 
 /* ============================================================ FRIEND REQUESTS ============================================================ */
 let allowFR=true;
@@ -1058,49 +1169,47 @@ function toggleTheme(){
    Бодит хувилбарт Supabase auth + users хүснэгт (утас давтагдахгүй) ашиглана. */
 let users=[];
 function normPhone(s){return (s||'').replace(/\D/g,'');}
-function doLogin(){
+async function doLogin(){
   const ph=normPhone(document.getElementById('lPhone').value);
   const pw=document.getElementById('lPass').value;
   if(!ph||!pw){toast('Утас болон нууц үгээ оруулна уу');return;}
-  const u=users.find(x=>normPhone(x.phone)===ph&&x.pass===pw);
-  if(!u){toast('Утас эсвэл нууц үг буруу');return;}
-  toast('Тавтай морил, '+u.name+'!');
-  setTimeout(()=>{route('mainapp');initApp();},700);
+  toast('Нэвтэрч байна…');
+  const {data,error}=await sb.auth.signInWithPassword({email:phEmail(ph),password:pw});
+  if(error){toast('Утас эсвэл нууц үг буруу');return;}
+  await enterApp();
 }
 
-function doRegister(){
+async function doRegister(){
   const name=document.getElementById('rName').value.trim();
   const phone=document.getElementById('rPhone').value.trim();
   const pass=document.getElementById('rPass').value;
   if(!name){toast('Нэрээ оруулна уу');return;}
   if(!phone){toast('Утасны дугаараа оруулна уу');return;}
-  if(!pass||pass.length<4){toast('Нууц үг дор хаяж 4 тэмдэгт байх ёстой');return;}
+  if(!pass||pass.length<6){toast('Нууц үг дор хаяж 6 тэмдэгт байх ёстой');return;}
   if(!document.getElementById('rAimag').value){toast('Аймгаа сонгоно уу');return;}
   if(!document.getElementById('rSoum').value){toast('Сум/дүүргээ сонгоно уу');return;}
   if(!rulesAgreed){toast('Эхлээд дүрэмтэй танилцана уу');return;}
-  if(users.some(u=>u.name.toLowerCase()===name.toLowerCase())){toast('Энэ нэр бүртгэлтэй байна. Өөр нэр сонгоно уу');return;}
-  if(users.some(u=>normPhone(u.phone)===normPhone(phone))){toast('Энэ дугаар аль хэдийн бүртгэлтэй байна');return;}
-  users.push({name,phone,pass,g:regGender,vip:regGender==='f'});
-  // Админд баталгаажуулахаар бүх мэдээллийг дараалалд нэмэх
+  toast('Бүртгэж байна…');
+  // 1) auth хэрэглэгч үүсгэх (утас → синтетик и-мэйл)
+  const {data,error}=await sb.auth.signUp({email:phEmail(phone),password:pass});
+  if(error){toast(error.message&&/registered|exists/i.test(error.message)?'Энэ дугаар аль хэдийн бүртгэлтэй байна':('Алдаа: '+error.message));return;}
+  const uid=data.user&&data.user.id;
+  if(!uid){toast('Бүртгэл амжилтгүй. Дахин оролдоно уу');return;}
+  // 2) профайл хадгалах (баталгаажуулалт хүлээнэ)
   const interests=[...document.querySelectorAll('#register .chip.on')].map(c=>c.textContent.trim());
-  admData.verify.unshift({
-    name, phone, g:regGender, vip:regGender==='f',
-    age:(document.getElementById('rAge').value||'').trim()||'-',
+  const {error:perr}=await sb.from('profiles').insert({
+    id:uid, name, phone:normPhone(phone), gender:regGender,
+    age:parseInt(document.getElementById('rAge').value)||null,
     city:document.getElementById('rAimag').value,
     soum:document.getElementById('rSoum').value,
     bio:document.getElementById('rBio').value.trim(),
-    tags:interests,
-    plan: regGender==='f' ? 'Бүсгүй · төлбөргүй' : (selectedPlan==='vip'?'VIP':'Энгийн гишүүн'),
-    ph:''
+    tags:interests, is_vip:(regGender==='f'), verified:false
   });
-  if(regGender==='f'){
-    toast('🎉 Бүртгэл амжилттай! Бүсгүйчүүд төлбөргүй — VIP эрх үнэгүй идэвхжлээ.');
-  }else{
-    const amount=fmt(selectedPlan==='vip'?settings.fee+settings.vip:settings.fee);
-    toast('🎉 Бүртгэл үүслээ! '+amount+' дансанд шилжүүлснээр идэвхжинэ.');
-  }
-  if(regGender==='f')myVip=true;
-  setTimeout(()=>{route('mainapp');initApp();},1100);
+  if(perr){toast(/duplicate|unique/i.test(perr.message)?'Энэ дугаар аль хэдийн бүртгэлтэй байна':('Алдаа: '+perr.message));return;}
+  await loadMe();
+  if(regGender==='f') toast('🎉 Бүртгэл амжилттай! Бүсгүйчүүд төлбөргүй — VIP үнэгүй. Админ баталгаажуулна.');
+  else toast('🎉 Бүртгэл амжилттай! Төлбөр + админ баталгаажуулсны дараа идэвхжинэ.');
+  setTimeout(()=>enterApp(),1300);
 }
 
 /* ============================================================ DISCOVER / BROWSE ============================================================ */
@@ -1189,16 +1298,22 @@ function tab(name,btn){
   document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
   document.getElementById('t-'+name).classList.add('active');
   document.querySelectorAll('.nav button').forEach(b=>b.classList.remove('active'));
-  if(btn)btn.classList.add('active');else{const map={discover:0,dates:1,matches:2,profile:3};document.querySelectorAll('.nav button')[map[name]].classList.add('active');}
+  if(btn)btn.classList.add('active');else{const map={discover:0,dates:1,matches:2,profile:3};const nb=document.querySelectorAll('.nav button')[map[name]];if(nb)nb.classList.add('active');}
   if(name==='matches'){renderMatches();renderFriendReqs();}if(name==='dates'){renderDates();renderPkgs();}
 }
 function bumpUnread(){const n=chats.reduce((a,c)=>a+c.unread,0),el=document.getElementById('navUnread');el.style.display=n?'flex':'none';el.textContent=n;}
 function bumpDates(){const el=document.getElementById('navDates'),n=dates.length;el.style.display=n?'flex':'none';el.textContent=n;}
 
 /* ============================================================ ADMIN ============================================================ */
-function adminLogin(){
+async function adminLogin(){
   const u=document.getElementById('admUser').value.trim(),p=document.getElementById('admPass').value;
-  if(u==='Gantulga'&&p==='My96101613'){route('adminPanel');admTab('verify');}else toast('Нэр эсвэл нууц үг буруу');
+  if(!u||!p){toast('Нэр болон нууц үгээ оруулна уу');return;}
+  toast('Нэвтэрч байна…');
+  const {error}=await sb.auth.signInWithPassword({email:'gantulga@bolzii.app',password:p});
+  if(error){toast('Нэр эсвэл нууц үг буруу');return;}
+  await loadMe();
+  if(!me||!me.is_admin){await sb.auth.signOut();toast('Та админ эрхгүй байна');return;}
+  route('adminPanel');admTab('verify');
 }
 /* ============================================================ ADMIN SETTINGS / DATA ============================================================ */
 let settings={bank:'Хаан банк',account:'5041 234 567',recipient:'Хоёулаа Болзий ХХК',fee:5000,vip:19900,
@@ -1222,9 +1337,22 @@ const admData={
   dates:[],
   reports:[],
 };
-function admTab(t,btn){
+async function admTab(t,btn){
   if(btn){document.querySelectorAll('.admin-tabs button').forEach(b=>b.classList.remove('on'));btn.classList.add('on');}
-  const body=document.getElementById('admBody');let html='';
+  const body=document.getElementById('admBody');
+  body.innerHTML='<div style="text-align:center;color:var(--gray-2);padding:30px;font-size:13px;">Ачааллаж байна…</div>';
+  // өгөгдөл татах
+  if(t!=='settings'){
+    try{
+      const [v,u]=await Promise.all([
+        sb.from('profiles').select('*').eq('verified',false).eq('blocked',false).order('created_at',{ascending:false}),
+        sb.from('profiles').select('*').eq('verified',true)
+      ]);
+      admData.verify=(v.data||[]).filter(x=>!x.is_admin).map(x=>({id:x.id,name:x.name,g:x.gender,age:x.age||'-',phone:x.phone,city:x.city,soum:x.soum,bio:x.bio,tags:x.tags,plan:x.gender==='f'?'Бүсгүй · төлбөргүй':'Энгийн гишүүн'}));
+      admData.users=(u.data||[]).filter(x=>!x.is_admin).map(x=>({id:x.id,n:x.name,m:`${x.age||''} · ${x.city||''}`,ph:x.photo_url||'',blocked:!!x.blocked}));
+    }catch(e){console.error('admTab load',e);body.innerHTML='<div style="text-align:center;color:var(--red);padding:30px;">Ачаалахад алдаа гарлаа</div>';return;}
+  }
+  let html='';
   if(t!=='settings'){
     const blk=admData.users.filter(u=>u.blocked).length;
     html+=`<div class="kpi-row"><div class="kpi"><div class="v">${admData.users.length}</div><div class="l">Хэрэглэгч</div></div><div class="kpi"><div class="v">${admData.verify.length}</div><div class="l">Хүлээгдэж буй</div></div><div class="kpi"><div class="v">${blk}</div><div class="l">Блоклосон</div></div></div>`;
@@ -1242,8 +1370,8 @@ function admTab(t,btn){
     <div class="av-actions"><button class="av-no" onclick="rejectUser(${i})">✕ Татгалзах</button><button class="av-ok" onclick="approveUser(${i})">✓ Зөвшөөрөх</button></div>
   </div>`).join(''):empty('Баталгаажуулалт хүлээж буй хэрэглэгч алга');}
   else if(t==='users'){html+=admData.users.length?admData.users.map((x,i)=>`<div class="adm-card" style="${x.blocked?'opacity:.55':''}"><div class="ph" style="${photoBg(x.ph)}"></div><div class="b"><div class="nm">${x.n}</div><div class="meta">${x.m}</div></div><span class="adm-pill ${x.blocked?'warn':'ok'}">${x.blocked?'Блоклогдсон':'Идэвхтэй'}</span><div class="acts"><button class="${x.blocked?'ok-b':'no-b'}" onclick="toggleBlock(${i})" title="${x.blocked?'Блокоос гаргах':'Блоклох'}">${x.blocked?'🔓':'🚫'}</button></div></div>`).join(''):empty('Бүртгэлтэй хэрэглэгч алга');}
-  else if(t==='dates'){html+=admData.dates.length?admData.dates.map(x=>`<div class="adm-card"><div class="ph" style="background:var(--pink-bg);display:flex;align-items:center;justify-content:center;">📅</div><div class="b"><div class="nm">${x.n}</div><div class="meta">${x.m}</div></div><span class="adm-pill ${x.pill}">${x.pt}</span></div>`).join(''):empty('Болзоо алга');}
-  else if(t==='reports'){html+=admData.reports.length?admData.reports.map(x=>`<div class="adm-card"><div class="ph" style="background:var(--pink-bg);display:flex;align-items:center;justify-content:center;">⚠️</div><div class="b"><div class="nm">${x.n}</div><div class="meta">${x.m}</div></div><span class="adm-pill ${x.pill}">${x.pt}</span></div>`).join(''):empty('Гомдол алга');}
+  else if(t==='dates'){html+=empty('Болзоо (удахгүй холбогдоно)');}
+  else if(t==='reports'){html+=empty('Гомдол (удахгүй холбогдоно)');}
   else if(t==='settings'){
     html+=`<div style="font-family:var(--display);font-size:17px;color:var(--red-deep);font-weight:600;margin-bottom:14px;">Дансны мэдээлэл & хураамж</div>
     <div class="form-group"><label>Банкны нэр</label><input id="setBank" value="${settings.bank}"></div>
@@ -1254,12 +1382,29 @@ function admTab(t,btn){
     <div style="font-family:var(--display);font-size:17px;color:var(--red-deep);font-weight:600;margin:18px 0 14px;">Болзоо зохион байгуулах багцууд</div>
     ${settings.datePkgs.map((p,i)=>`<div style="border:1px solid var(--gray-bg);border-radius:14px;padding:11px;margin-bottom:10px;"><div class="form-group" style="margin-bottom:10px"><label>Багц ${i+1} — нэр</label><input id="setPkgN${i}" value="${p.name}"></div><div class="form-group" style="margin-bottom:0"><label>Үнэ (₮)</label><input id="setPkg${i}" type="number" value="${p.price}"></div></div>`).join('')}
     <button class="btn btn-primary" style="width:100%" onclick="saveSettings()">💾 Хадгалах</button>
-    <p style="font-size:12px;color:var(--gray-2);font-weight:500;margin-top:12px;line-height:1.5;">Энд хийсэн өөрчлөлт бүртгэлийн дэлгэцийн данс, хураамж, VIP үнэ болон болзооны багцын үнэд шууд тусна.</p>`;
+    <p style="font-size:12px;color:var(--gray-2);font-weight:500;margin-top:12px;line-height:1.5;">Энд хийсэн өөрчлөлт бүх хэрэглэгчид шууд тусна (өгөгдлийн санд хадгалагдана).</p>`;
   }
   body.innerHTML=html;
 }
-function toggleBlock(i){admData.users[i].blocked=!admData.users[i].blocked;admTab('users');toast(admData.users[i].blocked?'🚫 '+admData.users[i].n+'-г блоклов':'🔓 Блокоос гаргав');}
-function saveSettings(){
+async function toggleBlock(i){
+  const x=admData.users[i];if(!x)return;
+  const {error}=await sb.from('profiles').update({blocked:!x.blocked}).eq('id',x.id);
+  if(error){toast('Алдаа гарлаа');return;}
+  toast(!x.blocked?'🚫 '+x.n+'-г блоклов':'🔓 Блокоос гаргав');
+  admTab('users');
+}
+async function loadSettings(){
+  try{
+    const {data}=await sb.from('settings').select('*').eq('id',1).single();
+    if(data){
+      settings.bank=data.bank;settings.account=data.account;settings.recipient=data.recipient;
+      settings.fee=data.fee;settings.vip=data.vip;
+      if(Array.isArray(data.packages)) data.packages.forEach((p,i)=>{if(settings.datePkgs[i]){settings.datePkgs[i].name=p.name;settings.datePkgs[i].price=p.price;}});
+    }
+  }catch(e){console.error('loadSettings',e);}
+  renderBank();renderPkgs();
+}
+async function saveSettings(){
   const g=id=>document.getElementById(id).value;
   settings.bank=g('setBank').trim()||settings.bank;
   settings.account=g('setAccount').trim()||settings.account;
@@ -1270,6 +1415,9 @@ function saveSettings(){
     const pr=document.getElementById('setPkg'+i);if(pr)p.price=parseInt(pr.value)||p.price;
     const nm=document.getElementById('setPkgN'+i);if(nm&&nm.value.trim())p.name=nm.value.trim();
   });
+  const packages=settings.datePkgs.map(p=>({name:p.name,price:p.price}));
+  const {error}=await sb.from('settings').update({bank:settings.bank,account:settings.account,recipient:settings.recipient,fee:settings.fee,vip:settings.vip,packages}).eq('id',1);
+  if(error){toast('Хадгалахад алдаа: '+error.message);return;}
   renderBank();renderPkgs();
   toast('💾 Тохиргоо хадгалагдлаа');
 }
@@ -1277,17 +1425,25 @@ function admAct(btn,msg){btn.closest('.adm-card').style.opacity='.4';toast(msg);
 /* Зураг байхгүй бол градиент фон */
 function photoBg(ph){return ph?`background-image:url('${F}${ph}')`:`background:linear-gradient(135deg,var(--red),var(--pink))`;}
 /* Бүртгэлийн хүсэлт зөвшөөрөх / татгалзах */
-function approveUser(i){
-  const x=admData.verify[i];if(!x)return;admData.verify.splice(i,1);
-  admData.users.unshift({n:x.name,m:`${x.age} · ${x.city||''}`,ph:x.ph||'',blocked:false});
-  people.push({n:x.name,a:parseInt(x.age)||25,g:x.g,city:x.city||'',d:'ойролцоо',v:true,vip:!!x.vip,bio:x.bio||'',tags:x.tags||[],ph:x.ph||''});
-  renderGrid();admTab('verify');toast('✓ '+x.name+'-г баталгаажууллаа');
+async function approveUser(i){
+  const x=admData.verify[i];if(!x)return;
+  const {error}=await sb.from('profiles').update({verified:true}).eq('id',x.id);
+  if(error){toast('Алдаа гарлаа');return;}
+  toast('✓ '+x.name+'-г баталгаажууллаа');admTab('verify');
 }
-function rejectUser(i){const x=admData.verify[i];if(!x)return;admData.verify.splice(i,1);admTab('verify');toast('✕ '+x.name+'-г татгалзлаа');}
+async function rejectUser(i){
+  const x=admData.verify[i];if(!x)return;
+  const {error}=await sb.from('profiles').update({blocked:true}).eq('id',x.id);
+  if(error){toast('Алдаа гарлаа');return;}
+  toast('✕ '+x.name+'-г татгалзлаа');admTab('verify');
+}
 
 /* ============================================================ MISC ============================================================ */
 let tt;function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');clearTimeout(tt);tt=setTimeout(()=>t.classList.remove('show'),1800);}
+async function logout(){try{await sb.auth.signOut();}catch(e){}me=null;myVip=false;route('landing');}
 fillAimags();renderBank();
+loadSettings();
+restoreSession();
 
 /* ============================================================ PWA — суулгах & service worker ============================================================ */
 let deferredPrompt=null;
