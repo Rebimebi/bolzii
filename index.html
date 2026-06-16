@@ -1,0 +1,1303 @@
+<!DOCTYPE html>
+<html lang="mn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>Хоёулаа Болзий — Жинхэнэ хүмүүс, жинхэнэ болзоо</title>
+<meta name="description" content="Жинхэнэ хүмүүс, жинхэнэ болзоо — баталгаажсан хэрэглэгчтэй Монгол болзооны апп.">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#e23e57">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Болзий">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,500;1,600&family=Onest:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   БОЛЗИЙ — суурь загвар. Цаашид өргөтгөхөд:
+   - өгөгдөл нь script доторх DATA хэсэгт
+   - дэлгэц солих нь route()
+   - өнгө бүгд CSS хувьсагчид (:root)
+   ============================================================ */
+:root{
+  --red:#e23e57;
+  --red-deep:#c01b3c;
+  --pink:#ff8fab;
+  --pink-2:#ffb3c6;
+  --pink-soft:#ffe0e8;
+  --pink-bg:#fff2f5;
+  --gray:#6e5f64;
+  --gray-2:#a6989d;
+  --gray-bg:#f1eaec;
+  --cream:#fffafb;
+  --card:#ffffff;
+  --ink:#3a2128;
+  --gold:#f6c453;
+  --ok:#2fa874;
+  --shadow:0 20px 55px -16px rgba(192,27,60,.4);
+  --display:'Playfair Display',Georgia,serif;
+  --body:'Onest',system-ui,sans-serif;
+}
+/* Харанхуй горим — өнгөний хувьсагчдыг дарж бичнэ */
+body.dark{
+  --pink-soft:#3a1f29;
+  --pink-bg:#1d0f15;
+  --gray:#c2b0b6;
+  --gray-2:#8f7c83;
+  --gray-bg:#2c1a21;
+  --cream:#160a0f;
+  --card:#241319;
+  --ink:#f6e9ec;
+  --shadow:0 20px 55px -16px rgba(0,0,0,.6);
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+html,body{height:100%;}
+body{
+  font-family:var(--body);
+  background:var(--gray-bg);
+  display:flex;align-items:stretch;justify-content:center;min-height:100vh;min-height:100dvh;color:var(--ink);
+}
+.phone{
+  width:100%;max-width:480px;
+  height:100vh;height:100dvh;
+  background:var(--cream);
+  position:relative;overflow:hidden;display:flex;flex-direction:column;
+  box-shadow:0 0 60px rgba(58,33,40,.12);
+}
+/* Утсан дээр (≤500px) дэлгэцийг бүрэн дүүргэнэ — хүрээ, хажуугийн зай байхгүй */
+@media (max-width:500px){
+  body{display:block;}
+  .phone{max-width:100%;box-shadow:none;}
+}
+
+/* router pages */
+.page{position:absolute;inset:0;display:none;flex-direction:column;overflow:hidden;}
+.page.active{display:flex;}
+
+/* ---------- decorative hearts + stars ---------- */
+.heart-deco{position:absolute;z-index:1;opacity:.5;pointer-events:none;}
+.heart-deco.tl{top:18px;left:16px;}
+.heart-deco.tr{top:22px;right:14px;transform:rotate(18deg);}
+.heart-deco.bl{bottom:120px;left:14px;transform:rotate(-14deg);}
+.heart-deco.br{bottom:140px;right:18px;transform:rotate(10deg);}
+.star{position:absolute;color:var(--gold);font-size:13px;animation:tw 2.6s ease-in-out infinite;pointer-events:none;z-index:1;}
+@keyframes tw{0%,100%{opacity:.35;transform:scale(.85)}50%{opacity:1;transform:scale(1.15)}}
+
+/* ================= LANDING (нүүр) ================= */
+#landing{background:linear-gradient(170deg,var(--pink-soft) 0%,var(--cream) 45%,var(--pink-bg) 100%);align-items:center;justify-content:center;text-align:center;padding:calc(50px + env(safe-area-inset-top)) 34px calc(50px + env(safe-area-inset-bottom));overflow-y:auto;}
+#landing .glow{position:absolute;top:-60px;left:50%;transform:translateX(-50%);width:320px;height:320px;border-radius:50%;background:radial-gradient(circle,rgba(226,62,87,.22),transparent 70%);z-index:0;}
+.brand{position:relative;z-index:5;animation:rise .6s ease both;}
+@keyframes rise{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+.brand .mark{width:84px;height:84px;margin:0 auto 18px;border-radius:28px;background:linear-gradient(135deg,var(--red),var(--pink));display:flex;align-items:center;justify-content:center;box-shadow:0 16px 36px -10px rgba(226,62,87,.6);}
+.brand h1{font-family:var(--display);font-size:54px;font-weight:700;color:var(--red-deep);letter-spacing:-1px;line-height:1;}
+.brand .kicker{font-family:var(--display);font-style:italic;font-size:24px;font-weight:500;color:var(--pink);letter-spacing:.5px;margin-bottom:-2px;}
+.brand .tag{font-family:var(--display);font-style:italic;font-size:19px;color:var(--gray);margin-top:14px;}
+.brand .sub{font-size:13.5px;color:var(--gray-2);margin-top:10px;font-weight:500;line-height:1.5;}
+.cta{position:relative;z-index:5;width:100%;margin-top:42px;display:flex;flex-direction:column;gap:12px;animation:rise .6s .12s ease both;}
+.btn{border:none;border-radius:30px;padding:16px;font-family:var(--body);font-weight:700;font-size:15.5px;cursor:pointer;transition:transform .15s;}
+.btn:active{transform:scale(.97);}
+.btn-primary{background:linear-gradient(135deg,var(--red),var(--pink));color:#fff;box-shadow:0 12px 28px -10px rgba(226,62,87,.7);}
+.btn-ghost{background:var(--card);color:var(--red-deep);box-shadow:0 8px 20px -12px rgba(58,33,40,.4);}
+.landing-links{position:relative;z-index:5;margin-top:30px;display:flex;flex-wrap:wrap;gap:6px 16px;justify-content:center;animation:rise .6s .22s ease both;}
+.women-free{position:relative;z-index:5;margin-top:22px;background:var(--card);color:var(--red-deep);border:1.5px solid var(--pink-2);border-radius:16px;padding:12px 16px;font-size:13px;font-weight:600;line-height:1.45;box-shadow:0 10px 26px -14px rgba(226,62,87,.5);animation:rise .6s .16s ease both;}
+.women-free b{color:var(--red);font-weight:800;}
+.landing-links a{font-size:12.5px;color:var(--gray);font-weight:600;cursor:pointer;text-decoration:none;}
+.landing-links a:active{color:var(--red);}
+
+/* ================= shared sub-page chrome ================= */
+.sub-head{flex:0 0 auto;padding:calc(20px + env(safe-area-inset-top)) 18px 14px;display:flex;align-items:center;gap:12px;background:var(--card);border-bottom:1px solid rgba(58,33,40,.07);z-index:10;}
+.sub-head .back{background:var(--gray-bg);border:none;width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;}
+.sub-head .ttl{font-family:var(--display);font-size:21px;font-weight:600;color:var(--ink);}
+.sub-body{flex:1;overflow-y:auto;padding:22px;}
+.sub-body h3{font-family:var(--display);font-size:18px;color:var(--red-deep);margin:18px 0 8px;font-weight:600;}
+.sub-body h3:first-child{margin-top:0;}
+.sub-body p{font-size:14px;line-height:1.65;color:var(--gray);margin-bottom:10px;font-weight:500;}
+.sub-body .lead{font-size:15px;color:var(--ink);}
+.feat{display:flex;gap:13px;align-items:flex-start;background:var(--pink-bg);border-radius:18px;padding:15px;margin-bottom:12px;}
+.feat .ic{font-size:22px;flex:0 0 auto;}
+.feat b{display:block;font-size:14.5px;color:var(--ink);margin-bottom:3px;}
+.feat span{font-size:13px;color:var(--gray);line-height:1.5;font-weight:500;}
+.rule-item{display:flex;gap:11px;padding:12px 0;border-bottom:1px solid rgba(58,33,40,.06);}
+.rule-item .num{flex:0 0 26px;height:26px;border-radius:50%;background:linear-gradient(135deg,var(--red),var(--pink));color:#fff;font-weight:800;font-size:13px;display:flex;align-items:center;justify-content:center;}
+.rule-item div{font-size:13.5px;line-height:1.55;color:var(--gray);font-weight:500;padding-top:2px;}
+.info-row{display:flex;align-items:center;gap:13px;padding:15px;background:var(--card);border-radius:16px;margin-bottom:10px;box-shadow:0 4px 14px -10px rgba(58,33,40,.4);}
+.info-row .ic{width:40px;height:40px;border-radius:12px;background:var(--pink-bg);display:flex;align-items:center;justify-content:center;font-size:18px;}
+.info-row .t b{display:block;font-size:14px;color:var(--ink);}
+.info-row .t span{font-size:12.5px;color:var(--gray-2);font-weight:500;}
+
+/* ================= REGISTER (бүртгүүлэх) ================= */
+.form-group{margin-bottom:16px;}
+.form-group label{display:block;font-size:12.5px;font-weight:700;color:var(--gray);margin-bottom:7px;}
+.form-group input,.form-group textarea,.form-group select{width:100%;border:1.5px solid var(--gray-bg);background:var(--card);border-radius:14px;padding:13px 15px;font-size:14.5px;font-family:var(--body);color:var(--ink);outline:none;transition:border .15s;}
+.form-group input:focus,.form-group textarea:focus{border-color:var(--pink);}
+.seg{display:flex;gap:8px;}
+.seg button{flex:1;border:1.5px solid var(--gray-bg);background:var(--card);border-radius:14px;padding:12px;font-weight:700;font-size:14px;color:var(--gray);cursor:pointer;font-family:var(--body);}
+.seg button.on{background:linear-gradient(135deg,var(--red),var(--pink));color:#fff;border-color:transparent;}
+.chips{display:flex;flex-wrap:wrap;gap:8px;}
+.chip{border:1.5px solid var(--gray-bg);background:var(--card);border-radius:30px;padding:8px 14px;font-size:13px;font-weight:600;color:var(--gray);cursor:pointer;}
+.chip.on{background:var(--pink-bg);border-color:var(--pink);color:var(--red-deep);}
+.photo-up{border:2px dashed var(--pink-2);border-radius:18px;padding:26px;text-align:center;color:var(--gray-2);font-size:13px;font-weight:600;cursor:pointer;background:var(--pink-bg);}
+.verify-note{background:rgba(47,168,116,.1);color:#1f7a54;font-size:12px;font-weight:600;padding:11px 14px;border-radius:12px;display:flex;gap:8px;align-items:center;margin-bottom:18px;line-height:1.4;}
+.agree{display:flex;gap:10px;align-items:flex-start;font-size:12.5px;color:var(--gray);font-weight:500;margin:6px 0 18px;line-height:1.5;}
+.agree input{margin-top:2px;width:18px;height:18px;accent-color:var(--red);}
+.form-group select{appearance:none;background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%23a6989d' stroke-width='2.4'><path d='M6 9l6 6 6-6'/></svg>");background-repeat:no-repeat;background-position:right 15px center;padding-right:40px;cursor:pointer;}
+.form-group select:disabled{background-color:var(--gray-bg);color:var(--gray-2);cursor:not-allowed;}
+/* rules read box */
+.rule-read{display:flex;align-items:center;justify-content:space-between;border:1.5px solid var(--gray-bg);background:var(--card);border-radius:14px;padding:14px 15px;cursor:pointer;font-weight:600;font-size:14px;color:var(--gray);}
+.rule-read.done{border-color:var(--ok);background:rgba(47,168,116,.08);color:#1f7a54;}
+.rule-read .chev{color:var(--gray-2);font-size:18px;}
+/* plan cards */
+.plan{display:flex;align-items:center;justify-content:space-between;border:1.5px solid var(--gray-bg);background:var(--card);border-radius:16px;padding:14px 15px;cursor:pointer;margin-bottom:10px;}
+.plan.on{border-color:var(--red);background:var(--pink-bg);}
+.plan b{font-size:14.5px;color:var(--ink);}
+.plan span{display:block;font-size:11.5px;color:var(--gray-2);font-weight:500;margin-top:2px;}
+.plan .pr{font-family:var(--display);font-size:18px;font-weight:600;color:var(--red-deep);white-space:nowrap;}
+.plan .pr small{font-family:var(--body);font-size:11px;font-weight:500;opacity:.7;}
+.pay-note{font-size:12px;color:var(--gray-2);font-weight:500;margin-top:8px;line-height:1.5;}
+.bank-box{border:1.5px solid var(--gray-bg);border-radius:16px;padding:14px 15px;background:var(--card);}
+.bank-row,.bank-amt{display:flex;justify-content:space-between;align-items:center;padding:7px 0;font-size:13.5px;}
+.bank-row span,.bank-amt span{color:var(--gray-2);font-weight:500;}
+.bank-row b{color:var(--ink);font-weight:700;}
+.bank-amt{border-top:1px dashed var(--gray-bg);margin-top:4px;padding-top:11px;}
+.bank-amt b{font-family:var(--display);font-size:19px;color:var(--red-deep);font-weight:600;}
+.bank-note{font-size:12px;color:var(--gray);font-weight:500;line-height:1.5;margin-top:10px;background:var(--pink-bg);padding:10px 12px;border-radius:10px;}
+/* rules modal */
+.rules-modal{position:absolute;inset:0;z-index:160;background:var(--card);display:none;flex-direction:column;transform:translateY(100%);transition:transform .3s ease;}
+.rules-modal.open{display:flex;transform:translateY(0);}
+.rm-head{flex:0 0 auto;padding:22px 18px 14px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid rgba(58,33,40,.07);font-family:var(--display);font-size:19px;font-weight:600;color:var(--ink);}
+.rm-head button{background:var(--gray-bg);border:none;width:34px;height:34px;border-radius:50%;font-size:16px;cursor:pointer;color:var(--gray);}
+.rm-body{flex:1;overflow-y:auto;padding:20px 18px;}
+.rm-foot{flex:0 0 auto;padding:14px 18px 22px;border-top:1px solid rgba(58,33,40,.07);}
+/* user login */
+#login .sub-body{display:flex;flex-direction:column;justify-content:center;}
+.login-mark{width:64px;height:64px;margin:0 auto 14px;border-radius:20px;background:linear-gradient(135deg,var(--red),var(--pink));display:flex;align-items:center;justify-content:center;box-shadow:0 12px 28px -10px rgba(226,62,87,.6);}
+.login-title{font-family:var(--display);font-size:26px;font-weight:600;color:var(--red-deep);text-align:center;}
+.login-sub{font-size:13px;color:var(--gray);margin:6px 0 22px;font-weight:500;text-align:center;line-height:1.5;}
+.login-alt{text-align:center;font-size:13px;color:var(--gray);margin-top:18px;font-weight:500;}
+.login-alt b{color:var(--red);cursor:pointer;}
+.login-hint{text-align:center;color:var(--gray-2);font-size:11.5px;margin-top:10px;}
+/* show/hide password */
+.pw-wrap{position:relative;}
+.pw-wrap input{padding-right:46px;}
+.pw-eye{position:absolute;top:50%;right:8px;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--gray-2);display:flex;align-items:center;justify-content:center;padding:6px;}
+.pw-eye .i-eyeoff{display:none;}
+.pw-eye.on .i-eye{display:none;}
+.pw-eye.on .i-eyeoff{display:block;}
+#adminLogin .pw-wrap input{padding-right:46px;}
+#adminLogin .pw-eye{color:rgba(255,255,255,.65);}
+
+/* ================= MAIN APP ================= */
+#mainapp{background:var(--pink-bg);}
+.topbar{flex:0 0 auto;padding:calc(18px + env(safe-area-inset-top)) 22px 12px;display:flex;align-items:center;justify-content:space-between;background:var(--card);z-index:30;border-bottom:1px solid rgba(58,33,40,.05);}
+.topbar .logo{font-family:var(--display);font-size:21px;font-weight:700;color:var(--red-deep);display:flex;align-items:center;gap:7px;}
+.topbar .vip{font-size:11px;font-weight:800;color:#7a4a00;background:linear-gradient(135deg,var(--gold),#ffdd87);padding:7px 12px;border-radius:30px;cursor:pointer;}
+.theme-btn{background:var(--gray-bg);border:none;width:34px;height:34px;border-radius:50%;font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+.tab{flex:1;position:relative;overflow:hidden;display:none;flex-direction:column;}
+.tab.active{display:flex;}
+
+.trust-banner{flex:0 0 auto;margin:8px 16px 2px;background:rgba(47,168,116,.12);color:#1f7a54;font-size:11.5px;font-weight:700;text-align:center;padding:8px;border-radius:14px;}
+/* browse grid */
+.user-grid{display:grid;grid-template-columns:1fr 1fr;gap:13px;}
+.ucard{border-radius:18px;overflow:hidden;background:var(--card);box-shadow:0 8px 20px -14px rgba(58,33,40,.5);cursor:pointer;transition:transform .15s;}
+.ucard:active{transform:scale(.97);}
+.uphoto{position:relative;width:100%;aspect-ratio:3/4;background-size:cover;background-position:center;}
+.ubadge{position:absolute;top:8px;right:8px;background:rgba(47,168,116,.92);color:#fff;font-size:11px;font-weight:800;width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;}
+.uloc{position:absolute;left:8px;bottom:8px;background:rgba(42,7,18,.55);backdrop-filter:blur(6px);color:#fff;font-size:11px;font-weight:600;padding:4px 9px;border-radius:20px;}
+.ucrown{position:absolute;top:8px;left:8px;background:linear-gradient(135deg,var(--gold),#ffdd87);color:#7a4a00;font-size:10px;font-weight:800;padding:4px 8px;border-radius:20px;}
+/* VIP lock screen */
+.lock-screen{position:absolute;inset:0;z-index:130;display:none;flex-direction:column;}
+.lock-screen.open{display:flex;}
+.lock-hero{flex:1;background-size:cover;background-position:center;background-color:#222;filter:blur(14px);transform:scale(1.1);}
+.lock-panel{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:34px;background:linear-gradient(180deg,rgba(42,7,18,.45),rgba(42,7,18,.82));}
+.lock-ic{font-size:40px;}
+.lock-crown{font-family:var(--body);font-weight:800;color:var(--gold);font-size:13px;letter-spacing:.5px;margin-top:10px;}
+.lock-name{font-family:var(--display);font-size:26px;font-weight:600;color:#fff;margin-top:4px;}
+.lock-panel p{color:rgba(255,255,255,.88);font-size:13.5px;line-height:1.55;font-weight:500;margin:12px 0 22px;max-width:300px;}
+.lock-vip{width:100%;margin-top:11px;background:linear-gradient(135deg,var(--gold),#ffdd87);color:#7a4a00;border:none;border-radius:30px;padding:15px;font-weight:800;font-family:var(--body);font-size:15px;cursor:pointer;}
+.lock-back{width:100%;margin-top:11px;background:transparent;color:#fff;border:1.5px solid rgba(255,255,255,.4);border-radius:30px;padding:13px;font-weight:700;font-family:var(--body);font-size:14px;cursor:pointer;}
+/* VIP benefits list */
+.vip-benefits{list-style:none;margin:8px 0 2px;padding:0;}
+.vip-benefits li{font-size:12.5px;opacity:.94;line-height:1.5;padding-left:19px;position:relative;margin-bottom:5px;}
+.vip-benefits li::before{content:'✓';position:absolute;left:0;color:var(--gold);font-weight:800;}
+.umeta{padding:10px 12px 12px;}
+.unm{font-weight:700;font-size:14.5px;color:var(--ink);}
+.udist{font-size:11.5px;color:var(--gray-2);font-weight:500;margin-top:2px;}
+.tag{font-size:11px;font-weight:700;padding:6px 11px;border-radius:30px;background:rgba(255,255,255,.16);}
+/* profile detail */
+.detail-screen{position:absolute;inset:0;background:var(--pink-bg);display:none;flex-direction:column;z-index:120;}
+.detail-screen.open{display:flex;}
+.detail-hero{position:relative;height:300px;flex:0 0 auto;background-size:cover;background-position:center;background-color:#222;}
+.detail-hero .dv-back{position:absolute;top:18px;left:14px;z-index:3;background:rgba(42,7,18,.4);backdrop-filter:blur(6px);border:none;width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;}
+.dv-grad{position:absolute;inset:0;background:linear-gradient(180deg,transparent 45%,rgba(42,7,18,.9));}
+.dv-headline{position:absolute;left:20px;right:20px;bottom:16px;z-index:2;color:#fff;}
+.dv-name{font-family:var(--display);font-size:30px;font-weight:600;display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.dv-verify{font-family:var(--body);font-size:11px;font-weight:800;background:rgba(47,168,116,.92);padding:5px 10px;border-radius:30px;}
+.dv-loc{font-size:14px;opacity:.92;margin-top:8px;font-weight:500;}
+.detail-body{flex:1;overflow-y:auto;padding:18px 20px 16px;}
+.dv-section{font-family:var(--display);font-size:15px;color:var(--red-deep);font-weight:600;margin:6px 0 8px;}
+.dv-bio{font-size:14.5px;line-height:1.6;color:var(--gray);font-weight:500;margin-bottom:8px;}
+.dv-tags{display:flex;flex-wrap:wrap;gap:8px;}
+.tag-d{font-size:12.5px;font-weight:700;padding:8px 13px;border-radius:30px;background:var(--card);color:var(--red-deep);box-shadow:0 4px 12px -8px rgba(58,33,40,.4);}
+.detail-actions{flex:0 0 auto;display:flex;gap:11px;padding:13px 18px calc(24px + env(safe-area-inset-bottom));background:var(--card);border-top:1px solid rgba(58,33,40,.07);}
+.detail-actions button{border:none;border-radius:30px;padding:14px;font-weight:800;font-family:var(--body);font-size:15px;cursor:pointer;}
+.da-pass{flex:1;background:var(--gray-bg);color:var(--gray);}
+.da-like{flex:1;background:linear-gradient(135deg,var(--red),var(--pink));color:#fff;}
+/* friend requests */
+.fr-card{display:flex;align-items:center;gap:12px;background:var(--card);border-radius:16px;padding:12px;margin-bottom:10px;box-shadow:0 6px 16px -12px rgba(58,33,40,.4);}
+.fr-card .ph{width:58px;height:58px;border-radius:50%;background-size:cover;background-position:center;flex:0 0 auto;border:2px solid var(--pink);}
+.fr-card .b{flex:1;min-width:0;}
+.fr-card .nm{font-weight:700;font-size:14.5px;color:var(--ink);}
+.fr-card .sub{font-size:11.5px;color:var(--gray-2);font-weight:500;margin:2px 0 8px;}
+.fr-btns{display:flex;gap:7px;}
+.fr-btns button{border:none;border-radius:10px;padding:8px 12px;font-weight:700;font-size:12.5px;font-family:var(--body);cursor:pointer;}
+.fr-btns .acc{background:linear-gradient(135deg,var(--red),var(--pink));color:#fff;flex:1;}
+.fr-btns .dec{background:var(--gray-bg);color:var(--gray);}
+/* setting with description + toggle */
+.setting-toggle{display:flex;align-items:center;gap:14px;padding:14px 4px;border-bottom:1px solid rgba(58,33,40,.06);}
+.st-text{flex:1;}
+.st-text b{font-size:14px;color:var(--ink);font-weight:700;display:block;}
+.st-text span{font-size:11.5px;color:var(--gray-2);font-weight:500;line-height:1.45;display:block;margin-top:3px;}
+.toggle{position:relative;width:46px;height:26px;flex:0 0 auto;cursor:pointer;}
+.toggle .track{display:block;width:46px;height:26px;border-radius:30px;background:var(--gray-bg);transition:background .2s;}
+.toggle .knob{position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:var(--card);transition:left .2s;box-shadow:0 1px 3px rgba(0,0,0,.25);}
+.toggle.on .track{background:linear-gradient(135deg,var(--red),var(--pink));}
+.toggle.on .knob{left:23px;}
+
+.scroll{flex:1;overflow-y:auto;padding:4px 18px 90px;}
+.sec-title{font-family:var(--display);font-size:20px;color:var(--red-deep);margin:14px 2px;font-weight:600;}
+.newm{display:flex;gap:13px;overflow-x:auto;padding:2px 2px 12px;}
+.newm::-webkit-scrollbar{display:none;}
+.nm-card{flex:0 0 auto;width:72px;text-align:center;cursor:pointer;}
+.nm-card .ph{width:72px;height:72px;border-radius:50%;background-size:cover;background-position:center;border:3px solid var(--pink);}
+.nm-card .lbl{font-size:11.5px;font-weight:600;margin-top:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.chat-row{display:flex;align-items:center;gap:13px;padding:11px 4px;cursor:pointer;border-radius:16px;}
+.chat-row:active{background:rgba(226,62,87,.07);}
+.chat-row .ph{width:56px;height:56px;border-radius:50%;background-size:cover;background-position:center;flex:0 0 auto;position:relative;}
+.chat-row .ph .on{position:absolute;bottom:2px;right:2px;width:13px;height:13px;border-radius:50%;background:var(--ok);border:2.5px solid var(--pink-bg);}
+.chat-row .body{flex:1;min-width:0;}
+.chat-row .body .top{display:flex;justify-content:space-between;align-items:baseline;}
+.chat-row .body .nme{font-weight:700;font-size:15px;color:var(--ink);}
+.chat-row .body .tm{font-size:11px;color:var(--gray-2);font-weight:500;}
+.chat-row .body .msg{font-size:13px;color:var(--gray-2);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:500;}
+.badge-unread{background:var(--red);color:#fff;font-size:11px;font-weight:800;min-width:20px;height:20px;border-radius:20px;display:flex;align-items:center;justify-content:center;padding:0 5px;}
+
+/* dates */
+.date-card{background:var(--card);border-radius:22px;overflow:hidden;margin-bottom:15px;box-shadow:0 10px 24px -14px rgba(58,33,40,.4);}
+.date-card .dc-top{display:flex;align-items:center;gap:12px;padding:15px;}
+.date-card .ph{width:52px;height:52px;border-radius:50%;background-size:cover;background-position:center;flex:0 0 auto;}
+.date-card .who{font-weight:700;font-size:15px;color:var(--ink);}
+.date-card .stt{font-size:11.5px;font-weight:700;margin-top:3px;}
+.date-card .stt.ok{color:var(--ok);}
+.date-card .stt.pend{color:#c98a00;}
+.date-card .dc-body{background:linear-gradient(135deg,var(--red-deep),var(--red));color:#fff;padding:15px;}
+.date-card .venue{font-family:var(--display);font-size:18px;font-weight:600;}
+.date-card .meta{font-size:13px;opacity:.9;margin-top:5px;font-weight:500;}
+.date-card .remind{font-size:12px;background:rgba(255,255,255,.16);padding:9px 12px;border-radius:12px;margin-top:12px;font-weight:500;}
+.date-card .dc-actions{display:flex;gap:10px;padding:13px 15px;}
+.date-card .dc-actions button{flex:1;border:none;border-radius:30px;padding:11px;font-weight:700;font-family:var(--body);font-size:13.5px;cursor:pointer;}
+.date-card .conf{background:linear-gradient(135deg,var(--red),var(--pink));color:#fff;}
+.date-card .resc{background:var(--gray-bg);color:var(--red-deep);}
+.date-tip{background:var(--card);border-radius:16px;padding:15px;font-size:12.5px;line-height:1.55;color:var(--gray);font-weight:500;}
+.pkg-card{background:var(--card);border-radius:18px;padding:15px;margin-bottom:12px;box-shadow:0 8px 20px -14px rgba(58,33,40,.45);border:1px solid rgba(226,62,87,.08);}
+.pkg-top{display:flex;align-items:baseline;justify-content:space-between;gap:10px;}
+.pkg-nm{font-family:var(--display);font-size:17px;font-weight:600;color:var(--ink);}
+.pkg-pr{font-family:var(--display);font-size:18px;font-weight:700;color:var(--red-deep);white-space:nowrap;}
+.pkg-desc{font-size:12.5px;color:var(--gray);font-weight:500;line-height:1.5;margin:7px 0 12px;}
+.pkg-buy{width:100%;border:none;border-radius:30px;padding:11px;font-weight:700;font-family:var(--body);font-size:13.5px;cursor:pointer;background:linear-gradient(135deg,var(--red),var(--pink));color:#fff;}
+/* blind date card */
+.blind-card{background:linear-gradient(135deg,var(--red-deep),#7a1330);border-radius:20px;padding:18px;margin-bottom:16px;color:#fff;}
+.blind-card p{font-size:13px;line-height:1.55;opacity:.92;font-weight:500;margin-bottom:14px;}
+.blind-btn{width:100%;border:none;border-radius:30px;padding:13px;font-weight:800;font-family:var(--body);font-size:14.5px;cursor:pointer;background:linear-gradient(135deg,var(--gold),#ffdd87);color:#7a4a00;}
+.blind-women{width:100%;margin-top:10px;border:1.5px solid rgba(255,255,255,.45);background:transparent;color:#fff;border-radius:30px;padding:12px;font-weight:700;font-family:var(--body);font-size:13.5px;cursor:pointer;}
+/* blind invite overlay */
+.blind-screen{position:absolute;inset:0;z-index:135;display:none;align-items:center;justify-content:center;text-align:center;padding:30px;background:linear-gradient(180deg,rgba(192,27,60,.96),rgba(42,7,18,.97));}
+.blind-screen.open{display:flex;}
+.blind-panel{width:100%;}
+.blind-emoji{font-size:32px;}
+.blind-head{font-family:var(--display);font-size:30px;font-weight:700;color:#fff;margin-top:4px;}
+.blind-mystery{width:110px;height:110px;margin:20px auto;border-radius:50%;background:rgba(255,255,255,.12);display:flex;align-items:center;justify-content:center;font-size:52px;border:3px solid rgba(255,255,255,.3);}
+.blind-who{font-family:var(--display);font-size:19px;color:var(--gold);font-weight:600;}
+.blind-info{color:#fff;opacity:.9;font-size:14px;font-weight:500;margin-top:10px;}
+.blind-consent{color:rgba(255,255,255,.82);font-size:12px;font-weight:500;line-height:1.5;background:rgba(255,255,255,.1);padding:10px 13px;border-radius:12px;margin:18px 0 16px;}
+/* payment sheet */
+.pay-screen{position:absolute;inset:0;z-index:140;display:none;align-items:flex-end;background:rgba(42,7,18,.55);}
+.pay-screen.open{display:flex;}
+.pay-sheet{width:100%;background:var(--card);border-radius:26px 26px 0 0;padding:14px 20px calc(26px + env(safe-area-inset-bottom));max-height:88%;overflow-y:auto;}
+.pay-handle{width:42px;height:5px;border-radius:5px;background:var(--gray-bg);margin:0 auto 14px;}
+.pay-title{font-family:var(--display);font-size:20px;font-weight:600;color:var(--ink);text-align:center;}
+.pay-amt{font-family:var(--display);font-size:34px;font-weight:700;color:var(--red-deep);text-align:center;margin:6px 0 4px;}
+.pay-consent{font-size:12px;color:var(--gray);font-weight:500;line-height:1.5;background:var(--pink-bg);padding:10px 12px;border-radius:10px;margin:6px 0;}
+.empty-dates{text-align:center;color:var(--gray-2);padding:46px 20px;font-size:13.5px;line-height:1.6;}
+
+/* profile */
+.prof-hero{position:relative;height:210px;background-size:cover;background-position:center;flex:0 0 auto;}
+.prof-hero .grad{position:absolute;inset:0;background:linear-gradient(180deg,transparent 40%,var(--pink-bg));}
+.prof-name{position:absolute;bottom:12px;left:20px;color:#fff;font-family:var(--display);font-size:27px;font-weight:600;text-shadow:0 2px 12px rgba(0,0,0,.4);}
+.prof-body{flex:1;overflow-y:auto;padding:4px 20px 90px;}
+.stat-row{display:flex;gap:11px;margin:14px 0;}
+.stat{flex:1;background:var(--card);border-radius:18px;padding:14px;text-align:center;box-shadow:0 6px 16px -12px rgba(58,33,40,.4);}
+.stat .v{font-family:var(--display);font-size:23px;color:var(--red);font-weight:600;}
+.stat .l{font-size:11px;color:var(--gray-2);font-weight:600;margin-top:2px;}
+.vip-card{background:linear-gradient(135deg,var(--red-deep),#7a1330);border-radius:22px;padding:22px;color:#fff;margin:4px 0 16px;position:relative;overflow:hidden;}
+.vip-card::after{content:"";position:absolute;top:-40px;right:-30px;width:140px;height:140px;border-radius:50%;background:radial-gradient(circle,var(--gold),transparent 70%);opacity:.4;}
+.vip-card .crown{font-size:12px;font-weight:800;color:var(--gold);letter-spacing:1px;}
+.vip-card h3{font-family:var(--display);font-size:21px;font-weight:600;margin:6px 0 4px;}
+.vip-card p{font-size:12.5px;opacity:.88;line-height:1.5;}
+.vip-card .price{font-family:var(--display);font-size:25px;margin-top:12px;font-weight:600;}
+.vip-card .price small{font-family:var(--body);font-size:13px;opacity:.7;font-weight:500;}
+.vip-card .buy{margin-top:12px;width:100%;background:linear-gradient(135deg,var(--gold),#ffdd87);color:#7a4a00;border:none;padding:13px;border-radius:30px;font-weight:800;font-family:var(--body);font-size:14px;cursor:pointer;}
+.setting{display:flex;align-items:center;justify-content:space-between;padding:15px 4px;border-bottom:1px solid rgba(58,33,40,.06);font-weight:600;font-size:14px;color:var(--ink);cursor:pointer;}
+.setting.danger{color:var(--red);}
+
+/* match popup */
+.match-pop{position:absolute;inset:0;z-index:150;background:linear-gradient(180deg,rgba(192,27,60,.96),rgba(122,19,48,.97));display:none;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:38px;}
+.match-pop.show{display:flex;animation:fade .35s ease;}
+@keyframes fade{from{opacity:0}to{opacity:1}}
+.match-pop .ttl{font-family:var(--display);font-size:42px;color:#fff;font-weight:700;}
+.match-pop .sub{color:#fff;opacity:.88;margin-top:8px;font-size:14px;font-weight:500;}
+.match-pop .pair{display:flex;margin:28px 0;}
+.match-pop .pair .ph{width:100px;height:100px;border-radius:50%;background-size:cover;background-position:center;border:4px solid #fff;}
+.match-pop .pair .ph:last-child{margin-left:-22px;}
+.match-pop button{width:100%;padding:14px;border-radius:30px;border:none;font-weight:800;font-family:var(--body);font-size:15px;cursor:pointer;}
+.match-pop .say{background:linear-gradient(135deg,var(--gold),#ffdd87);color:#7a4a00;margin-bottom:11px;}
+.match-pop .keep{background:transparent;color:#fff;border:1.5px solid rgba(255,255,255,.45);}
+
+/* nav */
+.nav{flex:0 0 auto;display:flex;background:var(--card);border-top:1px solid rgba(58,33,40,.06);padding:10px 0 calc(22px + env(safe-area-inset-bottom));z-index:40;}
+.nav button{flex:1;background:none;border:none;display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;color:var(--gray-2);font-size:10.5px;font-weight:700;font-family:var(--body);}
+.nav button.active{color:var(--red);}
+.nav button.active svg{stroke:var(--red);fill:var(--red);}
+.nav button svg{stroke:var(--gray-2);fill:none;}
+.nav .ct{position:relative;}
+.nav .ct .dot{position:absolute;top:-3px;right:-6px;background:var(--red);color:#fff;font-size:9px;font-weight:800;min-width:15px;height:15px;border-radius:10px;display:flex;align-items:center;justify-content:center;}
+
+/* chat view */
+.chat-screen{position:absolute;inset:0;background:var(--pink-bg);display:none;flex-direction:column;z-index:120;}
+.chat-screen.open{display:flex;}
+.chat-head{flex:0 0 auto;padding:calc(18px + env(safe-area-inset-top)) 14px 12px;display:flex;align-items:center;gap:11px;border-bottom:1px solid rgba(58,33,40,.07);background:var(--card);}
+.chat-head .back{background:none;border:none;cursor:pointer;padding:4px;}
+.chat-head .ph{width:40px;height:40px;border-radius:50%;background-size:cover;background-position:center;}
+.chat-head .nme{font-weight:700;font-size:15.5px;color:var(--ink);}
+.chat-head .st{font-size:11px;color:var(--ok);font-weight:600;}
+.chat-head .datebtn{margin-left:auto;background:linear-gradient(135deg,var(--red),var(--pink));color:#fff;border:none;border-radius:30px;padding:8px 13px;font-size:12px;font-weight:700;font-family:var(--body);cursor:pointer;}
+.msgs{flex:1;overflow-y:auto;padding:18px 14px;display:flex;flex-direction:column;gap:9px;}
+.bub{max-width:75%;padding:11px 15px;border-radius:20px;font-size:14.5px;line-height:1.4;font-weight:500;}
+.bub.them{align-self:flex-start;background:var(--card);color:var(--ink);border-bottom-left-radius:6px;box-shadow:0 3px 10px -6px rgba(58,33,40,.3);}
+.bub.me{align-self:flex-end;background:linear-gradient(135deg,var(--red),var(--pink));color:#fff;border-bottom-right-radius:6px;}
+.chat-input{flex:0 0 auto;padding:12px 13px calc(22px + env(safe-area-inset-bottom));display:flex;gap:9px;align-items:center;background:var(--card);border-top:1px solid rgba(58,33,40,.07);}
+.chat-input input{flex:1;border:none;background:var(--pink-bg);border-radius:30px;padding:13px 17px;font-size:14.5px;font-family:var(--body);outline:none;}
+.chat-input .send{width:44px;height:44px;border-radius:50%;border:none;background:var(--red);display:flex;align-items:center;justify-content:center;cursor:pointer;flex:0 0 auto;}
+
+/* ================= ADMIN ================= */
+#adminLogin{background:linear-gradient(160deg,#2a0712,#5a1024);align-items:center;justify-content:center;padding:40px;text-align:center;}
+#adminLogin .box{width:100%;}
+#adminLogin .mark{width:64px;height:64px;border-radius:20px;background:rgba(255,255,255,.1);display:flex;align-items:center;justify-content:center;margin:0 auto 18px;}
+#adminLogin h2{font-family:var(--display);color:#fff;font-size:26px;font-weight:600;}
+#adminLogin p{color:rgba(255,255,255,.6);font-size:13px;margin:6px 0 26px;font-weight:500;}
+#adminLogin input{width:100%;background:rgba(255,255,255,.1);border:1.5px solid rgba(255,255,255,.18);border-radius:14px;padding:14px 16px;color:#fff;font-size:14.5px;font-family:var(--body);margin-bottom:12px;outline:none;}
+#adminLogin input::placeholder{color:rgba(255,255,255,.5);}
+#adminLogin .hint{color:rgba(255,255,255,.4);font-size:11.5px;margin-top:6px;}
+#adminPanel{background:var(--gray-bg);}
+.admin-head{flex:0 0 auto;padding:calc(20px + env(safe-area-inset-top)) 18px 14px;background:var(--card);border-bottom:1px solid rgba(58,33,40,.07);display:flex;align-items:center;justify-content:space-between;}
+.admin-head .ttl{font-family:var(--display);font-size:20px;font-weight:600;color:var(--ink);}
+.admin-head .out{background:var(--gray-bg);border:none;border-radius:30px;padding:8px 14px;font-size:12px;font-weight:700;color:var(--red);cursor:pointer;font-family:var(--body);}
+.admin-tabs{flex:0 0 auto;display:flex;gap:6px;padding:12px 14px;overflow-x:auto;background:var(--card);border-bottom:1px solid rgba(58,33,40,.06);}
+.admin-tabs::-webkit-scrollbar{display:none;}
+.admin-tabs button{flex:0 0 auto;border:none;background:var(--gray-bg);border-radius:30px;padding:9px 16px;font-size:12.5px;font-weight:700;color:var(--gray);cursor:pointer;font-family:var(--body);}
+.admin-tabs button.on{background:linear-gradient(135deg,var(--red),var(--pink));color:#fff;}
+.admin-body{flex:1;overflow-y:auto;padding:16px 14px;}
+.kpi-row{display:flex;gap:10px;margin-bottom:14px;}
+.kpi{flex:1;background:var(--card);border-radius:16px;padding:14px;text-align:center;}
+.kpi .v{font-family:var(--display);font-size:22px;color:var(--red);font-weight:600;}
+.kpi .l{font-size:10.5px;color:var(--gray-2);font-weight:600;margin-top:2px;}
+.adm-card{background:var(--card);border-radius:16px;padding:13px;margin-bottom:10px;display:flex;align-items:center;gap:12px;}
+.adm-card .ph{width:46px;height:46px;border-radius:12px;background-size:cover;background-position:center;flex:0 0 auto;}
+.adm-card .b{flex:1;min-width:0;}
+.adm-card .b .nm{font-weight:700;font-size:14px;color:var(--ink);}
+.adm-card .b .meta{font-size:12px;color:var(--gray-2);font-weight:500;margin-top:2px;}
+.adm-card .acts{display:flex;gap:6px;}
+.adm-card .acts button{border:none;border-radius:10px;width:34px;height:34px;font-size:15px;cursor:pointer;}
+.adm-card .ok-b{background:rgba(47,168,116,.15);color:var(--ok);}
+.adm-card .no-b{background:rgba(226,62,87,.12);color:var(--red);}
+.adm-pill{font-size:10.5px;font-weight:800;padding:4px 9px;border-radius:20px;}
+.adm-pill.warn{background:rgba(246,196,83,.2);color:#a07400;}
+.adm-pill.ok{background:rgba(47,168,116,.15);color:var(--ok);}
+/* verification detail card */
+.adm-verify{background:var(--card);border-radius:16px;padding:14px;margin-bottom:12px;box-shadow:0 6px 16px -12px rgba(58,33,40,.4);}
+.av-top{display:flex;align-items:center;gap:12px;margin-bottom:12px;}
+.av-avatar{width:46px;height:46px;border-radius:50%;background:linear-gradient(135deg,var(--red),var(--pink));color:#fff;display:flex;align-items:center;justify-content:center;font-family:var(--display);font-size:22px;font-weight:600;flex:0 0 auto;}
+.av-name{font-weight:700;font-size:15px;color:var(--ink);}
+.av-name span{font-weight:600;font-size:12px;color:var(--gray-2);}
+.av-plan{font-size:12px;font-weight:700;color:var(--red-deep);margin-top:2px;}
+.av-rows{display:flex;flex-direction:column;gap:7px;border-top:1px solid var(--gray-bg);padding-top:11px;}
+.av-rows>div{display:flex;justify-content:space-between;gap:12px;font-size:13px;}
+.av-rows span{color:var(--gray-2);font-weight:500;flex:0 0 auto;}
+.av-rows b{color:var(--ink);font-weight:600;text-align:right;}
+.av-actions{display:flex;gap:9px;margin-top:13px;}
+.av-actions button{flex:1;border:none;border-radius:12px;padding:11px;font-weight:700;font-family:var(--body);font-size:13.5px;cursor:pointer;}
+.av-ok{background:linear-gradient(135deg,var(--ok),#3fc78c);color:#fff;}
+.av-no{background:var(--gray-bg);color:var(--red);}
+
+.toast{position:absolute;top:80px;left:50%;transform:translateX(-50%) translateY(-20px);background:var(--red-deep);color:#fff;padding:11px 20px;border-radius:30px;font-weight:600;font-size:13px;z-index:300;opacity:0;transition:.3s;pointer-events:none;white-space:nowrap;}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+</style>
+</head>
+<body>
+<div class="phone">
+
+  <!-- ============ LANDING ============ -->
+  <section class="page active" id="landing">
+    <div class="glow"></div>
+    <!-- corner hearts -->
+    <svg class="heart-deco tl" width="40" height="40" viewBox="0 0 24 24"><path fill="#ff8fab" d="M12 21s-7.5-4.7-10-9.3C.5 8.4 2 5 5.4 5c2 0 3.3 1.1 4.6 2.7C11.3 6.1 12.6 5 14.6 5 18 5 19.5 8.4 18 11.7 15.5 16.3 12 21 12 21z"/></svg>
+    <svg class="heart-deco tr" width="30" height="30" viewBox="0 0 24 24"><path fill="#e23e57" d="M12 21s-7.5-4.7-10-9.3C.5 8.4 2 5 5.4 5c2 0 3.3 1.1 4.6 2.7C11.3 6.1 12.6 5 14.6 5 18 5 19.5 8.4 18 11.7 15.5 16.3 12 21 12 21z"/></svg>
+    <svg class="heart-deco bl" width="32" height="32" viewBox="0 0 24 24"><path fill="#ffb3c6" d="M12 21s-7.5-4.7-10-9.3C.5 8.4 2 5 5.4 5c2 0 3.3 1.1 4.6 2.7C11.3 6.1 12.6 5 14.6 5 18 5 19.5 8.4 18 11.7 15.5 16.3 12 21 12 21z"/></svg>
+    <svg class="heart-deco br" width="38" height="38" viewBox="0 0 24 24"><path fill="#ff8fab" d="M12 21s-7.5-4.7-10-9.3C.5 8.4 2 5 5.4 5c2 0 3.3 1.1 4.6 2.7C11.3 6.1 12.6 5 14.6 5 18 5 19.5 8.4 18 11.7 15.5 16.3 12 21 12 21z"/></svg>
+    <!-- stars -->
+    <div class="star" style="top:90px;left:50px;">✦</div>
+    <div class="star" style="top:140px;right:46px;animation-delay:.6s;">✦</div>
+    <div class="star" style="top:300px;left:34px;animation-delay:1.1s;font-size:10px;">✦</div>
+    <div class="star" style="bottom:250px;right:60px;animation-delay:.4s;font-size:16px;">✦</div>
+    <div class="star" style="bottom:300px;left:64px;animation-delay:1.6s;font-size:9px;">✦</div>
+
+    <div class="brand">
+      <div class="mark">
+        <svg width="42" height="42" viewBox="0 0 24 24"><path fill="#fff" d="M12 21s-7.5-4.7-10-9.3C.5 8.4 2 5 5.4 5c2 0 3.3 1.1 4.6 2.7C11.3 6.1 12.6 5 14.6 5 18 5 19.5 8.4 18 11.7 15.5 16.3 12 21 12 21z"/></svg>
+      </div>
+      <div class="kicker">Хоёулаа</div>
+      <h1>Болзий</h1>
+      <div class="tag">Жинхэнэ хүмүүс, жинхэнэ болзоо</div>
+      <div class="sub">Баталгаажсан хэрэглэгчид · хуурамч профайл байхгүй.<br>Бид болзоог чинь зохион байгуулна.</div>
+    </div>
+
+    <div class="women-free">👩 Бүсгүйчүүд <b>төлбөргүй</b> бүртгүүлж, <b>VIP эрхийг ҮНЭГҮЙ</b> авна!</div>
+
+    <div class="cta">
+      <button class="btn btn-primary" onclick="route('register')">Бүртгүүлэх</button>
+      <button class="btn btn-ghost" onclick="route('login')">Нэвтрэх</button>
+      <button class="btn btn-ghost" id="installBtn" style="display:none;background:rgba(255,255,255,.55)" onclick="installApp()">📲 Аппаа суулгах</button>
+    </div>
+
+    <div class="landing-links">
+      <a onclick="openInstall()">📲 Суулгах заавар</a>
+      <a onclick="route('about')">Танилцуулга</a>
+      <a onclick="route('rules')">Дүрэм</a>
+      <a onclick="route('info')">Мэдээлэл</a>
+      <a onclick="route('adminLogin')">Админ</a>
+    </div>
+  </section>
+
+  <!-- install guide modal -->
+  <div class="rules-modal" id="installModal">
+    <div class="rm-head"><span>Утсандаа суулгах</span><button onclick="closeInstall()">✕</button></div>
+    <div class="rm-body">
+      <p class="lead">Хоёулаа Болзий-г апп шиг утсандаа суулгаад, нүүр дэлгэцээсээ шууд нээж ашиглаарай.</p>
+      <h3>iPhone (Safari)</h3>
+      <div class="rule-item"><div class="num">1</div><div>Энэ хуудсыг <b>Safari</b> хөтчөөр нээнэ.</div></div>
+      <div class="rule-item"><div class="num">2</div><div>Доод талын <b>Хуваалцах</b> ⬆️ товчийг дарна.</div></div>
+      <div class="rule-item"><div class="num">3</div><div><b>"Нүүр дэлгэцэд нэмэх"</b> (Add to Home Screen)-ийг сонгоно.</div></div>
+      <h3>Android (Chrome)</h3>
+      <div class="rule-item"><div class="num">1</div><div>Хуудсыг <b>Chrome</b> хөтчөөр нээнэ.</div></div>
+      <div class="rule-item"><div class="num">2</div><div>Баруун дээд буланд <b>⋮</b> цэсийг дарна.</div></div>
+      <div class="rule-item"><div class="num">3</div><div><b>"Аппликэйшн суулгах"</b> эсвэл <b>"Нүүр дэлгэцэд нэмэх"</b>-ийг сонгоно.</div></div>
+    </div>
+    <div class="rm-foot"><button class="btn btn-primary" style="width:100%" onclick="installApp()">📲 Шууд суулгах</button></div>
+  </div>
+
+  <!-- ============ REGISTER ============ -->
+  <section class="page" id="register">
+    <div class="sub-head">
+      <button class="back" onclick="route('landing')">‹</button>
+      <div class="ttl">Бүртгүүлэх</div>
+    </div>
+    <div class="sub-body">
+      <div class="verify-note">🛡 Бүртгэлийн дараа selfie + үнэмлэхээр баталгаажуулна. Ингэснээр хуурамч профайл байхгүй.</div>
+      <div class="form-group"><label>Нэр</label><input id="rName" placeholder="Таны нэр"></div>
+      <div class="form-group"><label>Хүйс</label>
+        <div class="seg"><button class="on" onclick="pickGender('m',this)">Эрэгтэй</button><button onclick="pickGender('f',this)">Эмэгтэй</button></div>
+      </div>
+      <div class="form-group"><label>Нас</label><input id="rAge" type="number" placeholder="Жишээ нь 25"></div>
+      <div class="form-group"><label>Утасны дугаар</label><input id="rPhone" type="tel" placeholder="8800-0000"></div>
+      <div class="form-group"><label>Нууц үг</label>
+        <div class="pw-wrap"><input id="rPass" type="password" placeholder="Дор хаяж 4 тэмдэгт">
+          <button type="button" class="pw-eye" onclick="togglePw(this)" aria-label="Нууц үг харах"><svg class="i-eye" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg><svg class="i-eyeoff" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.94 17.94A10 10 0 0 1 12 19C5 19 1 12 1 12a18 18 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9 9 0 0 1 12 4c7 0 11 8 11 8a18 18 0 0 1-2.16 3.19"/><path d="M1 1l22 22"/></svg></button>
+        </div>
+      </div>
+      <div class="form-group"><label>Аймаг / Нийслэл</label>
+        <select id="rAimag" onchange="fillSoums()"><option value="">— Сонгох —</option></select>
+      </div>
+      <div class="form-group"><label>Сум / Дүүрэг</label>
+        <select id="rSoum" disabled><option value="">— Эхлээд аймгаа сонгоно уу —</option></select>
+      </div>
+      <div class="form-group"><label>Танилцуулга</label><textarea id="rBio" rows="2" placeholder="Өөрийнхөө тухай хэдэн үг..."></textarea></div>
+      <div class="form-group"><label>Сонирхол</label>
+        <div class="chips">
+          <span class="chip" onclick="this.classList.toggle('on')">☕ Кофе</span>
+          <span class="chip" onclick="this.classList.toggle('on')">📚 Ном</span>
+          <span class="chip" onclick="this.classList.toggle('on')">🏔 Аялал</span>
+          <span class="chip" onclick="this.classList.toggle('on')">🎵 Хөгжим</span>
+          <span class="chip" onclick="this.classList.toggle('on')">🎬 Кино</span>
+          <span class="chip" onclick="this.classList.toggle('on')">🏃 Спорт</span>
+        </div>
+      </div>
+      <div class="form-group"><label>Зураг</label>
+        <div class="photo-up" onclick="toast('Зураг сонгох цонх (demo)')">📷 Жинхэнэ зургаа оруулна уу</div>
+      </div>
+      <div class="form-group"><label>Үйлчилгээний дүрэм</label>
+        <div class="rule-read" id="ruleBox" onclick="openRules()"><span id="ruleState">📜 Дүрэмтэй танилцаж зөвшөөрөх</span><span class="chev">›</span></div>
+      </div>
+      <div id="womenFree" style="display:none">
+        <div class="verify-note" style="background:rgba(226,62,87,.1);color:var(--red-deep)">👩 Бүсгүйчүүд төлбөргүй! Бүртгэлийн хураамжгүй бөгөөд VIP эрхийг ҮНЭГҮЙ авна.</div>
+      </div>
+      <div id="paidArea">
+        <div class="form-group"><label>Гишүүнчлэлийн багц</label>
+          <div class="plan on" id="planFree" onclick="pickPlan('free')"><div><b>Энгийн гишүүн</b><span>Зөвхөн бүртгэлийн хураамж</span></div><div class="pr" id="planFreePr">5,000₮</div></div>
+          <div class="plan" id="planVip" onclick="pickPlan('vip')"><div><b>VIP эрх 👑</b><span>Хэн лайк дарсныг хар · хязгааргүй swipe</span></div><div class="pr"><span id="planVipPr">+19,900₮</span><small>/сар</small></div></div>
+        </div>
+        <div class="form-group"><label>Төлбөрийн данс</label>
+          <div class="bank-box">
+            <div class="bank-row"><span>Банк</span><b id="bkBank">Хаан банк</b></div>
+            <div class="bank-row"><span>Данс</span><b id="bkAccount">5041 234 567</b></div>
+            <div class="bank-row"><span>Хүлээн авагч</span><b id="bkRecipient">Хоёулаа Болзий ХХК</b></div>
+            <div class="bank-amt"><span>Төлөх дүн</span><b id="payAmount">5,000₮</b></div>
+            <div class="bank-note">⚠️ Гүйлгээний утга дээр <b>бүртгүүлсэн утасны дугаараа</b> бичнэ үү. Төлбөр баталгаажмагц бүртгэл идэвхжинэ.</div>
+          </div>
+        </div>
+      </div>
+      <button class="btn btn-primary" style="width:100%" onclick="doRegister()">Бүртгэл үүсгэх</button>
+    </div>
+
+    <!-- rules modal -->
+    <div class="rules-modal" id="rulesModal">
+      <div class="rm-head"><span>Үйлчилгээний дүрэм</span><button onclick="closeRules()">✕</button></div>
+      <div class="rm-body">
+        <p class="lead">Хоёулаа Болзий аюулгүй, хүндэтгэлтэй орчин эрхэмлэдэг. Дараах дүрмийг анхааралтай уншина уу.</p>
+        <div class="rule-item"><div class="num">1</div><div>Зөвхөн өөрийн жинхэнэ зураг, мэдээллээ оруулна. Хуурамч профайлыг хориглоно.</div></div>
+        <div class="rule-item"><div class="num">2</div><div>18 нас хүрсэн байх ёстой.</div></div>
+        <div class="rule-item"><div class="num">3</div><div>Бусдыг доромжлох, заналхийлэх, дарамтлах хатуу хориотой.</div></div>
+        <div class="rule-item"><div class="num">4</div><div>Садар самуун, зохисгүй контент түгээхийг хориглоно.</div></div>
+        <div class="rule-item"><div class="num">5</div><div>Мөнгө нэхэх, луйврын үйлдэл илэрвэл бүртгэл цуцлагдана.</div></div>
+        <div class="rule-item"><div class="num">6</div><div>Анхны уулзалтаа манай аппаар зохион байгуулсан болзоогоор хийхийг зөвлөж байна.</div></div>
+        <div class="rule-item"><div class="num">7</div><div>Сэжигтэй хэрэглэгчийг "Гомдол" товчоор мэдээлнэ үү. Бид шалгана.</div></div>
+      </div>
+      <div class="rm-foot"><button class="btn btn-primary" style="width:100%" onclick="agreeRules()">Уншсан, зөвшөөрч байна</button></div>
+    </div>
+  </section>
+
+  <!-- ============ ABOUT ============ -->
+  <section class="page" id="about">
+    <div class="sub-head"><button class="back" onclick="route('landing')">‹</button><div class="ttl">Танилцуулга</div></div>
+    <div class="sub-body">
+      <p class="lead">Хоёулаа Болзий бол Монголын анхны баталгаажсан болзооны апп. Зорилго маань — хуурамч профайлгүй, бодит уулзалт болдог орчин бий болгох.</p>
+      <h3>Яаж ажилладаг вэ?</h3>
+      <div class="feat"><div class="ic">🛡</div><div><b>Баталгаажуулалт</b><span>Бүх хэрэглэгч selfie болон үнэмлэхээр баталгаажна. Хуурамч хүн нэвтрэхгүй.</span></div></div>
+      <div class="feat"><div class="ic">💞</div><div><b>Харилцан сонголт</b><span>Хоёр тал бие биенээ таалбал тохирч, чатлах боломжтой болно.</span></div></div>
+      <div class="feat"><div class="ic">📅</div><div><b>Бид болзоог зохион байгуулна</b><span>Газар, цаг санал болгож, хоёр тал баталгаажуулаад, цаг ойртоход сануулна.</span></div></div>
+      <div class="feat"><div class="ic">🔔</div><div><b>Сануулга</b><span>Болзооноос 2 цагийн өмнө хоёуланд нь мэдэгдэнэ — чатаар үлдэхгүй, бодит уулзалт.</span></div></div>
+      <div class="feat"><div class="ic">👑</div><div><b>VIP эрх</b><span>VIP хэрэглэгч бусдыг найзын хүсэлтгүй шууд харна. Мөн VIP-ийн профайл хамгаалагдаж, зөвхөн зөвшөөрсөн хүнд харагдана.</span></div></div>
+      <div class="feat"><div class="ic">👤</div><div><b>Найзын хүсэлт</b><span>Бусдад найзын хүсэлт илгээж, ирсэн хүсэлтийг зурагтай нь хараад зөвшөөрөх/татгалзах боломжтой.</span></div></div>
+      <div class="feat"><div class="ic">🎲</div><div><b>Сохор болзоо</b><span>Хэн болохыг урьдчилан мэдэхгүй — апп насанд ойролцоо, эсрэг хүйсийн хүнтэй болзоог зохион байгуулна. Нэр, зураг нь нөгөө тал зөвшөөрсний дараа нээгдэнэ.</span></div></div>
+      <div class="feat"><div class="ic">🎀</div><div><b>Болзоо зохион байгуулах багц</b><span>Энгийнээс VIP хүртэл 5 багц — ресторан захиалга, цэцэг, тээвэр, хувийн зохион байгуулагч зэрэг.</span></div></div>
+      <div class="feat"><div class="ic">👩</div><div><b>Бүсгүйчүүд төлбөргүй</b><span>Бүсгүйчүүд бүртгэлийн хураамжгүй бүртгүүлж, VIP эрхийг ҮНЭГҮЙ авна.</span></div></div>
+      <div class="feat"><div class="ic">🌙</div><div><b>Харанхуй / гэрэлтэй горим</b><span>Нүдэнд ээлтэй харанхуй горимыг нэг товчоор сэлгэнэ.</span></div></div>
+      <div class="feat"><div class="ic">📲</div><div><b>Утсандаа суулгах</b><span>Аппыг утасны нүүр дэлгэцэд нэмж, апп шиг бүтэн дэлгэцээр ашиглана. ("Суулгах заавар"-аас үзнэ үү.)</span></div></div>
+    </div>
+  </section>
+
+  <!-- ============ RULES ============ -->
+  <section class="page" id="rules">
+    <div class="sub-head"><button class="back" onclick="route('landing')">‹</button><div class="ttl">Дүрэм</div></div>
+    <div class="sub-body">
+      <p class="lead">Хоёулаа Болзий аюулгүй, хүндэтгэлтэй орчин эрхэмлэдэг. Дараах дүрмийг баримтлана уу.</p>
+      <div class="rule-item"><div class="num">1</div><div>Зөвхөн өөрийн жинхэнэ зураг, мэдээллээ оруулна. Хуурамч профайлыг хориглоно.</div></div>
+      <div class="rule-item"><div class="num">2</div><div>18 нас хүрсэн байх ёстой.</div></div>
+      <div class="rule-item"><div class="num">3</div><div>Бусдыг доромжлох, заналхийлэх, дарамтлах хатуу хориотой.</div></div>
+      <div class="rule-item"><div class="num">4</div><div>Садар самуун, зохисгүй контент түгээхийг хориглоно.</div></div>
+      <div class="rule-item"><div class="num">5</div><div>Мөнгө нэхэх, луйврын үйлдэл илэрвэл бүртгэл цуцлагдана.</div></div>
+      <div class="rule-item"><div class="num">6</div><div>Анхны уулзалтаа манай аппаар зохион байгуулсан болзоогоор хийхийг зөвлөж байна.</div></div>
+      <div class="rule-item"><div class="num">7</div><div>Сэжигтэй хэрэглэгчийг "Гомдол" товчоор мэдээлнэ үү. Бид шалгана.</div></div>
+    </div>
+  </section>
+
+  <!-- ============ INFO ============ -->
+  <section class="page" id="info">
+    <div class="sub-head"><button class="back" onclick="route('landing')">‹</button><div class="ttl">Бусад мэдээлэл</div></div>
+    <div class="sub-body">
+      <h3>Холбоо барих</h3>
+      <div class="info-row"><div class="ic">📞</div><div class="t"><b>Утас</b><span>+976 8800-0000</span></div></div>
+      <div class="info-row"><div class="ic">✉️</div><div class="t"><b>И-мэйл</b><span>help@bolzii.mn</span></div></div>
+      <div class="info-row"><div class="ic">📷</div><div class="t"><b>Instagram</b><span>@bolzii.mn</span></div></div>
+      <h3>Түгээмэл асуулт</h3>
+      <div class="feat"><div class="ic">❓</div><div><b>Баталгаажуулалт хэр удах вэ?</b><span>Ихэвчлэн 24 цагийн дотор шалгаж баталгаажуулна.</span></div></div>
+      <div class="feat"><div class="ic">❓</div><div><b>Үнэгүй юу?</b><span>Үндсэн боломжууд үнэгүй. VIP багц нэмэлт боломж олгоно.</span></div></div>
+      <div class="feat"><div class="ic">❓</div><div><b>Мэдээлэл минь аюулгүй юу?</b><span>Таны мэдээллийг хамгаалж, гуравдагч этгээдэд дамжуулахгүй.</span></div></div>
+    </div>
+  </section>
+
+  <!-- ============ LOGIN ============ -->
+  <section class="page" id="login">
+    <div class="sub-head"><button class="back" onclick="route('landing')">‹</button><div class="ttl">Нэвтрэх</div></div>
+    <div class="sub-body">
+      <div class="login-mark"><svg width="32" height="32" viewBox="0 0 24 24"><path fill="#fff" d="M12 21s-7.5-4.7-10-9.3C.5 8.4 2 5 5.4 5c2 0 3.3 1.1 4.6 2.7C11.3 6.1 12.6 5 14.6 5 18 5 19.5 8.4 18 11.7 15.5 16.3 12 21 12 21z"/></svg></div>
+      <div class="login-title">Тавтай морил</div>
+      <div class="login-sub">Бүртгэлтэй утасны дугаар, нууц үгээрээ нэвтэрнэ үү</div>
+      <div class="form-group"><label>Утасны дугаар</label><input id="lPhone" type="tel" placeholder="8800-0000"></div>
+      <div class="form-group"><label>Нууц үг</label>
+        <div class="pw-wrap"><input id="lPass" type="password" placeholder="••••••" onkeydown="if(event.key==='Enter')doLogin()">
+          <button type="button" class="pw-eye" onclick="togglePw(this)" aria-label="Нууц үг харах"><svg class="i-eye" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg><svg class="i-eyeoff" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.94 17.94A10 10 0 0 1 12 19C5 19 1 12 1 12a18 18 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9 9 0 0 1 12 4c7 0 11 8 11 8a18 18 0 0 1-2.16 3.19"/><path d="M1 1l22 22"/></svg></button>
+        </div>
+      </div>
+      <button class="btn btn-primary" style="width:100%" onclick="doLogin()">Нэвтрэх</button>
+      <div class="login-alt">Бүртгэл байхгүй юу? <b onclick="route('register')">Бүртгүүлэх</b></div>
+    </div>
+  </section>
+
+  <!-- ============ MAIN APP ============ -->
+  <section class="page" id="mainapp">
+    <div class="topbar">
+      <div class="logo">
+        <svg width="22" height="22" viewBox="0 0 24 24"><path fill="#e23e57" d="M12 21s-7.5-4.7-10-9.3C.5 8.4 2 5 5.4 5c2 0 3.3 1.1 4.6 2.7C11.3 6.1 12.6 5 14.6 5 18 5 19.5 8.4 18 11.7 15.5 16.3 12 21 12 21z"/></svg>
+        Хоёулаа Болзий
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <button class="theme-btn" id="themeBtn" onclick="toggleTheme()" aria-label="Өнгө солих">🌙</button>
+        <div class="vip" onclick="tab('profile')">⭐ VIP</div>
+      </div>
+    </div>
+
+    <!-- DISCOVER (browse) -->
+    <div class="tab active" id="t-discover">
+      <div class="trust-banner">✓ Бүх хэрэглэгч баталгаажсан · хуурамч профайл байхгүй</div>
+      <div class="scroll">
+        <div class="sec-title">Ойролцоох хүмүүс</div>
+        <div class="user-grid" id="userGrid"></div>
+      </div>
+    </div>
+
+    <!-- DATES -->
+    <div class="tab" id="t-dates">
+      <div class="scroll">
+        <div class="sec-title">Товлосон болзоо</div>
+        <div id="datesList"></div>
+        <div class="date-tip">📲 Хоёулаа Болзий апп болзоог танд зориулж зохион байгуулна — газар, цаг санал болгож, хоёр тал баталгаажуулаад, цаг ойртоход хоёуланд нь сануулна.</div>
+        <div class="sec-title">Сохор болзоо</div>
+        <div class="blind-card">
+          <p>🎲 Хэн болохыг нь урьдчилан мэдэхгүй. Апп таны насанд ойролцоо, эсрэг хүйсийн баталгаажсан хүнтэй болзоог зохион байгуулна. Нэр, зураг нь нөгөө тал зөвшөөрсний дараа нээгдэнэ.</p>
+          <button class="blind-btn" onclick="startBlind('opp')">🎲 Сохор болзоонд урих</button>
+          <button class="blind-women" onclick="startBlind('women')">👩 Зөвхөн бүсгүйчүүдэд</button>
+        </div>
+        <div class="sec-title">Болзоо зохион байгуулах багц</div>
+        <div id="pkgList"></div>
+      </div>
+    </div>
+
+    <!-- CHAT LIST -->
+    <div class="tab" id="t-matches">
+      <div class="scroll">
+        <div id="frWrap"></div>
+        <div class="sec-title">Шинэ тохироо</div>
+        <div class="newm" id="newMatches"></div>
+        <div class="sec-title">Чат</div>
+        <div id="chatList"></div>
+      </div>
+    </div>
+
+    <!-- PROFILE -->
+    <div class="tab" id="t-profile">
+      <div class="prof-hero" style="background:linear-gradient(135deg,var(--red),var(--pink))"><div class="grad"></div><div class="prof-name">Миний профайл</div></div>
+      <div class="prof-body">
+        <div class="stat-row">
+          <div class="stat"><div class="v">0</div><div class="l">Лайк</div></div>
+          <div class="stat"><div class="v">0</div><div class="l">Тохироо</div></div>
+          <div class="stat"><div class="v">0</div><div class="l">Болзоо</div></div>
+        </div>
+        <div class="vip-card">
+          <div class="crown">👑 ХОЁУЛАА БОЛЗИЙ VIP</div>
+          <h3>VIP-ийн давуу тал</h3>
+          <ul class="vip-benefits">
+            <li>Бусдын мэдээллийг найзын хүсэлтгүй шууд харах</li>
+            <li>Таны профайл хамгаалагдана — зөвшөөрсөн хүн л харна</li>
+            <li>Хэн танд таалагдсаныг харах</li>
+            <li>Хязгааргүй таалагдах, тэргүүн эгнээнд гарах</li>
+            <li>Болзооны багцад хөнгөлөлт</li>
+          </ul>
+          <div class="price"><span id="vipCardPr">19,900₮</span> <small>/ сар</small></div>
+          <button class="buy" id="vipBtn" onclick="becomeVip()">VIP эрх авах</button>
+        </div>
+        <div class="setting-toggle">
+          <div class="st-text"><b>Харанхуй горим</b><span>Шөнийн цагт нүдэнд ээлтэй харанхуй өнгөний горим. Дээд талын 🌙 товчоор ч сольж болно.</span></div>
+          <div class="toggle" id="themeToggle" onclick="toggleTheme()"><span class="track"></span><span class="knob"></span></div>
+        </div>
+        <div class="setting-toggle">
+          <div class="st-text"><b>Найзын хүсэлт зөвшөөрөх</b><span>Идэвхтэй үед бусад хэрэглэгч танд найзын хүсэлт илгээх боломжтой. Унтраавал хэн ч хүсэлт илгээж чадахгүй.</span></div>
+          <div class="toggle on" id="frToggle" onclick="toggleFRSetting()"><span class="track"></span><span class="knob"></span></div>
+        </div>
+        <div class="setting" onclick="toast('Профайл засах')">Профайл засах ›</div>
+        <div class="setting" onclick="toast('Хайлтын тохиргоо')">Хайлтын тохиргоо ›</div>
+        <div class="setting" onclick="toast('Баталгаажуулалт')">Баталгаажуулалт ›</div>
+        <div class="setting" onclick="route('info')">Тусламж & холбоо ›</div>
+        <div class="setting danger" onclick="route('landing')">Гарах</div>
+      </div>
+    </div>
+
+    <!-- profile detail -->
+    <div class="detail-screen" id="detailView">
+      <div class="detail-hero" id="dvHero">
+        <button class="dv-back" onclick="closeProfile()"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.6"><path d="M15 18l-6-6 6-6"/></svg></button>
+        <div class="dv-grad"></div>
+        <div class="dv-headline">
+          <div class="dv-name"><span id="dvName"></span><span class="dv-verify" id="dvVerify">✓ Баталгаажсан</span></div>
+          <div class="dv-loc" id="dvLoc"></div>
+        </div>
+      </div>
+      <div class="detail-body">
+        <div class="dv-section">Танилцуулга</div>
+        <p class="dv-bio" id="dvBio"></p>
+        <div class="dv-section">Сонирхол</div>
+        <div class="dv-tags" id="dvTags"></div>
+      </div>
+      <div class="detail-actions">
+        <button class="da-pass" onclick="sendFriendReq()">👤 Найзын хүсэлт</button>
+        <button class="da-like" onclick="likeUser()">❤️ Таалагдлаа</button>
+      </div>
+    </div>
+
+    <!-- VIP lock overlay -->
+    <div class="lock-screen" id="lockView">
+      <div class="lock-hero" id="lkHero"></div>
+      <div class="lock-panel">
+        <div class="lock-ic">🔒</div>
+        <div class="lock-crown">👑 VIP хэрэглэгч</div>
+        <div class="lock-name" id="lkName"></div>
+        <p>Энэ хэрэглэгчийн мэдээллийг шууд харах боломжгүй. Найзын хүсэлт илгээх эсвэл өөрөө VIP болж шууд харах боломжтой.</p>
+        <button class="btn btn-primary" style="width:100%" onclick="sendFriendReq()">👤 Найзын хүсэлт илгээх</button>
+        <button class="lock-vip" onclick="becomeVip()">👑 VIP болох</button>
+        <button class="lock-back" onclick="closeLock()">Буцах</button>
+      </div>
+    </div>
+
+    <!-- BLIND DATE invite overlay -->
+    <div class="blind-screen" id="blindView">
+      <div class="blind-panel">
+        <div class="blind-emoji">🎲</div>
+        <div class="blind-head">Сохор болзоо</div>
+        <div class="blind-mystery">🎭</div>
+        <div class="blind-who" id="blindWho">Эмэгтэй таныг сохор болзоонд урьж байна</div>
+        <div class="blind-info" id="blindInfo"></div>
+        <div class="blind-consent">⚠️ Нөгөө тал зөвшөөрсөн үед нэр, зураг нь нээгдэж, болзоо баталгаажна.</div>
+        <button class="btn btn-primary" style="width:100%" onclick="acceptBlind()">Хүлээн зөвшөөрөх</button>
+        <button class="lock-back" style="border-color:rgba(255,255,255,.4)" onclick="closeBlind()">Татгалзах</button>
+      </div>
+    </div>
+
+    <!-- PAYMENT overlay (багц захиалах) -->
+    <div class="pay-screen" id="payView">
+      <div class="pay-sheet">
+        <div class="pay-handle"></div>
+        <div class="pay-title" id="payTitle">Багц захиалах</div>
+        <div class="pay-amt" id="payBig">0₮</div>
+        <div class="form-group" style="margin-top:6px"><label>Хамт явах хүн</label>
+          <select id="payCompanion"></select>
+        </div>
+        <div class="pay-consent">⚠️ Сонгосон хүн зөвшөөрсөн үед болзоо баталгаажна.</div>
+        <div class="bank-box" style="margin-top:4px">
+          <div class="bank-row"><span>Банк</span><b id="pvBank"></b></div>
+          <div class="bank-row"><span>Данс</span><b id="pvAccount"></b></div>
+          <div class="bank-row"><span>Хүлээн авагч</span><b id="pvRecipient"></b></div>
+        </div>
+        <button class="btn btn-primary" style="width:100%;margin-top:14px" onclick="confirmPay()">💳 Төлбөр төлсөн</button>
+        <button class="lock-back" style="color:var(--gray);border-color:var(--gray-bg)" onclick="closePay()">Болих</button>
+      </div>
+    </div>
+
+    <!-- chat view -->
+    <div class="chat-screen" id="chatView">
+      <div class="chat-head">
+        <button class="back" onclick="closeChat()"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#3a2128" stroke-width="2.4"><path d="M15 18l-6-6 6-6"/></svg></button>
+        <div class="ph" id="cvPh"></div>
+        <div><div class="nme" id="cvName"></div><div class="st">Онлайн</div></div>
+        <button class="datebtn" onclick="scheduleFromChat()">📅 Болзоо</button>
+      </div>
+      <div class="msgs" id="cvMsgs"></div>
+      <div class="chat-input">
+        <input id="cvInput" placeholder="Мессеж бичих..." onkeydown="if(event.key==='Enter')sendMsg()">
+        <button class="send" onclick="sendMsg()"><svg width="20" height="20" viewBox="0 0 24 24" fill="#fff"><path d="M3 11l18-8-8 18-2-7-8-3z"/></svg></button>
+      </div>
+    </div>
+
+    <!-- match popup -->
+    <div class="match-pop" id="matchPop">
+      <div class="ttl">Тохирлоо! 💞</div>
+      <div class="sub" id="matchSub"></div>
+      <div class="pair">
+        <div class="ph" style="background:linear-gradient(135deg,var(--red),var(--pink))"></div>
+        <div class="ph" id="matchPh"></div>
+      </div>
+      <button class="say" onclick="scheduleFromMatch()">📅 Болзоо товлох</button>
+      <button class="keep" onclick="sayHi()">Эхлээд чатлах</button>
+    </div>
+
+    <nav class="nav">
+      <button class="active" onclick="tab('discover',this)"><svg width="24" height="24" viewBox="0 0 24 24" stroke-width="2"><path d="M12 21s-7.5-4.7-10-9.3C.5 8.4 2 5 5.4 5c2 0 3.3 1.1 4.6 2.7C11.3 6.1 12.6 5 14.6 5 18 5 19.5 8.4 18 11.7 15.5 16.3 12 21 12 21z"/></svg>Нээх</button>
+      <button onclick="tab('dates',this)"><span class="ct"><svg width="24" height="24" viewBox="0 0 24 24" stroke-width="2" fill="none"><rect x="3" y="4" width="18" height="18" rx="3"/><path d="M3 9h18M8 2v4M16 2v4"/></svg><span class="dot" id="navDates">1</span></span>Болзоо</button>
+      <button onclick="tab('matches',this)"><span class="ct"><svg width="24" height="24" viewBox="0 0 24 24" stroke-width="2" fill="none"><path d="M21 11.5a8.4 8.4 0 0 1-9 8.4 8.4 8.4 0 0 1-4-1L3 20l1.1-4.9A8.4 8.4 0 1 1 21 11.5z"/></svg><span class="dot" id="navUnread">2</span></span>Чат</button>
+      <button onclick="tab('profile',this)"><svg width="24" height="24" viewBox="0 0 24 24" stroke-width="2" fill="none"><circle cx="12" cy="8" r="4"/><path d="M5 21c0-4 3-6 7-6s7 2 7 6"/></svg>Профайл</button>
+    </nav>
+  </section>
+
+  <!-- ============ ADMIN LOGIN ============ -->
+  <section class="page" id="adminLogin">
+    <div class="box">
+      <div class="mark"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div>
+      <h2>Админ нэвтрэх</h2>
+      <p>Зөвхөн зөвшөөрөгдсөн ажилтан</p>
+      <input id="admUser" placeholder="Нэвтрэх нэр">
+      <div class="pw-wrap"><input id="admPass" type="password" placeholder="Нууц үг">
+        <button type="button" class="pw-eye" onclick="togglePw(this)" aria-label="Нууц үг харах"><svg class="i-eye" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg><svg class="i-eyeoff" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.94 17.94A10 10 0 0 1 12 19C5 19 1 12 1 12a18 18 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9 9 0 0 1 12 4c7 0 11 8 11 8a18 18 0 0 1-2.16 3.19"/><path d="M1 1l22 22"/></svg></button>
+      </div>
+      <button class="btn btn-primary" style="width:100%" onclick="adminLogin()">Нэвтрэх</button>
+      <button class="btn btn-ghost" style="width:100%;margin-top:10px;background:rgba(255,255,255,.1);color:#fff" onclick="route('landing')">Буцах</button>
+    </div>
+  </section>
+
+  <!-- ============ ADMIN PANEL ============ -->
+  <section class="page" id="adminPanel">
+    <div class="admin-head"><div class="ttl">Хоёулаа Болзий — Админ</div><button class="out" onclick="route('landing')">Гарах</button></div>
+    <div class="admin-tabs">
+      <button class="on" onclick="admTab('verify',this)">Баталгаажуулалт</button>
+      <button onclick="admTab('users',this)">Хэрэглэгчид</button>
+      <button onclick="admTab('dates',this)">Болзоо</button>
+      <button onclick="admTab('reports',this)">Гомдол</button>
+      <button onclick="admTab('settings',this)">Тохиргоо</button>
+    </div>
+    <div class="admin-body" id="admBody"></div>
+  </section>
+
+  <div class="toast" id="toast"></div>
+</div>
+
+<script>
+/* ============================================================
+   DATA  (цаашид backend-ээс татна: Supabase/Firebase)
+   ============================================================ */
+const F='https://images.unsplash.com/';
+const people=[
+  /* Хэрэглэгчид backend (Supabase)-ээс ачаалагдана */
+];
+const venues=[
+  {v:'Café Amsterdam',area:'Сүхбаатарын талбай'},{v:'Rosewood Kitchen',area:'Их дэлгүүрийн зүүн тал'},
+  {v:'Tom N Toms Coffee',area:'Шангри-Ла молл'},{v:'Namaste Restaurant',area:'Сансар'},{v:'BLD Café',area:'Зайсан'},
+];
+const slots=['Бямба гараг, 19:00','Ням гараг, 15:00','Баасан гараг, 20:00','Мягмар гараг, 18:30'];
+let idx=0, curChat=0;
+let chats=[];
+let dates=[];
+
+/* ============================================================ ROUTER ============================================================ */
+function route(p){
+  document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));
+  document.getElementById(p).classList.add('active');
+  if(p==='register')renderBank();
+}
+function initApp(){renderGrid();renderMatches();renderDates();renderPkgs();renderFriendReqs();bumpUnread();bumpDates();}
+
+/* ============================================================ FRIEND REQUESTS ============================================================ */
+let allowFR=true;
+let friendReqs=[];
+function renderFriendReqs(){
+  const w=document.getElementById('frWrap');if(!w)return;
+  if(!friendReqs.length){w.innerHTML='';return;}
+  w.innerHTML=`<div class="sec-title">Найзын хүсэлт (${friendReqs.length})</div>`+
+    friendReqs.map((r,i)=>`<div class="fr-card"><div class="ph" style="${photoBg(r.ph)}"></div><div class="b"><div class="nm">${r.n}</div><div class="sub">танд найзын хүсэлт илгээлээ</div><div class="fr-btns"><button class="acc" onclick="acceptFR(${i})">Зөвшөөрөх</button><button class="dec" onclick="declineFR(${i})">Татгалзах</button></div></div></div>`).join('');
+}
+function sendFriendReq(){const p=people[curProfile];closeProfile();closeLock();toast('👤 '+p.n+'-д найзын хүсэлт илгээлээ');}
+function acceptFR(i){
+  const r=friendReqs[i];friendReqs.splice(i,1);
+  if(!chats.find(c=>c.n===r.n))chats.unshift({n:r.n,ph:r.ph,last:'Найз боллоо — сайн уу гэж бичээрэй 👋',time:'Одоо',unread:0,on:true,msgs:[]});
+  renderFriendReqs();renderMatches();toast('✓ '+r.n+'-г найзаар нэмлээ');
+}
+function declineFR(i){const r=friendReqs[i];friendReqs.splice(i,1);renderFriendReqs();toast(r.n+'-н хүсэлтийг татгалзлаа');}
+function toggleFRSetting(){allowFR=!allowFR;document.getElementById('frToggle').classList.toggle('on',allowFR);toast(allowFR?'Найзын хүсэлт зөвшөөрөв':'Найзын хүсэлт хаалаа');}
+function renderPkgs(){
+  const el=document.getElementById('pkgList');if(!el)return;
+  el.innerHTML=settings.datePkgs.map((p,i)=>`
+    <div class="pkg-card">
+      <div class="pkg-top"><div class="pkg-nm">${p.name}</div><div class="pkg-pr">${fmt(p.price)}</div></div>
+      <div class="pkg-desc">${p.desc}</div>
+      <button class="pkg-buy" onclick="orderPkg(${i})">Захиалах</button>
+    </div>`).join('');
+}
+function orderPkg(i){openPay('pkg',i);}
+
+/* ---- Багц захиалах → шууд төлбөр ---- */
+let payCtx=null;
+function openPay(kind,i){
+  payCtx={kind,i};
+  const pkg=settings.datePkgs[i];
+  document.getElementById('payTitle').textContent=pkg.name;
+  document.getElementById('payBig').textContent=fmt(pkg.price);
+  // хамт явах хүн — одоогийн чат/тохирлуудаас
+  const sel=document.getElementById('payCompanion');
+  sel.innerHTML=chats.length?chats.map(c=>`<option>${c.n}</option>`).join(''):'<option value="">— Эхлээд тохироо хийнэ үү —</option>';
+  document.getElementById('pvBank').textContent=settings.bank;
+  document.getElementById('pvAccount').textContent=settings.account;
+  document.getElementById('pvRecipient').textContent=settings.recipient;
+  document.getElementById('payView').classList.add('open');
+}
+function closePay(){document.getElementById('payView').classList.remove('open');}
+function confirmPay(){
+  const pkg=settings.datePkgs[payCtx.i];
+  const who=document.getElementById('payCompanion').value;
+  closePay();
+  toast('💳 Төлбөр хүлээн авлаа · '+pkg.name);
+  if(who){
+    const c=chats.find(x=>x.n===who);
+    const ven=venues[Math.floor(Math.random()*venues.length)],slot=slots[Math.floor(Math.random()*slots.length)];
+    dates.unshift({n:who,ph:c?c.ph:people[0].ph,venue:ven.v,area:ven.area,when:slot,status:'pending'});
+    renderDates();bumpDates();
+    setTimeout(()=>{toast('⏳ '+who+'-н зөвшөөрлийг хүлээж байна');},1400);
+  }
+}
+
+/* ============================================================ СОХОР БОЛЗОО (blind date) ============================================================ */
+let blindPick=null;
+function startBlind(mode){
+  /* mode: 'opp' эсрэг хүйс (эмэгтэй), 'women' зөвхөн бүсгүйчүүдээс — хоёулаа эмэгтэйгээс сонгоно */
+  const cands=people.filter(p=>p.g==='f' && Math.abs(p.a-26)<=6);
+  if(!cands.length){toast('Одоогоор боломжтой хэрэглэгч алга');return;}
+  blindPick=cands[Math.floor(Math.random()*cands.length)];
+  const ven=venues[Math.floor(Math.random()*venues.length)],slot=slots[Math.floor(Math.random()*slots.length)];
+  blindPick._ven=ven;blindPick._slot=slot;
+  document.getElementById('blindWho').textContent='Эмэгтэй таныг сохор болзоонд урьж байна';
+  document.getElementById('blindInfo').textContent=`📍 ${ven.v} · 🗓 ${slot}`;
+  document.getElementById('blindView').classList.add('open');
+}
+function closeBlind(){document.getElementById('blindView').classList.remove('open');}
+function acceptBlind(){
+  const p=blindPick;if(!p){closeBlind();return;}closeBlind();
+  dates.unshift({n:p.n,ph:p.ph,venue:p._ven.v,area:p._ven.area,when:p._slot,status:'pending'});
+  renderDates();bumpDates();
+  toast('🎲 Сохор болзоо илгээлээ — '+p.n+'-н зөвшөөрлийг хүлээж байна');
+}
+
+/* ============================================================ REGISTER ============================================================ */
+/* Аймаг → сум/дүүрэг. Улаанбаатар + Архангай нягталсан; бусад сумын нэрсийг
+   ашиглалтад гаргахын өмнө албан ёсны эх сурвалжтай (toli.gov.mn/region) тулгаж шалгана уу. */
+const AIMAGS={
+ 'Улаанбаатар (нийслэл)':['Багануур','Багахангай','Баянгол','Баянзүрх','Налайх','Сонгинохайрхан','Сүхбаатар','Хан-Уул','Чингэлтэй'],
+ 'Архангай':['Эрдэнэбулган','Батцэнгэл','Булган','Жаргалант','Их-Тамир','Өгийнуур','Өлзийт','Өндөр-Улаан','Тариат','Төвшрүүлэх','Хайрхан','Хангай','Хашаат','Хотонт','Цахир','Цэнхэр','Цэцэрлэг','Чулуут','Эрдэнэмандал'],
+ 'Баян-Өлгий':['Өлгий','Алтай','Алтанцөгц','Баяннуур','Бугат','Булган','Буянт','Дэлүүн','Ногооннуур','Сагсай','Толбо','Улаанхус','Цэнгэл'],
+ 'Баянхонгор':['Баянхонгор','Баацагаан','Баянбулаг','Баянговь','Баянлиг','Баян-Овоо','Баян-Өндөр','Баянцагаан','Богд','Бөмбөгөр','Бууцагаан','Галуут','Гурванбулаг','Жаргалант','Жинст','Заг','Өлзийт','Хүрээмарал','Шинэжинст','Эрдэнэцогт'],
+ 'Булган':['Булган','Баян-Агт','Баяннуур','Бугат','Бүрэгхангай','Гурванбулаг','Дашинчилэн','Могод','Орхон','Рашаант','Сайхан','Сэлэнгэ','Тэшиг','Хангал','Хишиг-Өндөр','Хутаг-Өндөр'],
+ 'Говь-Алтай':['Есөнбулаг','Алтай','Баян-Уул','Бигэр','Бугат','Дарви','Дэлгэр','Жаргалан','Тайшир','Тонхил','Төгрөг','Халиун','Хөхморьт','Цогт','Цээл','Чандмань','Шарга','Эрдэнэ'],
+ 'Говьсүмбэр':['Сүмбэр','Баянтал','Шивээговь'],
+ 'Дархан-Уул':['Дархан','Орхон','Хонгор','Шарын гол'],
+ 'Дорноговь':['Сайншанд','Айраг','Алтанширээ','Даланжаргалан','Дэлгэрэх','Замын-Үүд','Иххэт','Мандах','Өргөн','Сайхандулаан','Улаанбадрах','Хатанбулаг','Хөвсгөл','Эрдэнэ'],
+ 'Дорнод':['Хэрлэн','Баяндун','Баян-Уул','Баянтүмэн','Булган','Гурванзагал','Дашбалбар','Матад','Сэргэлэн','Халхгол','Хөлөнбуйр','Цагаан-Овоо','Чойбалсан','Чулуунхороот'],
+ 'Дундговь':['Сайнцагаан','Адаацаг','Баянжаргалан','Говь-Угтаал','Гурвансайхан','Дэлгэрхангай','Дэлгэрцогт','Дэрэн','Луус','Өлзийт','Өндөршил','Сайхан-Овоо','Хулд','Цагаандэлгэр','Эрдэнэдалай'],
+ 'Завхан':['Улиастай','Алдархаан','Асгат','Баянтэс','Баянхайрхан','Дөрвөлжин','Завханмандал','Идэр','Их-Уул','Нөмрөг','Отгон','Сантмаргац','Сонгино','Тосонцэнгэл','Түдэвтэй','Тэлмэн','Тэс','Ургамал','Цагаанхайрхан','Цагаанчулуут','Цэцэн-Уул','Шилүүстэй','Эрдэнэхайрхан','Яруу'],
+ 'Орхон':['Баян-Өндөр','Жаргалант'],
+ 'Өвөрхангай':['Арвайхээр','Баруунбаян-Улаан','Бат-Өлзий','Баян-Өндөр','Баянгол','Богд','Бүрд','Гучин-Ус','Есөнзүйл','Зүүнбаян-Улаан','Нарийнтээл','Өлзийт','Сант','Тарагт','Төгрөг','Уянга','Хайрхандулаан','Хархорин','Хужирт'],
+ 'Өмнөговь':['Даланзадгад','Баяндалай','Баян-Овоо','Булган','Гурвантэс','Мандал-Овоо','Манлай','Ноён','Номгон','Сэврэй','Ханбогд','Ханхонгор','Хүрмэн','Цогт-Овоо','Цогтцэций'],
+ 'Сүхбаатар':['Баруун-Урт','Асгат','Баяндэлгэр','Дарьганга','Мөнххаан','Наран','Онгон','Сүхбаатар','Түвшинширээ','Түмэнцогт','Уулбаян','Халзан','Эрдэнэцагаан'],
+ 'Сэлэнгэ':['Сүхбаатар','Алтанбулаг','Баруунбүрэн','Баянгол','Ерөө','Жавхлант','Зүүнбүрэн','Мандал','Орхон','Орхонтуул','Сайхан','Сант','Шаамар','Түшиг','Хушаат','Хүдэр','Цагааннуур'],
+ 'Төв':['Зуунмод','Алтанбулаг','Аргалант','Архуст','Батсүмбэр','Баян','Баяндэлгэр','Баян-Өнжүүл','Баянжаргалан','Баянхангай','Баянцагаан','Баянцогт','Баянчандмань','Борнуур','Бүрэн','Дэлгэрхаан','Жаргалант','Заамар','Лүн','Мөнгөнморьт','Сүмбэр','Сэргэлэн','Угтаалцайдам','Цээл','Эрдэнэ','Эрдэнэсант','Өндөрширээт'],
+ 'Увс':['Улаангом','Баруунтуруун','Бөхмөрөн','Давст','Завхан','Зүүнговь','Зүүнхангай','Малчин','Наранбулаг','Өлгий','Өмнөговь','Өндөрхангай','Сагил','Тариалан','Түргэн','Ховд','Хяргас','Цагаанхайрхан','Тэс'],
+ 'Ховд':['Жаргалант','Алтай','Булган','Буянт','Дарви','Дөргөн','Дуут','Зэрэг','Манхан','Мөнххайрхан','Мөст','Мянгад','Үенч','Ховд','Цэцэг','Чандмань','Эрдэнэбүрэн'],
+ 'Хөвсгөл':['Мөрөн','Алаг-Эрдэнэ','Арбулаг','Баянзүрх','Бүрэнтогтох','Галт','Жаргалант','Их-Уул','Рашаант','Рэнчинлхүмбэ','Тариалан','Тосонцэнгэл','Төмөрбулаг','Түнэл','Улаан-Уул','Ханх','Цагаан-Уул','Цагаан-Үүр','Цагааннуур','Цэцэрлэг','Чандмань-Өндөр','Шинэ-Идэр','Эрдэнэбулган'],
+ 'Хэнтий':['Чингис хот','Батноров','Батширээт','Баян-Адарга','Баянмөнх','Баян-Овоо','Баянхутаг','Биндэр','Галшар','Дадал','Дархан','Дэлгэрхаан','Жаргалтхаан','Мөрөн','Норовлин','Өмнөдэлгэр','Хэрлэн'],
+};
+let rulesAgreed=false, selectedPlan='free';
+function fillAimags(){
+  const sel=document.getElementById('rAimag');if(!sel)return;
+  Object.keys(AIMAGS).forEach(a=>{const o=document.createElement('option');o.value=a;o.textContent=a;sel.appendChild(o);});
+}
+function fillSoums(){
+  const a=document.getElementById('rAimag').value, ss=document.getElementById('rSoum');
+  ss.innerHTML='';
+  if(!a){ss.disabled=true;ss.innerHTML='<option value="">— Эхлээд аймгаа сонгоно уу —</option>';return;}
+  ss.disabled=false;
+  const head=document.createElement('option');head.value='';head.textContent='— Сонгох —';ss.appendChild(head);
+  AIMAGS[a].forEach(s=>{const o=document.createElement('option');o.value=s;o.textContent=s;ss.appendChild(o);});
+}
+function openRules(){document.getElementById('rulesModal').classList.add('open');}
+function closeRules(){document.getElementById('rulesModal').classList.remove('open');}
+function agreeRules(){rulesAgreed=true;const b=document.getElementById('ruleBox');b.classList.add('done');document.getElementById('ruleState').textContent='✓ Дүрэмтэй танилцсан';closeRules();}
+function pickPlan(p){
+  selectedPlan=p;
+  document.getElementById('planFree').classList.toggle('on',p==='free');
+  document.getElementById('planVip').classList.toggle('on',p==='vip');
+  const amt=document.getElementById('payAmount');
+  if(amt)amt.textContent=fmt(p==='vip'?settings.fee+settings.vip:settings.fee);
+}
+function seg(btn){btn.parentNode.querySelectorAll('button').forEach(b=>b.classList.remove('on'));btn.classList.add('on');}
+let regGender='m';
+function pickGender(g,btn){
+  regGender=g;seg(btn);
+  const free=g==='f';
+  document.getElementById('paidArea').style.display=free?'none':'block';
+  document.getElementById('womenFree').style.display=free?'block':'none';
+}
+function openInstall(){document.getElementById('installModal').classList.add('open');}
+function closeInstall(){document.getElementById('installModal').classList.remove('open');}
+function togglePw(btn){const inp=btn.parentNode.querySelector('input');const hidden=inp.type==='password';inp.type=hidden?'text':'password';btn.classList.toggle('on',hidden);}
+/* Харанхуй / гэрэлтэй горим солих */
+let darkMode=false;
+function toggleTheme(){
+  darkMode=!darkMode;
+  document.body.classList.toggle('dark',darkMode);
+  const tb=document.getElementById('themeBtn');if(tb)tb.textContent=darkMode?'☀️':'🌙';
+  const tg=document.getElementById('themeToggle');if(tg)tg.classList.toggle('on',darkMode);
+}
+
+/* ============================================================ ACCOUNTS / LOGIN ============================================================ */
+/* Прототип: хэрэглэгчид санах ойд хадгалагдана (хуудас сэргээхэд арилна).
+   Бодит хувилбарт Supabase auth + users хүснэгт (утас давтагдахгүй) ашиглана. */
+let users=[];
+function normPhone(s){return (s||'').replace(/\D/g,'');}
+function doLogin(){
+  const ph=normPhone(document.getElementById('lPhone').value);
+  const pw=document.getElementById('lPass').value;
+  if(!ph||!pw){toast('Утас болон нууц үгээ оруулна уу');return;}
+  const u=users.find(x=>normPhone(x.phone)===ph&&x.pass===pw);
+  if(!u){toast('Утас эсвэл нууц үг буруу');return;}
+  toast('Тавтай морил, '+u.name+'!');
+  setTimeout(()=>{route('mainapp');initApp();},700);
+}
+
+function doRegister(){
+  const name=document.getElementById('rName').value.trim();
+  const phone=document.getElementById('rPhone').value.trim();
+  const pass=document.getElementById('rPass').value;
+  if(!name){toast('Нэрээ оруулна уу');return;}
+  if(!phone){toast('Утасны дугаараа оруулна уу');return;}
+  if(!pass||pass.length<4){toast('Нууц үг дор хаяж 4 тэмдэгт байх ёстой');return;}
+  if(!document.getElementById('rAimag').value){toast('Аймгаа сонгоно уу');return;}
+  if(!document.getElementById('rSoum').value){toast('Сум/дүүргээ сонгоно уу');return;}
+  if(!rulesAgreed){toast('Эхлээд дүрэмтэй танилцана уу');return;}
+  if(users.some(u=>u.name.toLowerCase()===name.toLowerCase())){toast('Энэ нэр бүртгэлтэй байна. Өөр нэр сонгоно уу');return;}
+  if(users.some(u=>normPhone(u.phone)===normPhone(phone))){toast('Энэ дугаар аль хэдийн бүртгэлтэй байна');return;}
+  users.push({name,phone,pass,g:regGender,vip:regGender==='f'});
+  // Админд баталгаажуулахаар бүх мэдээллийг дараалалд нэмэх
+  const interests=[...document.querySelectorAll('#register .chip.on')].map(c=>c.textContent.trim());
+  admData.verify.unshift({
+    name, phone, g:regGender, vip:regGender==='f',
+    age:(document.getElementById('rAge').value||'').trim()||'-',
+    city:document.getElementById('rAimag').value,
+    soum:document.getElementById('rSoum').value,
+    bio:document.getElementById('rBio').value.trim(),
+    tags:interests,
+    plan: regGender==='f' ? 'Бүсгүй · төлбөргүй' : (selectedPlan==='vip'?'VIP':'Энгийн гишүүн'),
+    ph:''
+  });
+  if(regGender==='f'){
+    toast('🎉 Бүртгэл амжилттай! Бүсгүйчүүд төлбөргүй — VIP эрх үнэгүй идэвхжлээ.');
+  }else{
+    const amount=fmt(selectedPlan==='vip'?settings.fee+settings.vip:settings.fee);
+    toast('🎉 Бүртгэл үүслээ! '+amount+' дансанд шилжүүлснээр идэвхжинэ.');
+  }
+  if(regGender==='f')myVip=true;
+  setTimeout(()=>{route('mainapp');initApp();},1100);
+}
+
+/* ============================================================ DISCOVER / BROWSE ============================================================ */
+function renderGrid(){
+  const g=document.getElementById('userGrid');if(!g)return;
+  if(!people.length){g.innerHTML=`<div style="grid-column:1/-1;text-align:center;color:var(--gray-2);font-size:13.5px;padding:50px 20px;line-height:1.6;">Одоогоор хэрэглэгч алга.<br>Шинэ хэрэглэгч бүртгүүлэхэд энд харагдана.</div>`;return;}
+  g.innerHTML=people.map((p,i)=>`
+    <div class="ucard" onclick="openProfile(${i})">
+      <div class="uphoto" style="${photoBg(p.ph)}">
+        ${p.v?'<span class="ubadge">✓</span>':''}
+        ${p.vip?'<span class="ucrown">👑 VIP</span>':''}
+        <span class="uloc">📍 ${p.city}</span>
+      </div>
+      <div class="umeta"><div class="unm">${p.n}, ${p.a}</div><div class="udist">${p.d}</div></div>
+    </div>`).join('');
+}
+let curProfile=0;
+let myVip=false;
+function openProfile(i){
+  const p=people[i];curProfile=i;window._lastMatch=p.n;
+  if(p.vip && !myVip){openLock(i);return;}
+  document.getElementById('dvHero').style.cssText='background-size:cover;background-position:center;'+(p.ph?`background-image:url('${F}${p.ph}')`:'background:linear-gradient(135deg,var(--red),var(--pink))');
+  document.getElementById('dvName').textContent=`${p.n}, ${p.a}`;
+  document.getElementById('dvVerify').style.display=p.v?'inline-flex':'none';
+  document.getElementById('dvLoc').textContent=`📍 ${p.city} · ${p.d}`;
+  document.getElementById('dvBio').textContent=p.bio;
+  document.getElementById('dvTags').innerHTML=p.tags.map(t=>`<span class="tag-d">${t}</span>`).join('');
+  document.getElementById('detailView').classList.add('open');
+}
+function openLock(i){
+  const p=people[i];curProfile=i;window._lastMatch=p.n;
+  document.getElementById('lkHero').style.cssText='background-size:cover;background-position:center;'+(p.ph?`background-image:url('${F}${p.ph}')`:'background:linear-gradient(135deg,var(--red),var(--pink))');
+  document.getElementById('lkName').textContent=`${p.n}, ${p.a}`;
+  document.getElementById('lockView').classList.add('open');
+}
+function closeLock(){document.getElementById('lockView').classList.remove('open');}
+function becomeVip(){myVip=true;closeLock();updateVipUI();toast('👑 Та VIP боллоо! Бусдыг найзын хүсэлтгүй харах боломжтой.');}
+function updateVipUI(){const b=document.getElementById('vipBtn');if(b&&myVip){b.textContent='✓ VIP идэвхтэй';b.style.opacity='.8';}}
+function closeProfile(){document.getElementById('detailView').classList.remove('open');}
+function likeUser(){
+  const p=people[curProfile];closeProfile();
+  toast('💌 '+p.n+'-д таалагдсанаа илэрхийллээ');
+  setTimeout(()=>{if(Math.random()<0.6)showMatch(p);},400);
+}
+
+/* ============================================================ MATCH ============================================================ */
+function showMatch(p){
+  document.getElementById('matchSub').textContent=`Та болон ${p.n} бие биедээ таалагдлаа`;
+  document.getElementById('matchPh').style.cssText='background-size:cover;background-position:center;'+(p.ph?`background-image:url('${F}${p.ph}')`:'background:linear-gradient(135deg,var(--red),var(--pink))');
+  document.getElementById('matchPop').classList.add('show');
+  if(!chats.find(c=>c.n===p.n)){chats.unshift({n:p.n,ph:p.ph,last:'Тохирлоо — сайн уу гэж бичээрэй 👋',time:'Одоо',unread:0,on:true,msgs:[]});renderMatches();}
+  window._lastMatch=p.n;
+}
+function hideMatch(){document.getElementById('matchPop').classList.remove('show');}
+function sayHi(){hideMatch();tab('matches',document.querySelectorAll('.nav button')[2]);openChat(0);}
+
+/* ============================================================ MATCHES / CHAT ============================================================ */
+function renderMatches(){
+  document.getElementById('newMatches').innerHTML=chats.slice(0,6).map((c,i)=>`<div class="nm-card" onclick="openChat(${i})"><div class="ph" style="${photoBg(c.ph)}"></div><div class="lbl">${c.n}</div></div>`).join('');
+  document.getElementById('chatList').innerHTML=chats.length?chats.map((c,i)=>`<div class="chat-row" onclick="openChat(${i})"><div class="ph" style="${photoBg(c.ph)}">${c.on?'<span class="on"></span>':''}</div><div class="body"><div class="top"><span class="nme">${c.n}</span><span class="tm">${c.time}</span></div><div class="msg">${c.last}</div></div>${c.unread?`<span class="badge-unread">${c.unread}</span>`:''}</div>`).join(''):`<div style="text-align:center;color:var(--gray-2);font-size:13px;padding:30px 10px;">Одоогоор чат алга</div>`;
+}
+function openChat(i){curChat=i;const c=chats[i];c.unread=0;bumpUnread();renderMatches();document.getElementById('cvName').textContent=c.n;document.getElementById('cvPh').style.cssText='background-size:cover;background-position:center;'+(c.ph?`background-image:url('${F}${c.ph}')`:'background:linear-gradient(135deg,var(--red),var(--pink))');renderMsgs();document.getElementById('chatView').classList.add('open');}
+function renderMsgs(){const c=chats[curChat];document.getElementById('cvMsgs').innerHTML=c.msgs.length?c.msgs.map(m=>`<div class="bub ${m.me?'me':'them'}">${m.t}</div>`).join(''):`<div style="text-align:center;color:var(--gray-2);font-size:13px;margin-top:30px;">Тохирлоо! Эхний мессежээ бичээрэй 👋</div>`;const m=document.getElementById('cvMsgs');m.scrollTop=m.scrollHeight;}
+function sendMsg(){const inp=document.getElementById('cvInput'),t=inp.value.trim();if(!t)return;const c=chats[curChat];c.msgs.push({me:1,t});c.last=t;c.time='Одоо';inp.value='';renderMsgs();const r=['Хаха тийм ээ 😄','Зөв байна!','Тэгье ээ','Сонирхолтой 😊','Уулзацгаая ☕'];setTimeout(()=>{c.msgs.push({me:0,t:r[Math.floor(Math.random()*r.length)]});c.last=c.msgs[c.msgs.length-1].t;renderMsgs();renderMatches();},900);}
+function closeChat(){document.getElementById('chatView').classList.remove('open');renderMatches();}
+
+/* ============================================================ DATES (app organizes) ============================================================ */
+function renderDates(){
+  const el=document.getElementById('datesList');
+  if(!dates.length){el.innerHTML=`<div class="empty-dates">Одоогоор товлосон болзоо алга.<br>Тохирсон хүнтэйгээ болзоо товлоорой 💕</div>`;return;}
+  el.innerHTML=dates.map(d=>`<div class="date-card"><div class="dc-top"><div class="ph" style="${photoBg(d.ph)}"></div><div><div class="who">${d.n}</div><div class="stt ${d.status==='confirmed'?'ok':'pend'}">${d.status==='confirmed'?'✓ Хоёр тал баталгаажуулсан':'⏳ Нөгөө талын хариу хүлээж байна'}</div></div></div><div class="dc-body"><div class="venue">📍 ${d.venue}</div><div class="meta">${d.area}</div><div class="meta">🗓 ${d.when}</div><div class="remind">📲 Бид танд 2 цагийн өмнө сануулна</div></div><div class="dc-actions"><button class="resc" onclick="toast('Цаг өөрчлөх хүсэлт илгээлээ')">Цаг өөрчлөх</button><button class="conf" onclick="openChatByName('${d.n}')">Чатлах</button></div></div>`).join('');
+}
+function makeDate(name,ph){
+  const ven=venues[Math.floor(Math.random()*venues.length)],slot=slots[Math.floor(Math.random()*slots.length)];
+  dates.unshift({n:name,ph:ph,venue:ven.v,area:ven.area,when:slot,status:'pending'});
+  tab('dates',document.querySelectorAll('.nav button')[1]);renderDates();bumpDates();
+  toast('📅 Болзооны санал илгээлээ...');
+  setTimeout(()=>{if(dates[0]){dates[0].status='confirmed';renderDates();toast('🎉 '+name+' болзоог баталгаажууллаа!');}},1700);
+}
+function scheduleFromMatch(){const name=window._lastMatch,src=people.find(x=>x.n===name)||chats.find(x=>x.n===name)||{};hideMatch();makeDate(name,src.ph);}
+function scheduleFromChat(){const c=chats[curChat];closeChat();makeDate(c.n,c.ph);}
+function openChatByName(n){const i=chats.findIndex(c=>c.n===n);if(i>=0){tab('matches',document.querySelectorAll('.nav button')[2]);openChat(i);}else toast('Чат удахгүй нээгдэнэ');}
+
+/* ============================================================ TABS / BADGES ============================================================ */
+function tab(name,btn){
+  document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+  document.getElementById('t-'+name).classList.add('active');
+  document.querySelectorAll('.nav button').forEach(b=>b.classList.remove('active'));
+  if(btn)btn.classList.add('active');else{const map={discover:0,dates:1,matches:2,profile:3};document.querySelectorAll('.nav button')[map[name]].classList.add('active');}
+  if(name==='matches'){renderMatches();renderFriendReqs();}if(name==='dates'){renderDates();renderPkgs();}
+}
+function bumpUnread(){const n=chats.reduce((a,c)=>a+c.unread,0),el=document.getElementById('navUnread');el.style.display=n?'flex':'none';el.textContent=n;}
+function bumpDates(){const el=document.getElementById('navDates'),n=dates.length;el.style.display=n?'flex':'none';el.textContent=n;}
+
+/* ============================================================ ADMIN ============================================================ */
+function adminLogin(){
+  const u=document.getElementById('admUser').value.trim(),p=document.getElementById('admPass').value;
+  if(u==='Gantulga'&&p==='My96101613'){route('adminPanel');admTab('verify');}else toast('Нэр эсвэл нууц үг буруу');
+}
+/* ============================================================ ADMIN SETTINGS / DATA ============================================================ */
+let settings={bank:'Хаан банк',account:'5041 234 567',recipient:'Хоёулаа Болзий ХХК',fee:5000,vip:19900,
+  datePkgs:[
+    {name:'Энгийн болзоо',price:100000,desc:'Ресторан/кафе захиалга, ширээ бэлдэх, цаг тохируулах'},
+    {name:'Романтик болзоо',price:200000,desc:'Дээрх + цэцэг, тусгай ширээ, лаа болон чимэглэл'},
+    {name:'Тусгай үдэш',price:300000,desc:'Дээрх + хоол, ундааны багц, дурсгалын гэрэл зураг'},
+    {name:'Гайхалтай болзоо',price:400000,desc:'Дээрх + тээвэр, кино эсвэл тоглолтын тасалбар'},
+    {name:'VIP романс',price:500000,desc:'Бүх зүйл + хувийн зохион байгуулагч, гэнэтийн бэлэг, дээд зэрэглэлийн ресторан'},
+  ]};
+function fmt(n){return Number(n).toLocaleString('en-US')+'₮';}
+function renderBank(){
+  const set=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v;};
+  set('bkBank',settings.bank);set('bkAccount',settings.account);set('bkRecipient',settings.recipient);
+  set('planFreePr',fmt(settings.fee));set('planVipPr','+'+fmt(settings.vip));set('vipCardPr',fmt(settings.vip));
+  const amt=document.getElementById('payAmount');if(amt)amt.textContent=fmt(selectedPlan==='vip'?settings.fee+settings.vip:settings.fee);
+}
+const admData={
+  verify:[],
+  users:[],
+  dates:[],
+  reports:[],
+};
+function admTab(t,btn){
+  if(btn){document.querySelectorAll('.admin-tabs button').forEach(b=>b.classList.remove('on'));btn.classList.add('on');}
+  const body=document.getElementById('admBody');let html='';
+  if(t!=='settings'){
+    const blk=admData.users.filter(u=>u.blocked).length;
+    html+=`<div class="kpi-row"><div class="kpi"><div class="v">${admData.users.length}</div><div class="l">Хэрэглэгч</div></div><div class="kpi"><div class="v">${admData.verify.length}</div><div class="l">Хүлээгдэж буй</div></div><div class="kpi"><div class="v">${blk}</div><div class="l">Блоклосон</div></div></div>`;
+  }
+  const empty=msg=>`<div style="text-align:center;color:var(--gray-2);font-size:13px;padding:30px 10px;">${msg}</div>`;
+  if(t==='verify'){html+=admData.verify.length?admData.verify.map((x,i)=>`<div class="adm-verify">
+    <div class="av-top"><div class="av-avatar">${(x.name||'?').charAt(0)}</div><div><div class="av-name">${x.name} <span>${x.g==='f'?'♀ Эмэгтэй':'♂ Эрэгтэй'}</span></div><div class="av-plan">${x.plan}</div></div></div>
+    <div class="av-rows">
+      <div><span>Нас</span><b>${x.age}</b></div>
+      <div><span>Утас</span><b>${x.phone}</b></div>
+      <div><span>Байршил</span><b>${x.city||'-'}${x.soum?', '+x.soum:''}</b></div>
+      ${x.bio?`<div><span>Танилцуулга</span><b>${x.bio}</b></div>`:''}
+      ${x.tags&&x.tags.length?`<div><span>Сонирхол</span><b>${x.tags.join(', ')}</b></div>`:''}
+    </div>
+    <div class="av-actions"><button class="av-no" onclick="rejectUser(${i})">✕ Татгалзах</button><button class="av-ok" onclick="approveUser(${i})">✓ Зөвшөөрөх</button></div>
+  </div>`).join(''):empty('Баталгаажуулалт хүлээж буй хэрэглэгч алга');}
+  else if(t==='users'){html+=admData.users.length?admData.users.map((x,i)=>`<div class="adm-card" style="${x.blocked?'opacity:.55':''}"><div class="ph" style="${photoBg(x.ph)}"></div><div class="b"><div class="nm">${x.n}</div><div class="meta">${x.m}</div></div><span class="adm-pill ${x.blocked?'warn':'ok'}">${x.blocked?'Блоклогдсон':'Идэвхтэй'}</span><div class="acts"><button class="${x.blocked?'ok-b':'no-b'}" onclick="toggleBlock(${i})" title="${x.blocked?'Блокоос гаргах':'Блоклох'}">${x.blocked?'🔓':'🚫'}</button></div></div>`).join(''):empty('Бүртгэлтэй хэрэглэгч алга');}
+  else if(t==='dates'){html+=admData.dates.length?admData.dates.map(x=>`<div class="adm-card"><div class="ph" style="background:var(--pink-bg);display:flex;align-items:center;justify-content:center;">📅</div><div class="b"><div class="nm">${x.n}</div><div class="meta">${x.m}</div></div><span class="adm-pill ${x.pill}">${x.pt}</span></div>`).join(''):empty('Болзоо алга');}
+  else if(t==='reports'){html+=admData.reports.length?admData.reports.map(x=>`<div class="adm-card"><div class="ph" style="background:var(--pink-bg);display:flex;align-items:center;justify-content:center;">⚠️</div><div class="b"><div class="nm">${x.n}</div><div class="meta">${x.m}</div></div><span class="adm-pill ${x.pill}">${x.pt}</span></div>`).join(''):empty('Гомдол алга');}
+  else if(t==='settings'){
+    html+=`<div style="font-family:var(--display);font-size:17px;color:var(--red-deep);font-weight:600;margin-bottom:14px;">Дансны мэдээлэл & хураамж</div>
+    <div class="form-group"><label>Банкны нэр</label><input id="setBank" value="${settings.bank}"></div>
+    <div class="form-group"><label>Дансны дугаар</label><input id="setAccount" value="${settings.account}"></div>
+    <div class="form-group"><label>Хүлээн авагч</label><input id="setRecipient" value="${settings.recipient}"></div>
+    <div class="form-group"><label>Бүртгэлийн хураамж (₮)</label><input id="setFee" type="number" value="${settings.fee}"></div>
+    <div class="form-group"><label>VIP үнэ / сар (₮)</label><input id="setVip" type="number" value="${settings.vip}"></div>
+    <div style="font-family:var(--display);font-size:17px;color:var(--red-deep);font-weight:600;margin:18px 0 14px;">Болзоо зохион байгуулах багцууд</div>
+    ${settings.datePkgs.map((p,i)=>`<div style="border:1px solid var(--gray-bg);border-radius:14px;padding:11px;margin-bottom:10px;"><div class="form-group" style="margin-bottom:10px"><label>Багц ${i+1} — нэр</label><input id="setPkgN${i}" value="${p.name}"></div><div class="form-group" style="margin-bottom:0"><label>Үнэ (₮)</label><input id="setPkg${i}" type="number" value="${p.price}"></div></div>`).join('')}
+    <button class="btn btn-primary" style="width:100%" onclick="saveSettings()">💾 Хадгалах</button>
+    <p style="font-size:12px;color:var(--gray-2);font-weight:500;margin-top:12px;line-height:1.5;">Энд хийсэн өөрчлөлт бүртгэлийн дэлгэцийн данс, хураамж, VIP үнэ болон болзооны багцын үнэд шууд тусна.</p>`;
+  }
+  body.innerHTML=html;
+}
+function toggleBlock(i){admData.users[i].blocked=!admData.users[i].blocked;admTab('users');toast(admData.users[i].blocked?'🚫 '+admData.users[i].n+'-г блоклов':'🔓 Блокоос гаргав');}
+function saveSettings(){
+  const g=id=>document.getElementById(id).value;
+  settings.bank=g('setBank').trim()||settings.bank;
+  settings.account=g('setAccount').trim()||settings.account;
+  settings.recipient=g('setRecipient').trim()||settings.recipient;
+  settings.fee=parseInt(g('setFee'))||0;
+  settings.vip=parseInt(g('setVip'))||0;
+  settings.datePkgs.forEach((p,i)=>{
+    const pr=document.getElementById('setPkg'+i);if(pr)p.price=parseInt(pr.value)||p.price;
+    const nm=document.getElementById('setPkgN'+i);if(nm&&nm.value.trim())p.name=nm.value.trim();
+  });
+  renderBank();renderPkgs();
+  toast('💾 Тохиргоо хадгалагдлаа');
+}
+function admAct(btn,msg){btn.closest('.adm-card').style.opacity='.4';toast(msg);}
+/* Зураг байхгүй бол градиент фон */
+function photoBg(ph){return ph?`background-image:url('${F}${ph}')`:`background:linear-gradient(135deg,var(--red),var(--pink))`;}
+/* Бүртгэлийн хүсэлт зөвшөөрөх / татгалзах */
+function approveUser(i){
+  const x=admData.verify[i];if(!x)return;admData.verify.splice(i,1);
+  admData.users.unshift({n:x.name,m:`${x.age} · ${x.city||''}`,ph:x.ph||'',blocked:false});
+  people.push({n:x.name,a:parseInt(x.age)||25,g:x.g,city:x.city||'',d:'ойролцоо',v:true,vip:!!x.vip,bio:x.bio||'',tags:x.tags||[],ph:x.ph||''});
+  renderGrid();admTab('verify');toast('✓ '+x.name+'-г баталгаажууллаа');
+}
+function rejectUser(i){const x=admData.verify[i];if(!x)return;admData.verify.splice(i,1);admTab('verify');toast('✕ '+x.name+'-г татгалзлаа');}
+
+/* ============================================================ MISC ============================================================ */
+let tt;function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');clearTimeout(tt);tt=setTimeout(()=>t.classList.remove('show'),1800);}
+fillAimags();renderBank();
+
+/* ============================================================ PWA — суулгах & service worker ============================================================ */
+let deferredPrompt=null;
+window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredPrompt=e;const b=document.getElementById('installBtn');if(b)b.style.display='block';});
+function installApp(){
+  if(deferredPrompt){deferredPrompt.prompt();deferredPrompt.userChoice.then(()=>{deferredPrompt=null;const b=document.getElementById('installBtn');if(b)b.style.display='none';});}
+  else{toast('Хөтчийн цэснээс "Нүүр дэлгэцэд нэмэх"-ийг сонгоно уу 📲');}
+}
+window.addEventListener('appinstalled',()=>{const b=document.getElementById('installBtn');if(b)b.style.display='none';toast('🎉 Апп амжилттай суулаа!');});
+if('serviceWorker' in navigator){window.addEventListener('load',()=>{navigator.serviceWorker.register('sw.js').catch(()=>{});});}
+</script>
+</body>
+</html>
