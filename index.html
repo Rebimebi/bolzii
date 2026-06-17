@@ -151,8 +151,8 @@ body{
 /* notifications */
 .bell-btn{position:relative;width:38px;height:38px;border-radius:50%;border:none;background:var(--pink-bg);font-size:17px;cursor:pointer;display:flex;align-items:center;justify-content:center;}
 .bell-badge{position:absolute;top:-2px;right:-2px;min-width:17px;height:17px;padding:0 4px;border-radius:9px;background:var(--red);color:#fff;font-size:10px;font-weight:800;display:flex;align-items:center;justify-content:center;border:2px solid var(--bg);}
-.notif-banner{position:absolute;bottom:calc(82px + env(safe-area-inset-bottom));left:12px;right:12px;z-index:120;display:flex;align-items:center;gap:11px;padding:12px 14px;border-radius:16px;background:var(--card);box-shadow:0 16px 40px -12px rgba(58,33,40,.5);border:1px solid var(--gray-bg);transform:translateY(220%);opacity:0;transition:transform .35s cubic-bezier(.2,.9,.3,1.3),opacity .25s;cursor:pointer;}
-.notif-banner.show{transform:translateY(0);opacity:1;}
+.notif-banner{position:absolute;bottom:calc(96px + env(safe-area-inset-bottom));left:12px;right:12px;z-index:60;display:flex;align-items:center;gap:11px;padding:12px 14px;border-radius:16px;background:var(--card);box-shadow:0 16px 40px -12px rgba(58,33,40,.5);border:1px solid var(--gray-bg);transform:translateY(220%);opacity:0;pointer-events:none;transition:transform .35s cubic-bezier(.2,.9,.3,1.3),opacity .25s;cursor:pointer;}
+.notif-banner.show{transform:translateY(0);opacity:1;pointer-events:auto;}
 .notif-banner .nb-ic{width:38px;height:38px;border-radius:12px;background:linear-gradient(135deg,var(--red),var(--pink));display:flex;align-items:center;justify-content:center;font-size:19px;flex:0 0 auto;}
 .notif-banner .nb-t{font-weight:800;font-size:13.5px;color:var(--ink);}
 .notif-banner .nb-d{font-size:12px;color:var(--gray);font-weight:500;margin-top:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:230px;}
@@ -1182,7 +1182,7 @@ let _ovStack=[],_fromPop=false;
 const _OVL_IDS=['detailView','chatView','lockView','vipModal','pwModal','payView','blindView','admUserView','notifPanel','lightbox','rulesModal','installModal'];
 function ovOpen(id){const e=document.getElementById(id);if(!e)return;e.classList.add('open');_ovStack.push(id);try{history.pushState({ov:id},'');}catch(_){}}
 function ovClose(id){const e=document.getElementById(id);if(e)e.classList.remove('open');const k=_ovStack.lastIndexOf(id);if(k<0)return;_ovStack.splice(k,1);if(!_fromPop){try{history.back();}catch(_){}}}
-function clearOverlays(){_OVL_IDS.forEach(id=>{const e=document.getElementById(id);if(e)e.classList.remove('open');});_ovStack=[];}
+function clearOverlays(){const n=_ovStack.length;_OVL_IDS.forEach(id=>{const e=document.getElementById(id);if(e)e.classList.remove('open');});_ovStack=[];if(n>0){try{history.go(-n);}catch(_){}}}
 window.addEventListener('popstate',function(){if(_ovStack.length){_fromPop=true;ovClose(_ovStack[_ovStack.length-1]);_fromPop=false;}});
 function route(p){
   document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));
@@ -1756,6 +1756,7 @@ function openChatByName(n){const i=chats.findIndex(c=>c.n===n);if(i>=0){tab('mat
 
 /* ============================================================ TABS / BADGES ============================================================ */
 function tab(name,btn){
+  clearOverlays();
   document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
   document.getElementById('t-'+name).classList.add('active');
   document.querySelectorAll('.nav button').forEach(b=>b.classList.remove('active'));
