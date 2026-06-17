@@ -151,7 +151,7 @@ body{
 /* notifications */
 .bell-btn{position:relative;width:38px;height:38px;border-radius:50%;border:none;background:var(--pink-bg);font-size:17px;cursor:pointer;display:flex;align-items:center;justify-content:center;}
 .bell-badge{position:absolute;top:-2px;right:-2px;min-width:17px;height:17px;padding:0 4px;border-radius:9px;background:var(--red);color:#fff;font-size:10px;font-weight:800;display:flex;align-items:center;justify-content:center;border:2px solid var(--bg);}
-.notif-banner{position:absolute;top:calc(8px + env(safe-area-inset-top));left:12px;right:12px;z-index:120;display:flex;align-items:center;gap:11px;padding:12px 14px;border-radius:16px;background:var(--card);box-shadow:0 16px 40px -12px rgba(58,33,40,.5);border:1px solid var(--gray-bg);transform:translateY(-160%);opacity:0;transition:transform .35s cubic-bezier(.2,.9,.3,1.3),opacity .25s;cursor:pointer;}
+.notif-banner{position:absolute;bottom:calc(82px + env(safe-area-inset-bottom));left:12px;right:12px;z-index:120;display:flex;align-items:center;gap:11px;padding:12px 14px;border-radius:16px;background:var(--card);box-shadow:0 16px 40px -12px rgba(58,33,40,.5);border:1px solid var(--gray-bg);transform:translateY(220%);opacity:0;transition:transform .35s cubic-bezier(.2,.9,.3,1.3),opacity .25s;cursor:pointer;}
 .notif-banner.show{transform:translateY(0);opacity:1;}
 .notif-banner .nb-ic{width:38px;height:38px;border-radius:12px;background:linear-gradient(135deg,var(--red),var(--pink));display:flex;align-items:center;justify-content:center;font-size:19px;flex:0 0 auto;}
 .notif-banner .nb-t{font-weight:800;font-size:13.5px;color:var(--ink);}
@@ -455,7 +455,8 @@ body{
 .bub.them{align-self:flex-start;background:var(--card);color:var(--ink);border-bottom-left-radius:6px;box-shadow:0 3px 10px -6px rgba(58,33,40,.3);}
 .bub.me{align-self:flex-end;background:linear-gradient(135deg,var(--red),var(--pink));color:#fff;border-bottom-right-radius:6px;}
 .chat-input{flex:0 0 auto;padding:12px 13px calc(22px + env(safe-area-inset-bottom));display:flex;gap:9px;align-items:center;background:var(--card);border-top:1px solid rgba(58,33,40,.07);}
-.chat-input input{flex:1;border:none;background:var(--pink-bg);border-radius:30px;padding:13px 17px;font-size:14.5px;font-family:var(--body);outline:none;}
+.chat-input input{flex:1;border:none;background:var(--pink-bg);border-radius:30px;padding:13px 17px;font-size:14.5px;font-family:var(--body);color:var(--ink);outline:none;}
+.chat-input input::placeholder{color:var(--gray-2);}
 .chat-input .send{width:44px;height:44px;border-radius:50%;border:none;background:var(--red);display:flex;align-items:center;justify-content:center;cursor:pointer;flex:0 0 auto;}
 
 /* ================= ADMIN ================= */
@@ -1172,6 +1173,11 @@ let chats=[];
 let dates=[];
 
 /* ============================================================ ROUTER ============================================================ */
+/* ---- Утасны "буцах" товчоор апп-аас гарахгүй: нээлттэй давхаргыг хаана ---- */
+let _ovStack=[],_fromPop=false;
+function ovOpen(id){const e=document.getElementById(id);if(!e)return;e.classList.add('open');_ovStack.push(id);try{history.pushState({ov:id},'');}catch(_){}}
+function ovClose(id){const e=document.getElementById(id);if(e)e.classList.remove('open');const k=_ovStack.lastIndexOf(id);if(k>=0)_ovStack.splice(k,1);if(!_fromPop){try{history.back();}catch(_){}}}
+window.addEventListener('popstate',function(){if(_ovStack.length){_fromPop=true;ovClose(_ovStack[_ovStack.length-1]);_fromPop=false;}});
 function route(p){
   document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));
   document.getElementById(p).classList.add('active');
@@ -1180,7 +1186,10 @@ function route(p){
 async function initApp(){
   await loadSettings();
   await loadPeople();
-  renderMatches();renderDates();renderPkgs();renderFriendReqs();renderBlind();bumpUnread();bumpDates();
+  await loadFriendReqs();
+  await loadContacts();
+  setupRealtime();
+  renderDates();renderPkgs();renderBlind();bumpUnread();bumpDates();
   if(me){applyProfileUI();}
 }
 async function loadPeople(){
@@ -1196,19 +1205,44 @@ async function loadPeople(){
 /* ============================================================ FRIEND REQUESTS ============================================================ */
 let allowFR=true;
 let friendReqs=[];
+async function loadFriendReqs(){
+  if(!me){friendReqs=[];renderFriendReqs();return;}
+  try{
+    const {data}=await sb.from('friend_requests').select('id,from_id').eq('to_id',me.id).eq('status','pending').order('created_at',{ascending:false});
+    const ids=[...new Set((data||[]).map(r=>r.from_id))];
+    let profs={};
+    if(ids.length){const {data:ps}=await sb.from('profiles').select('id,name,photo_url').in('id',ids);(ps||[]).forEach(p=>profs[p.id]=p);}
+    friendReqs=(data||[]).map(r=>({reqId:r.id,fromId:r.from_id,n:(profs[r.from_id]||{}).name||'Хэрэглэгч',ph:(profs[r.from_id]||{}).photo_url||''}));
+  }catch(e){console.error('loadFriendReqs',e);friendReqs=[];}
+  renderFriendReqs();
+}
 function renderFriendReqs(){
   const w=document.getElementById('frWrap');if(!w)return;
   if(!friendReqs.length){w.innerHTML='';return;}
   w.innerHTML=`<div class="sec-title">Найзын хүсэлт (${friendReqs.length})</div>`+
     friendReqs.map((r,i)=>`<div class="fr-card"><div class="ph" style="${photoBg(r.ph)}"></div><div class="b"><div class="nm">${r.n}</div><div class="sub">танд найзын хүсэлт илгээлээ</div><div class="fr-btns"><button class="acc" onclick="acceptFR(${i})">Зөвшөөрөх</button><button class="dec" onclick="declineFR(${i})">Татгалзах</button></div></div></div>`).join('');
 }
-function sendFriendReq(){const p=people[curProfile];closeProfile();closeLock();toast('👤 '+p.n+'-д найзын хүсэлт илгээлээ');notify('👋','Найзын хүсэлт',p.n+'-д найзын хүсэлт илгээлээ');}
-function acceptFR(i){
-  const r=friendReqs[i];friendReqs.splice(i,1);
-  if(!chats.find(c=>c.n===r.n))chats.unshift({n:r.n,ph:r.ph,last:'Найз боллоо — сайн уу гэж бичээрэй 👋',time:'Одоо',unread:0,on:true,msgs:[]});
-  renderFriendReqs();renderMatches();toast('✓ '+r.n+'-г найзаар нэмлээ');notify('🤝','Шинэ найз',r.n+' таны найз боллоо');
+async function sendFriendReq(){
+  const p=people[curProfile];closeProfile();closeLock();
+  if(!me||!p)return;
+  try{
+    const {error}=await sb.from('friend_requests').insert({from_id:me.id,to_id:p.id});
+    if(error&&!/duplicate|unique/i.test(error.message||'')){toast('Алдаа: '+error.message);return;}
+  }catch(e){}
+  toast('👤 '+p.n+'-д найзын хүсэлт илгээлээ');notify('👋','Найзын хүсэлт',p.n+'-д найзын хүсэлт илгээлээ');
 }
-function declineFR(i){const r=friendReqs[i];friendReqs.splice(i,1);renderFriendReqs();toast(r.n+'-н хүсэлтийг татгалзлаа');}
+async function acceptFR(i){
+  const r=friendReqs[i];if(!r)return;
+  try{const {error}=await sb.from('friend_requests').update({status:'accepted'}).eq('id',r.reqId);if(error)throw error;}
+  catch(e){toast('Алдаа гарлаа');return;}
+  toast('✓ '+r.n+'-г найзаар нэмлээ');notify('🤝','Шинэ найз',r.n+' таны найз боллоо');
+  await loadFriendReqs();await loadContacts();
+}
+async function declineFR(i){
+  const r=friendReqs[i];if(!r)return;
+  try{await sb.from('friend_requests').update({status:'declined'}).eq('id',r.reqId);}catch(e){}
+  toast(r.n+'-н хүсэлтийг татгалзлаа');await loadFriendReqs();
+}
 function toggleFRSetting(){allowFR=!allowFR;document.getElementById('frToggle').classList.toggle('on',allowFR);toast(allowFR?'Найзын хүсэлт зөвшөөрөв':'Найзын хүсэлт хаалаа');}
 function renderPkgs(){
   const el=document.getElementById('pkgList');if(!el)return;
@@ -1236,9 +1270,9 @@ function openPay(kind,i){
   document.getElementById('pvBank').textContent=settings.bank;
   document.getElementById('pvAccount').textContent=settings.account;
   document.getElementById('pvRecipient').textContent=settings.recipient;
-  document.getElementById('payView').classList.add('open');
+  ovOpen('payView');
 }
-function closePay(){document.getElementById('payView').classList.remove('open');}
+function closePay(){ovClose('payView');}
 function confirmPay(){
   const pkg=settings.datePkgs[payCtx.i];
   const who=document.getElementById('payCompanion').value;
@@ -1298,9 +1332,9 @@ function startBlind(mode){
   blindPick._ven=ven;blindPick._slot=slot;
   document.getElementById('blindWho').textContent=(me&&me.gender==='f'?'Эрэгтэй':'Эмэгтэй')+' таныг сохор болзоонд урьж байна';
   document.getElementById('blindInfo').textContent=`📍 ${ven.v} · 🗓 ${slot}`;
-  document.getElementById('blindView').classList.add('open');
+  ovOpen('blindView');
 }
-function closeBlind(){document.getElementById('blindView').classList.remove('open');}
+function closeBlind(){ovClose('blindView');}
 function acceptBlind(){
   const p=blindPick;if(!p){closeBlind();return;}closeBlind();
   dates.unshift({n:p.n,ph:p.ph,venue:p._ven.v,area:p._ven.area,when:p._slot,status:'pending'});
@@ -1348,8 +1382,8 @@ function fillSoums(){
   const head=document.createElement('option');head.value='';head.textContent='— Сонгох —';ss.appendChild(head);
   AIMAGS[a].forEach(s=>{const o=document.createElement('option');o.value=s;o.textContent=s;ss.appendChild(o);});
 }
-function openRules(){document.getElementById('rulesModal').classList.add('open');}
-function closeRules(){document.getElementById('rulesModal').classList.remove('open');}
+function openRules(){ovOpen('rulesModal');}
+function closeRules(){ovClose('rulesModal');}
 function agreeRules(){rulesAgreed=true;const b=document.getElementById('ruleBox');b.classList.add('done');document.getElementById('ruleState').textContent='✓ Дүрэмтэй танилцсан';closeRules();validateReg();}
 function pickPlan(p){
   selectedPlan=p;
@@ -1367,8 +1401,8 @@ function pickGender(g,btn){
   document.getElementById('womenFree').style.display=free?'block':'none';
   validateReg();
 }
-function openInstall(){document.getElementById('installModal').classList.add('open');}
-function closeInstall(){document.getElementById('installModal').classList.remove('open');}
+function openInstall(){ovOpen('installModal');}
+function closeInstall(){ovClose('installModal');}
 function togglePw(btn){const inp=btn.parentNode.querySelector('input');const hidden=inp.type==='password';inp.type=hidden?'text':'password';btn.classList.toggle('on',hidden);}
 /* Харанхуй / гэрэлтэй горим солих */
 let darkMode=false;
@@ -1537,33 +1571,33 @@ function openProfile(i){
   document.getElementById('dvBio').textContent=p.bio||'—';
   document.getElementById('dvTags').innerHTML=(p.tags||[]).map(t=>`<span class="tag-d">${t}</span>`).join('');
   // үйлдэл: найз бол чатлах, эс бол хүсэлт/таалагдах
-  const isFriend=chats.some(c=>c.n===p.n);
+  const isFriend=chats.some(c=>c.id===p.id);
   document.getElementById('dvActions').innerHTML=isFriend
-    ? `<button class="da-like" style="flex:1" onclick="closeProfile();openChatByName(${JSON.stringify(p.n)})">💬 Чат бичих</button>`
+    ? `<button class="da-like" style="flex:1" onclick="closeProfile();openChatById(${JSON.stringify(p.id)})">💬 Чат бичих</button>`
     : `<button class="da-pass" onclick="sendFriendReq()">👤 Найзын хүсэлт</button><button class="da-like" onclick="likeUser()">❤️ Таалагдлаа</button>`;
-  document.getElementById('detailView').classList.add('open');
+  ovOpen('detailView');
 }
 function openLock(i){
   const p=people[i];curProfile=i;window._lastMatch=p.n;
   document.getElementById('lkHero').style.cssText='background-size:cover;background-position:center;'+(p.ph?`background-image:url('${imgUrl(p.ph)}')`:'background:linear-gradient(135deg,var(--red),var(--pink))');
   document.getElementById('lkName').textContent=`${p.n}, ${p.a}`;
-  document.getElementById('lockView').classList.add('open');
+  ovOpen('lockView');
 }
-function closeLock(){document.getElementById('lockView').classList.remove('open');}
+function closeLock(){ovClose('lockView');}
 function becomeVip(){
   if(myVip){toast('Та аль хэдийн VIP байна 👑');return;}
   closeLock();
   const set=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v;};
   set('vmBank',settings.bank);set('vmAccount',settings.account);set('vmRecipient',settings.recipient);set('vmAmount',fmt(settings.vip));
-  document.getElementById('vipModal').classList.add('open');
+  ovOpen('vipModal');
 }
-function closeVipModal(){document.getElementById('vipModal').classList.remove('open');}
+function closeVipModal(){ovClose('vipModal');}
 function openPwModal(){
   if(!me){toast('Эхлээд нэвтэрнэ үү');return;}
   document.getElementById('pwNew').value='';document.getElementById('pwNew2').value='';
-  document.getElementById('pwModal').classList.add('open');
+  ovOpen('pwModal');
 }
-function closePwModal(){document.getElementById('pwModal').classList.remove('open');}
+function closePwModal(){ovClose('pwModal');}
 async function changePassword(){
   const a=document.getElementById('pwNew').value,b=document.getElementById('pwNew2').value;
   if(!a||a.length<6){toast('Нууц үг дор хаяж 6 тэмдэгт');return;}
@@ -1574,12 +1608,22 @@ async function changePassword(){
   closePwModal();toast('✓ Нууц үг солигдлоо');
 }
 function updateVipUI(){const b=document.getElementById('vipBtn');if(b&&myVip){b.textContent='✓ VIP идэвхтэй';b.style.opacity='.8';}}
-function closeProfile(){document.getElementById('detailView').classList.remove('open');}
-function likeUser(){
+function closeProfile(){ovClose('detailView');}
+async function likeUser(){
   const p=people[curProfile];closeProfile();
   myLikes++;renderProfileStats();
-  toast('💌 '+p.n+'-д таалагдсанаа илэрхийллээ');
-  setTimeout(()=>{if(Math.random()<0.6)showMatch(p);},400);
+  toast('💌 '+(p?p.n:'')+'-д таалагдсанаа илэрхийллээ');
+  if(!me||!p)return;
+  try{await sb.from('likes').insert({from_id:me.id,to_id:p.id});}catch(e){}
+  // эсрэг талд лайк байвал → тохирол
+  try{
+    const {data}=await sb.from('likes').select('id').eq('from_id',p.id).eq('to_id',me.id).maybeSingle();
+    if(data){
+      await sb.from('matches').insert({a_id:me.id,b_id:p.id});
+      showMatch(p);
+      await loadContacts();
+    }
+  }catch(e){console.error('match check',e);}
 }
 
 /* ============================================================ MATCH ============================================================ */
@@ -1587,7 +1631,6 @@ function showMatch(p){
   document.getElementById('matchSub').textContent=`Та болон ${p.n} бие биедээ таалагдлаа`;
   document.getElementById('matchPh').style.cssText='background-size:cover;background-position:center;'+(p.ph?`background-image:url('${imgUrl(p.ph)}')`:'background:linear-gradient(135deg,var(--red),var(--pink))');
   document.getElementById('matchPop').classList.add('show');
-  if(!chats.find(c=>c.n===p.n)){chats.unshift({n:p.n,ph:p.ph,last:'Тохирлоо — сайн уу гэж бичээрэй 👋',time:'Одоо',unread:0,on:true,msgs:[]});renderMatches();}
   window._lastMatch=p.n;
   notify('💖','Шинэ тохирол!',p.n+' тантай тохирлоо 🎉');
 }
@@ -1595,14 +1638,86 @@ function hideMatch(){document.getElementById('matchPop').classList.remove('show'
 function sayHi(){hideMatch();tab('matches',document.querySelectorAll('.nav button')[2]);openChat(0);}
 
 /* ============================================================ MATCHES / CHAT ============================================================ */
+async function loadContacts(){
+  if(!me)return;
+  const otherIds=new Set();
+  try{
+    const {data:fr}=await sb.from('friend_requests').select('from_id,to_id').or(`from_id.eq.${me.id},to_id.eq.${me.id}`).eq('status','accepted');
+    (fr||[]).forEach(r=>otherIds.add(r.from_id===me.id?r.to_id:r.from_id));
+  }catch(e){console.error('contacts fr',e);}
+  try{
+    const {data:mt}=await sb.from('matches').select('a_id,b_id').or(`a_id.eq.${me.id},b_id.eq.${me.id}`);
+    (mt||[]).forEach(m=>otherIds.add(m.a_id===me.id?m.b_id:m.a_id));
+  }catch(e){console.error('contacts mt',e);}
+  otherIds.delete(me.id);
+  const ids=[...otherIds];
+  let profs={};
+  if(ids.length){try{const {data:ps}=await sb.from('profiles').select('id,name,photo_url').in('id',ids);(ps||[]).forEach(p=>profs[p.id]=p);}catch(e){}}
+  const prev={};chats.forEach(c=>prev[c.id]=c);
+  chats=ids.map(id=>{const ex=prev[id]||{};const p=profs[id]||{};return {id,n:p.name||ex.n||'Хэрэглэгч',ph:p.photo_url||ex.ph||'',last:ex.last||'',time:ex.time||'',unread:ex.unread||0,msgs:ex.msgs||[],loaded:ex.loaded||false};});
+  renderMatches();bumpUnread();
+}
 function renderMatches(){
   const nm=document.getElementById('newMatches');if(nm)nm.innerHTML=chats.slice(0,6).map((c,i)=>`<div class="nm-card" onclick="openChat(${i})"><div class="ph" style="${photoBg(c.ph)}"></div><div class="lbl">${c.n}</div></div>`).join('');
-  document.getElementById('chatList').innerHTML=chats.length?chats.map((c,i)=>`<div class="chat-row" onclick="openChat(${i})"><div class="ph" style="${photoBg(c.ph)}">${c.on?'<span class="on"></span>':''}</div><div class="body"><div class="top"><span class="nme">${c.n}</span><span class="tm">${c.time}</span></div><div class="msg">${c.last}</div></div>${c.unread?`<span class="badge-unread">${c.unread}</span>`:''}</div>`).join(''):`<div style="text-align:center;color:var(--gray-2);font-size:13px;padding:30px 10px;">Одоогоор чат алга</div>`;
+  const cl=document.getElementById('chatList');if(cl)cl.innerHTML=chats.length?chats.map((c,i)=>`<div class="chat-row" onclick="openChat(${i})"><div class="ph" style="${photoBg(c.ph)}"></div><div class="body"><div class="top"><span class="nme">${c.n}</span><span class="tm">${c.time}</span></div><div class="msg">${c.last||'Найз боллоо — сайн уу гэж бичээрэй 👋'}</div></div>${c.unread?`<span class="badge-unread">${c.unread}</span>`:''}</div>`).join(''):`<div style="text-align:center;color:var(--gray-2);font-size:13px;padding:30px 10px;">Одоогоор чат алга. Хэн нэгэнтэй найзлаж эсвэл тохирвол энд харагдана.</div>`;
 }
-function openChat(i){curChat=i;const c=chats[i];c.unread=0;bumpUnread();renderMatches();document.getElementById('cvName').textContent=c.n;document.getElementById('cvPh').style.cssText='background-size:cover;background-position:center;'+(c.ph?`background-image:url('${imgUrl(c.ph)}')`:'background:linear-gradient(135deg,var(--red),var(--pink))');renderMsgs();document.getElementById('chatView').classList.add('open');}
-function renderMsgs(){const c=chats[curChat];document.getElementById('cvMsgs').innerHTML=c.msgs.length?c.msgs.map(m=>`<div class="bub ${m.me?'me':'them'}">${m.t}</div>`).join(''):`<div style="text-align:center;color:var(--gray-2);font-size:13px;margin-top:30px;">Тохирлоо! Эхний мессежээ бичээрэй 👋</div>`;const m=document.getElementById('cvMsgs');m.scrollTop=m.scrollHeight;}
-function sendMsg(){const inp=document.getElementById('cvInput'),t=inp.value.trim();if(!t)return;const c=chats[curChat];c.msgs.push({me:1,t});c.last=t;c.time='Одоо';inp.value='';renderMsgs();const r=['Хаха тийм ээ 😄','Зөв байна!','Тэгье ээ','Сонирхолтой 😊','Уулзацгаая ☕'];setTimeout(()=>{c.msgs.push({me:0,t:r[Math.floor(Math.random()*r.length)]});c.last=c.msgs[c.msgs.length-1].t;if(!document.getElementById('chatView').classList.contains('open')){c.unread=(c.unread||0)+1;bumpUnread();}renderMsgs();renderMatches();notify('💬','Шинэ зурвас',c.n+': '+c.last);},900);}
-function closeChat(){document.getElementById('chatView').classList.remove('open');renderMatches();}
+async function openChat(i){
+  curChat=i;const c=chats[i];if(!c)return;
+  c.unread=0;bumpUnread();renderMatches();
+  document.getElementById('cvName').textContent=c.n;
+  document.getElementById('cvPh').style.cssText='background-size:cover;background-position:center;'+(c.ph?`background-image:url('${imgUrl(c.ph)}')`:'background:linear-gradient(135deg,var(--red),var(--pink))');
+  ovOpen('chatView');
+  document.getElementById('cvMsgs').innerHTML='<div style="text-align:center;color:var(--gray-2);font-size:13px;margin-top:30px;">Ачааллаж байна…</div>';
+  try{
+    const {data}=await sb.from('messages').select('from_id,text,created_at').or(`and(from_id.eq.${me.id},to_id.eq.${c.id}),and(from_id.eq.${c.id},to_id.eq.${me.id})`).order('created_at',{ascending:true});
+    c.msgs=(data||[]).map(m=>({me:m.from_id===me.id?1:0,t:m.text}));
+    if(c.msgs.length)c.last=c.msgs[c.msgs.length-1].t;
+    c.loaded=true;
+  }catch(e){console.error('loadMsgs',e);}
+  renderMsgs();
+}
+function renderMsgs(){const c=chats[curChat];if(!c)return;document.getElementById('cvMsgs').innerHTML=c.msgs.length?c.msgs.map(m=>`<div class="bub ${m.me?'me':'them'}">${m.t}</div>`).join(''):`<div style="text-align:center;color:var(--gray-2);font-size:13px;margin-top:30px;">Найз боллоо! Эхний мессежээ бичээрэй 👋</div>`;const m=document.getElementById('cvMsgs');m.scrollTop=m.scrollHeight;}
+async function sendMsg(){
+  const inp=document.getElementById('cvInput'),t=inp.value.trim();if(!t)return;
+  const c=chats[curChat];if(!c){toast('Чат сонгоно уу');return;}
+  inp.value='';
+  c.msgs.push({me:1,t});c.last=t;c.time='Одоо';renderMsgs();renderMatches();
+  try{const {error}=await sb.from('messages').insert({from_id:me.id,to_id:c.id,text:t});if(error)toast('Илгээхэд алдаа: '+error.message);}
+  catch(e){toast('Илгээхэд алдаа гарлаа');}
+}
+function closeChat(){ovClose('chatView');renderMatches();}
+function openChatById(id){
+  const i=chats.findIndex(c=>c.id===id);
+  if(i>=0){tab('matches',document.querySelectorAll('.nav button')[2]);openChat(i);return;}
+  loadContacts().then(()=>{const j=chats.findIndex(c=>c.id===id);if(j>=0){tab('matches',document.querySelectorAll('.nav button')[2]);openChat(j);}else toast('Чатлахын тулд эхлээд найз болох/тохирох хэрэгтэй');});
+}
+/* ---- Realtime (чат + найзын хүсэлт шууд) ---- */
+let rtChannel=null;
+function setupRealtime(){
+  if(!me)return;
+  teardownRealtime();
+  try{
+    rtChannel=sb.channel('rt-'+me.id)
+      .on('postgres_changes',{event:'INSERT',schema:'public',table:'messages',filter:'to_id=eq.'+me.id},payload=>{
+        const m=payload.new;if(!m)return;
+        const c=chats.find(x=>x.id===m.from_id);
+        const open=document.getElementById('chatView').classList.contains('open')&&chats[curChat]&&chats[curChat].id===m.from_id;
+        if(c){
+          c.msgs.push({me:0,t:m.text});c.last=m.text;c.time='Одоо';
+          if(open)renderMsgs();else{c.unread=(c.unread||0)+1;notify('💬','Шинэ зурвас',(c.n||'')+': '+m.text);}
+          renderMatches();bumpUnread();
+        }else{loadContacts();notify('💬','Шинэ зурвас','Танд шинэ зурвас ирлээ');}
+      })
+      .on('postgres_changes',{event:'INSERT',schema:'public',table:'friend_requests',filter:'to_id=eq.'+me.id},()=>{
+        loadFriendReqs();notify('👋','Найзын хүсэлт','Танд шинэ найзын хүсэлт ирлээ');
+      })
+      .on('postgres_changes',{event:'UPDATE',schema:'public',table:'friend_requests',filter:'from_id=eq.'+me.id},payload=>{
+        if(payload.new&&payload.new.status==='accepted'){loadContacts();notify('🤝','Найз','Таны найзын хүсэлтийг зөвшөөрлөө');}
+      })
+      .subscribe();
+  }catch(e){console.error('realtime',e);}
+}
+function teardownRealtime(){try{if(rtChannel){sb.removeChannel(rtChannel);rtChannel=null;}}catch(e){}}
 
 /* ============================================================ DATES (app organizes) ============================================================ */
 function renderDates(){
@@ -1619,7 +1734,7 @@ function makeDate(name,ph){
 }
 function scheduleFromMatch(){const name=window._lastMatch,src=people.find(x=>x.n===name)||chats.find(x=>x.n===name)||{};hideMatch();makeDate(name,src.ph);}
 function scheduleFromChat(){const c=chats[curChat];closeChat();makeDate(c.n,c.ph);}
-function openChatByName(n){const i=chats.findIndex(c=>c.n===n);if(i>=0){tab('matches',document.querySelectorAll('.nav button')[2]);openChat(i);}else toast('Чат удахгүй нээгдэнэ');}
+function openChatByName(n){const i=chats.findIndex(c=>c.n===n);if(i>=0){tab('matches',document.querySelectorAll('.nav button')[2]);openChat(i);}else toast('Чатлахын тулд найз болох/тохирох хэрэгтэй');}
 
 /* ============================================================ TABS / BADGES ============================================================ */
 function tab(name,btn){
@@ -1776,7 +1891,7 @@ function admViewUser(i){
     <button class="btn btn-primary" style="width:100%;margin-top:14px;background:var(--gold);color:#7a4a00" onclick="sendWarning(${i})">⚠️ Анхааруулга илгээх</button>
     <button class="btn btn-primary" style="width:100%;margin-top:10px;" onclick="toggleVip(${i});closeAdmUser()">${x.is_vip?'👑 VIP цуцлах':'👑 VIP болгох'}</button>
     <button class="btn btn-primary" style="width:100%;margin-top:10px;${x.blocked?'':'background:var(--red)'}" onclick="toggleBlock(${i});closeAdmUser()">${x.blocked?'🔓 Блокоос гаргах':'🚫 Блоклох'}</button>`;
-  document.getElementById('admUserView').classList.add('open');
+  ovOpen('admUserView');
 }
 async function admDeleteUserPhoto(i,pi){
   const x=admData.users[i];if(!x)return;
@@ -1797,7 +1912,7 @@ async function sendWarning(i){
   if(error){toast('Алдаа: '+error.message);return;}
   toast('⚠️ '+x.name+'-д анхааруулга илгээлээ');
 }
-function closeAdmUser(){document.getElementById('admUserView').classList.remove('open');}
+function closeAdmUser(){ovClose('admUserView');}
 function admViewPending(i){
   const x=admData.verify[i];if(!x)return;
   const photos=(x.photos&&x.photos.length)?x.photos:(x.ph?[x.ph]:[]);
@@ -1817,7 +1932,7 @@ function admViewPending(i){
     </div>
     <button class="btn btn-primary" style="width:100%;margin-top:14px" onclick="approveUser(${i});closeAdmUser()">✓ Зөвшөөрөх</button>
     <button class="btn btn-primary" style="width:100%;margin-top:10px;background:var(--red)" onclick="rejectUser(${i});closeAdmUser()">✕ Татгалзах</button>`;
-  document.getElementById('admUserView').classList.add('open');
+  ovOpen('admUserView');
 }
 async function toggleVip(i){
   const x=admData.users[i];if(!x)return;
@@ -1845,7 +1960,7 @@ async function rejectUser(i){
 
 /* ============================================================ MISC ============================================================ */
 let tt;function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');clearTimeout(tt);tt=setTimeout(()=>t.classList.remove('show'),1800);}
-async function logout(){try{await sb.auth.signOut();}catch(e){}me=null;myVip=false;route('landing');}
+async function logout(){teardownRealtime();try{await sb.auth.signOut();}catch(e){}me=null;myVip=false;myLikes=0;chats=[];friendReqs=[];try{if(navigator.clearAppBadge)navigator.clearAppBadge();}catch(e){}route('landing');}
 /* ============================================================ NOTIFICATIONS ============================================================ */
 let notifs=[];           // {icon,title,body,time,read}
 let _actx=null,_nbT=null;
@@ -1911,12 +2026,12 @@ function openNotifs(){
   const w=document.getElementById('notifList');if(!w)return;
   w.innerHTML=notifs.length?notifs.map(x=>`<div class="nf-item${x.read?'':' unread'}"><div class="nf-ic">${x.icon}</div><div class="nf-b"><div class="nf-t">${x.title}</div><div class="nf-d">${x.body}</div></div><div class="nf-time">${x.time}</div></div>`).join(''):'<div style="text-align:center;color:var(--gray-2);padding:50px 20px;font-size:13px;">Одоогоор мэдэгдэл алга</div>';
   notifs.forEach(x=>x.read=true);bumpBell();
-  document.getElementById('notifPanel').classList.add('open');
+  ovOpen('notifPanel');
 }
-function closeNotifs(){document.getElementById('notifPanel').classList.remove('open');}
+function closeNotifs(){ovClose('notifPanel');}
 /* Зураг томруулж харах */
-function openLightbox(url){if(!url)return;const im=document.getElementById('lightboxImg');im.src=url;document.getElementById('lightbox').classList.add('open');}
-function closeLightbox(){document.getElementById('lightbox').classList.remove('open');}
+function openLightbox(url){if(!url)return;const im=document.getElementById('lightboxImg');im.src=url;ovOpen('lightbox');}
+function closeLightbox(){ovClose('lightbox');}
 fillAimags();renderBank();
 applyTheme();
 loadSettings();
