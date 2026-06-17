@@ -293,6 +293,7 @@ body{
 .dv-name{font-family:var(--display);font-size:30px;font-weight:600;display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
 .dv-verify{font-family:var(--body);font-size:11px;font-weight:800;background:rgba(47,168,116,.92);padding:5px 10px;border-radius:30px;}
 .dv-loc{font-size:14px;opacity:.92;margin-top:8px;font-weight:500;}
+.copy-acc{margin-left:auto;border:none;background:var(--pink-bg);color:var(--red);font-weight:800;font-size:11.5px;padding:6px 12px;border-radius:20px;cursor:pointer;font-family:var(--body);}
 .detail-body{flex:1;overflow-y:auto;padding:18px 20px 16px;}
 .dv-gallery{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px;}
 .dv-photo{aspect-ratio:1/1;border-radius:13px;background-size:cover;background-position:center;background-color:var(--gray-bg);cursor:pointer;}
@@ -583,7 +584,7 @@ body{
       <div class="pend-pay">
         <div class="pp-title">💳 VIP төлбөр</div>
         <div class="pp-row"><span>Банк</span><b id="vmBank"></b></div>
-        <div class="pp-row"><span>Данс</span><b id="vmAccount"></b></div>
+        <div class="pp-row"><span>Данс</span><b id="vmAccount"></b><button class="copy-acc" onclick="copyAccount()">📋 Хуулах</button></div>
         <div class="pp-row"><span>Хүлээн авагч</span><b id="vmRecipient"></b></div>
         <div class="pp-row"><span>Дүн / сар</span><b id="vmAmount"></b></div>
         <div class="pp-warn">⚠️ Төлбөр хийгээгүй бол VIP идэвхжихгүй.</div>
@@ -616,8 +617,8 @@ body{
         <div class="seg"><button class="on" onclick="pickGender('m',this)">Эрэгтэй</button><button onclick="pickGender('f',this)">Эмэгтэй</button></div>
       </div>
       <div class="form-group"><label>Нас</label><input id="rAge" type="number" placeholder="Жишээ нь 25"></div>
-      <div class="form-group"><label>Өндөр (см)</label><input id="rHeight" type="number" placeholder="Жишээ нь 170"></div>
-      <div class="form-group"><label>Жин (кг)</label><input id="rWeight" type="number" placeholder="Жишээ нь 65"></div>
+      <div class="form-group"><label>Өндөр (см) <span style="color:var(--gray-2);font-weight:500">(заавал биш)</span></label><input id="rHeight" type="number" placeholder="Жишээ нь 170"></div>
+      <div class="form-group"><label>Жин (кг) <span style="color:var(--gray-2);font-weight:500">(заавал биш)</span></label><input id="rWeight" type="number" placeholder="Жишээ нь 65"></div>
       <div class="form-group"><label>Утасны дугаар</label><input id="rPhone" type="tel" placeholder="8800-0000"></div>
       <div class="form-group"><label>Нууц үг</label>
         <div class="pw-wrap"><input id="rPass" type="password" placeholder="Дор хаяж 6 тэмдэгт">
@@ -660,7 +661,7 @@ body{
         <div class="form-group"><label>Төлбөрийн данс</label>
           <div class="bank-box">
             <div class="bank-row"><span>Банк</span><b id="bkBank">Хаан банк</b></div>
-            <div class="bank-row"><span>Данс</span><b id="bkAccount">5041 234 567</b></div>
+            <div class="bank-row"><span>Данс</span><b id="bkAccount">5041 234 567</b><button class="copy-acc" onclick="copyAccount()">📋 Хуулах</button></div>
             <div class="bank-row"><span>Хүлээн авагч</span><b id="bkRecipient">Хоёулаа Болзий ХХК</b></div>
             <div class="bank-amt"><span>Төлөх дүн</span><b id="payAmount">5,000₮</b></div>
             <div class="bank-note">⚠️ Гүйлгээний утга дээр <b>бүртгүүлсэн утасны дугаараа</b> бичнэ үү. Төлбөр баталгаажмагц бүртгэл идэвхжинэ.</div>
@@ -935,7 +936,7 @@ body{
         <div class="pay-consent">⚠️ Сонгосон хүн зөвшөөрсөн үед болзоо баталгаажна.</div>
         <div class="bank-box" style="margin-top:4px">
           <div class="bank-row"><span>Банк</span><b id="pvBank"></b></div>
-          <div class="bank-row"><span>Данс</span><b id="pvAccount"></b></div>
+          <div class="bank-row"><span>Данс</span><b id="pvAccount"></b><button class="copy-acc" onclick="copyAccount()">📋 Хуулах</button></div>
           <div class="bank-row"><span>Хүлээн авагч</span><b id="pvRecipient"></b></div>
         </div>
         <button class="btn btn-primary" style="width:100%;margin-top:14px" onclick="confirmPay()">💳 Төлбөр төлсөн</button>
@@ -1070,7 +1071,7 @@ function showPending(){
     pay.innerHTML=`<div class="pend-pay">
       <div class="pp-title">💳 Эхлээд төлбөрөө төлнө үү</div>
       <div class="pp-row"><span>Банк</span><b>${settings.bank}</b></div>
-      <div class="pp-row"><span>Данс</span><b>${settings.account}</b></div>
+      <div class="pp-row"><span>Данс</span><b>${settings.account}</b><button class="copy-acc" onclick="copyAccount()">📋 Хуулах</button></div>
       <div class="pp-row"><span>Хүлээн авагч</span><b>${settings.recipient}</b></div>
       <div class="pp-row"><span>Бүртгэлийн дүн</span><b>${fmt(settings.fee)}</b></div>
       <div class="pp-row"><span>VIP эрх (заавал биш)</span><b>+${fmt(settings.vip)}/сар</b></div>
@@ -1458,7 +1459,7 @@ function validateReg(){
   const height=parseInt(val('rHeight'))||0;
   const weight=parseInt(val('rWeight'))||0;
   const interests=document.querySelectorAll('#register .chip.on').length;
-  const ok = !!val('rName') && age>=18 && height>0 && weight>0 && !!val('rPhone') && val('rPass').length>=6
+  const ok = !!val('rName') && age>=18 && !!val('rPhone') && val('rPass').length>=6
     && !!val('rAimag') && !!val('rSoum') && interests>=1 && !!regPhotoFile && !!rulesAgreed;
   const btn=document.getElementById('regBtn');
   if(btn){btn.disabled=!ok;btn.textContent=ok?'Бүртгэл үүсгэх':'Бүх талбарыг бөглөнө үү';}
@@ -1489,8 +1490,6 @@ async function doRegister(){
   if(!pass||pass.length<6){toast('Нууц үг дор хаяж 6 тэмдэгт байх ёстой');return;}
   const ageN=parseInt(document.getElementById('rAge').value)||0;
   if(ageN<18){toast('Нас 18-аас дээш байх ёстой');return;}
-  if(!(parseInt(document.getElementById('rHeight').value)>0)){toast('Өндрөө оруулна уу');return;}
-  if(!(parseInt(document.getElementById('rWeight').value)>0)){toast('Жингээ оруулна уу');return;}
   if(document.querySelectorAll('#register .chip.on').length<1){toast('Дор хаяж нэг сонирхол сонгоно уу');return;}
   if(!document.getElementById('rAimag').value){toast('Аймгаа сонгоно уу');return;}
   if(!document.getElementById('rSoum').value){toast('Сум/дүүргээ сонгоно уу');return;}
@@ -2048,6 +2047,15 @@ function closeNotifs(){ovClose('notifPanel');}
 /* Зураг томруулж харах */
 function openLightbox(url){if(!url)return;const im=document.getElementById('lightboxImg');im.src=url;ovOpen('lightbox');}
 function closeLightbox(){ovClose('lightbox');}
+/* Дансны дугаар хуулах */
+function copyAccount(){const b=document.getElementById('bkAccount');const acc=(settings&&settings.account)||(b&&b.textContent)||'';copyText(acc);}
+function copyText(t){t=(t||'').trim();if(!t){toast('Данс хоосон байна');return;}
+  try{
+    if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(t).then(()=>toast('📋 Данс хуулагдлаа')).catch(()=>fallbackCopy(t));return;}
+  }catch(e){}
+  fallbackCopy(t);
+}
+function fallbackCopy(t){try{const ta=document.createElement('textarea');ta.value=t;ta.style.position='fixed';ta.style.opacity='0';document.body.appendChild(ta);ta.focus();ta.select();document.execCommand('copy');document.body.removeChild(ta);toast('📋 Данс хуулагдлаа');}catch(e){toast('Хуулж чадсангүй: '+t);}}
 fillAimags();renderBank();
 applyTheme();
 loadSettings();
