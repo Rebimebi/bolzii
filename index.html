@@ -1175,8 +1175,10 @@ let dates=[];
 /* ============================================================ ROUTER ============================================================ */
 /* ---- Утасны "буцах" товчоор апп-аас гарахгүй: нээлттэй давхаргыг хаана ---- */
 let _ovStack=[],_fromPop=false;
+const _OVL_IDS=['detailView','chatView','lockView','vipModal','pwModal','payView','blindView','admUserView','notifPanel','lightbox','rulesModal','installModal'];
 function ovOpen(id){const e=document.getElementById(id);if(!e)return;e.classList.add('open');_ovStack.push(id);try{history.pushState({ov:id},'');}catch(_){}}
-function ovClose(id){const e=document.getElementById(id);if(e)e.classList.remove('open');const k=_ovStack.lastIndexOf(id);if(k>=0)_ovStack.splice(k,1);if(!_fromPop){try{history.back();}catch(_){}}}
+function ovClose(id){const e=document.getElementById(id);if(e)e.classList.remove('open');const k=_ovStack.lastIndexOf(id);if(k>=0)_ovStack.splice(k,1);if(!_fromPop){try{if(history.state&&history.state.ov)history.back();}catch(_){}}}
+function clearOverlays(){_OVL_IDS.forEach(id=>{const e=document.getElementById(id);if(e)e.classList.remove('open');});_ovStack=[];}
 window.addEventListener('popstate',function(){if(_ovStack.length){_fromPop=true;ovClose(_ovStack[_ovStack.length-1]);_fromPop=false;}});
 function route(p){
   document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));
@@ -1184,6 +1186,7 @@ function route(p){
   if(p==='register')renderBank();
 }
 async function initApp(){
+  clearOverlays();
   await loadSettings();
   await loadPeople();
   await loadFriendReqs();
@@ -1742,7 +1745,11 @@ function tab(name,btn){
   document.getElementById('t-'+name).classList.add('active');
   document.querySelectorAll('.nav button').forEach(b=>b.classList.remove('active'));
   if(btn)btn.classList.add('active');else{const map={discover:0,dates:1,matches:2,profile:3};const nb=document.querySelectorAll('.nav button')[map[name]];if(nb)nb.classList.add('active');}
-  if(name==='matches'){renderMatches();renderFriendReqs();}if(name==='dates'){renderDates();renderPkgs();renderBlind();}if(name==='profile'){renderProfileStats();}
+  try{
+    if(name==='matches'){renderMatches();renderFriendReqs();}
+    if(name==='dates'){renderDates();renderPkgs();renderBlind();}
+    if(name==='profile'){renderProfileStats();}
+  }catch(e){console.error('tab render',e);}
 }
 function bumpUnread(){const n=chats.reduce((a,c)=>a+c.unread,0),el=document.getElementById('navUnread');el.style.display=n?'flex':'none';el.textContent=n;}
 function bumpDates(){const el=document.getElementById('navDates'),n=dates.length;el.style.display=n?'flex':'none';el.textContent=n;}
@@ -2056,7 +2063,16 @@ function installApp(){
   else{toast('Хөтчийн цэснээс "Нүүр дэлгэцэд нэмэх"-ийг сонгоно уу 📲');}
 }
 window.addEventListener('appinstalled',()=>{const b=document.getElementById('installBtn');if(b)b.style.display='none';toast('🎉 Апп амжилттай суулаа!');});
-if('serviceWorker' in navigator){window.addEventListener('load',()=>{navigator.serviceWorker.register('sw.js').catch(()=>{});});}
+if('serviceWorker' in navigator){
+  let _swReloaded=false;
+  navigator.serviceWorker.addEventListener('controllerchange',()=>{if(_swReloaded)return;_swReloaded=true;location.reload();});
+  window.addEventListener('load',()=>{
+    navigator.serviceWorker.register('sw.js').then(reg=>{
+      reg.addEventListener('updatefound',()=>{const nw=reg.installing;if(nw)nw.addEventListener('statechange',()=>{if(nw.state==='installed'&&navigator.serviceWorker.controller){nw.postMessage&&nw.postMessage('skip');}});});
+      try{reg.update();}catch(_){}
+    }).catch(()=>{});
+  });
+}
 </script>
 </body>
 </html>
