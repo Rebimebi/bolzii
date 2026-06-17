@@ -1456,13 +1456,20 @@ let regPhotoFile=null;
 function validateReg(){
   const val=id=>{const e=document.getElementById(id);return e?(e.value||'').trim():'';};
   const age=parseInt(val('rAge'))||0;
-  const height=parseInt(val('rHeight'))||0;
-  const weight=parseInt(val('rWeight'))||0;
   const interests=document.querySelectorAll('#register .chip.on').length;
-  const ok = !!val('rName') && age>=18 && !!val('rPhone') && val('rPass').length>=6
-    && !!val('rAimag') && !!val('rSoum') && interests>=1 && !!regPhotoFile && !!rulesAgreed;
+  let msg='';
+  if(!val('rName'))msg='Нэрээ оруулна уу';
+  else if(age<18)msg='Насаа оруулна уу (18+)';
+  else if(!val('rPhone'))msg='Утасны дугаараа оруулна уу';
+  else if(val('rPass').length<6)msg='Нууц үг дор хаяж 6 тэмдэгт';
+  else if(!val('rAimag'))msg='Аймгаа сонгоно уу';
+  else if(!val('rSoum'))msg='Сум/дүүргээ сонгоно уу';
+  else if(interests<1)msg='Дор хаяж 1 сонирхол сонгоно уу';
+  else if(!regPhotoFile)msg='Нүүр зургаа оруулна уу';
+  else if(!rulesAgreed)msg='Дүрэмтэй танилцаж зөвшөөрнө үү';
+  const ok=!msg;
   const btn=document.getElementById('regBtn');
-  if(btn){btn.disabled=!ok;btn.textContent=ok?'Бүртгэл үүсгэх':'Бүх талбарыг бөглөнө үү';}
+  if(btn){btn.disabled=!ok;btn.textContent=ok?'Бүртгэл үүсгэх':msg;}
   return ok;
 }
 function onRegPhoto(inp){
