@@ -1127,7 +1127,10 @@ async function saveProfile(){
   const bio=document.getElementById('eBio').value.trim();
   const tags=[...document.querySelectorAll('#eChips .chip.on')].map(c=>c.textContent.trim());
   toast('Хадгалж байна…');
-  const {error}=await sb.from('profiles').update({name,age,height,weight,bio,tags,photos:editPhotos,photo_url:editPhotos[0]}).eq('id',me.id);
+  let {error}=await sb.from('profiles').update({name,age,height,weight,bio,tags,photos:editPhotos,photo_url:editPhotos[0]}).eq('id',me.id);
+  if(error && /column|schema cache|does not exist|find the/i.test(error.message||'')){
+    ({error}=await sb.from('profiles').update({name,age,bio,tags,photo_url:editPhotos[0]}).eq('id',me.id));
+  }
   if(error){toast('Алдаа: '+error.message);return;}
   await loadMe();
   applyProfileUI();
@@ -1516,7 +1519,7 @@ async function doRegister(){
   catch(e){ photoErr=(e&&e.message)||String(e); }
   // 3) профайл хадгалах (upsert — давхар бүртгэлийн алдаагүй)
   const interests=[...document.querySelectorAll('#register .chip.on')].map(c=>c.textContent.trim());
-  const {error:perr}=await sb.from('profiles').upsert({
+  const fullProfile={
     id:uid, name, phone:normPhone(phone), gender:regGender,
     age:parseInt(document.getElementById('rAge').value)||null,
     height:parseInt(document.getElementById('rHeight').value)||null,
@@ -1526,7 +1529,13 @@ async function doRegister(){
     bio:document.getElementById('rBio').value.trim(),
     tags:interests, is_vip:(regGender==='f'), verified:false,
     photo_url:photoUrl, photos:photoUrl?[photoUrl]:[]
-  });
+  };
+  let {error:perr}=await sb.from('profiles').upsert(fullProfile);
+  if(perr && /column|schema cache|does not exist|find the/i.test(perr.message||'')){
+    // Шинэ багана (height/weight/photos) DB-д үүсээгүй байж магадгүй — тэдгүйгээр дахин хадгална
+    const slim=Object.assign({},fullProfile);delete slim.height;delete slim.weight;delete slim.photos;
+    ({error:perr}=await sb.from('profiles').upsert(slim));
+  }
   if(perr){toast('Профайл хадгалах алдаа: '+perr.message);return;}
   await loadMe();
   if(photoErr){
