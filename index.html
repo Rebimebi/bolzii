@@ -634,6 +634,16 @@ body.dark .date-remind-top{background:linear-gradient(135deg,#3a2e12,#2c2410);co
     <div class="rm-foot"><button class="btn btn-primary" style="width:100%" onclick="closeVipModal()">Ойлголоо</button></div>
   </div>
 
+  <!-- ============ LOCKED (баталгаажаагүй) MODAL ============ -->
+  <div class="rules-modal" id="lockedModal">
+    <div class="rm-head"><span>🔒 Түгжээтэй</span><button onclick="ovClose('lockedModal')">✕</button></div>
+    <div class="rm-body">
+      <p class="lead" id="lockedMsg">Та бүртгэлийн хураамжаа төлснөөр админ нэвтрэх эрх олгоно.</p>
+      <div class="pp-note">«Нээх» хэсгээс бусад хэрэглэгчдийг үзэж болно. Чат, болзоо, мэдэгдэл зэрэг боломжийг ашиглахын тулд баталгаажуулалт шаардлагатай.</div>
+    </div>
+    <div class="rm-foot"><button class="btn btn-primary" style="width:100%" onclick="ovClose('lockedModal');route('pending');showPending();">💳 Төлбөр / Төлөв шалгах</button></div>
+  </div>
+
   <!-- ============ BLIND DATE REGISTER MODAL ============ -->
   <div class="rules-modal" id="blindRegModal">
     <div class="rm-head"><span>Сохор болзоонд бүртгүүлэх 🎲</span><button onclick="ovClose('blindRegModal')">✕</button></div>
@@ -1126,8 +1136,8 @@ async function enterApp(){
   }
   if(me.is_admin){route('adminPanel');admTab('verify');return;}
   if(me.blocked){await sb.auth.signOut();me=null;route('landing');toast('Таны бүртгэл блоклогдсон байна');return;}
-  if(!me.verified){await loadSettings();route('pending');showPending();return;}
   route('mainapp');try{await initApp();}catch(e){console.error('initApp',e);}ensureNotifPermission();
+  if(isLocked())setTimeout(()=>{try{toast('🔒 Зарим боломж түгжээтэй — баталгаажуулна уу');}catch(e){}},900);
 }
 function showPending(){
   const pay=document.getElementById('pendingPay');if(!pay)return;
@@ -1243,7 +1253,7 @@ let dates=[];
 /* ============================================================ ROUTER ============================================================ */
 /* ---- Утасны "буцах" товчоор апп-аас гарахгүй: нээлттэй давхаргыг хаана ---- */
 let _ovStack=[],_fromPop=false,_ignorePop=false;
-const _OVL_IDS=['detailView','chatView','lockView','vipModal','pwModal','payView','blindView','admUserView','notifPanel','lightbox','rulesModal','installModal','guideModal','blindRegModal'];
+const _OVL_IDS=['detailView','chatView','lockView','vipModal','pwModal','payView','blindView','admUserView','notifPanel','lightbox','rulesModal','installModal','guideModal','blindRegModal','lockedModal'];
 function ovOpen(id){const e=document.getElementById(id);if(!e)return;e.classList.add('open');_ovStack.push(id);try{history.pushState({ov:id},'');}catch(_){}}
 function ovClose(id){const e=document.getElementById(id);if(e)e.classList.remove('open');const k=_ovStack.lastIndexOf(id);if(k<0)return;_ovStack.splice(k,1);if(!_fromPop){_ignorePop=true;try{history.back();}catch(_){_ignorePop=false;}}}
 function clearOverlays(){_OVL_IDS.forEach(id=>{const e=document.getElementById(id);if(e)e.classList.remove('open');});_ovStack=[];}
@@ -1322,6 +1332,7 @@ function renderFriendReqs(){
 }
 async function sendFriendReq(){
   const p=people[curProfile];closeProfile();closeLock();
+  if(isLocked()){openLockedModal();return;}
   if(!me||!p)return;
   try{
     const {error}=await sb.from('friend_requests').insert({from_id:me.id,to_id:p.id});
@@ -1771,11 +1782,13 @@ function openProfile(i){
   document.getElementById('dvTags').innerHTML=(p.tags||[]).map(t=>`<span class="tag-d">${t}</span>`).join('');
   // үйлдэл: найз бол чатлах, эс бол хүсэлт/таалагдах
   const isFriend=chats.some(c=>c.id===p.id);
-  document.getElementById('dvActions').innerHTML=isFriend
+  document.getElementById('dvActions').innerHTML=isLocked()
+    ? `<button class="da-pass" style="flex:1" onclick="closeProfile();openLockedModal()">🔒 Бүртгэлээ баталгаажуулна уу</button>`
+    : (isFriend
     ? `<button class="da-like" style="flex:1" onclick="closeProfile();openChatById('${p.id}')">💬 Чат бичих</button>`
     : (sentReqIds.has(p.id)
       ? `<button class="da-pass" style="flex:1" onclick="cancelFR('${p.id}')">⏳ Хүсэлт цуцлах</button>`
-      : `<button class="da-pass" onclick="sendFriendReq()">👤 Найзын хүсэлт</button><button class="da-like" onclick="likeUser()">❤️ Таалагдлаа</button>`);
+      : `<button class="da-pass" onclick="sendFriendReq()">👤 Найзын хүсэлт</button><button class="da-like" onclick="likeUser()">❤️ Таалагдлаа</button>`));
   ovOpen('detailView');
 }
 function openLock(i){
@@ -1812,6 +1825,7 @@ function updateVipUI(){const b=document.getElementById('vipBtn');if(b&&myVip){b.
 function closeProfile(){ovClose('detailView');}
 async function likeUser(){
   const p=people[curProfile];closeProfile();
+  if(isLocked()){openLockedModal();return;}
   myLikes++;renderProfileStats();
   toast('💌 '+(p?p.n:'')+'-д таалагдсанаа илэрхийллээ');
   if(!me||!p)return;
@@ -1973,7 +1987,14 @@ function scheduleFromChat(){const c=chats[curChat];closeChat();makeDate(c.n,c.ph
 function openChatByName(n){const i=chats.findIndex(c=>c.n===n);if(i>=0){tab('matches',document.querySelectorAll('.nav button')[2]);openChat(i);}else toast('Чатлахын тулд найз болох/тохирох хэрэгтэй');}
 
 /* ============================================================ TABS / BADGES ============================================================ */
+function isLocked(){return !!(me&&!me.verified&&!me.is_admin);}
+function openLockedModal(){
+  const m=document.getElementById('lockedMsg');
+  if(m)m.textContent=(me&&me.gender==='f')?'Админ таны бүртгэлийг баталгаажуулсны дараа нэвтрэх эрх нээгдэнэ.':'Та бүртгэлийн хураамжаа төлснөөр админ нэвтрэх эрх олгоно.';
+  ovOpen('lockedModal');
+}
 function tab(name,btn){
+  if(isLocked()&&name!=='discover'){openLockedModal();return;}
   clearOverlays();
   document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
   document.getElementById('t-'+name).classList.add('active');
@@ -2385,6 +2406,7 @@ function attachNotifSwipe(){
   });
 }
 async function openNotifs(){
+  if(isLocked()){openLockedModal();return;}
   ovOpen('notifPanel');
   renderNotifs();
   try{await loadFriendReqs();renderNotifs();}catch(e){}
@@ -2406,7 +2428,7 @@ function fallbackCopy(t){try{const ta=document.createElement('textarea');ta.valu
 fillAimags();renderBank();
 applyTheme();
 try{window.addEventListener('pointerdown',function(){try{_actx=_actx||new(window.AudioContext||window.webkitAudioContext)();if(_actx.state==='suspended')_actx.resume();}catch(e){}});}catch(e){}
-const APP_VERSION='v42';
+const APP_VERSION='v43';
 try{document.getElementById('verBadge').textContent='Хоёулаа Болзий '+APP_VERSION;}catch(_){}
 loadSettings();
 restoreSession();
