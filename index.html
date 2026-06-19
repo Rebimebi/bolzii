@@ -156,15 +156,15 @@ body{
 .notif-banner .nb-ic{width:38px;height:38px;border-radius:12px;background:linear-gradient(135deg,var(--red),var(--pink));display:flex;align-items:center;justify-content:center;font-size:19px;flex:0 0 auto;}
 .notif-banner .nb-t{font-weight:800;font-size:13.5px;color:var(--ink);}
 .notif-banner .nb-d{font-size:12px;color:var(--gray);font-weight:500;margin-top:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:230px;}
-.notif-panel{position:absolute;inset:0;background:var(--bg);z-index:110;transform:translateX(100%);transition:transform .28s cubic-bezier(.4,0,.2,1);display:flex;flex-direction:column;}
+.notif-panel{position:absolute;inset:0;background:var(--card);z-index:110;transform:translateX(100%);transition:transform .28s cubic-bezier(.4,0,.2,1);display:flex;flex-direction:column;}
 .notif-panel.open{transform:translateX(0);}
 .np-head{display:flex;align-items:center;justify-content:space-between;padding:calc(15px + env(safe-area-inset-top)) 18px 15px;border-bottom:1px solid var(--gray-bg);}
 .np-head .ttl{font-family:var(--display);font-size:20px;font-weight:600;color:var(--ink);}
 .np-close{background:var(--pink-bg);border:none;width:32px;height:32px;border-radius:50%;font-size:14px;color:var(--ink);cursor:pointer;}
-.np-list{flex:1;overflow-y:auto;padding:10px 14px;}
-.nf-item{display:flex;align-items:flex-start;gap:11px;padding:13px 12px;border-radius:14px;margin-bottom:8px;background:var(--card);border:1px solid var(--gray-bg);}
-.nf-item.unread{background:var(--pink-bg);border-color:var(--pink-2);}
-.nf-ic{width:38px;height:38px;border-radius:12px;background:linear-gradient(135deg,var(--red),var(--pink));display:flex;align-items:center;justify-content:center;font-size:18px;flex:0 0 auto;}
+.np-list{flex:1;overflow-y:auto;padding:0;background:var(--card);}
+.nf-item{display:flex;align-items:flex-start;gap:12px;padding:14px 16px;border-bottom:1px solid var(--gray-bg);background:var(--card);}
+.nf-item.unread{background:var(--pink-bg);}
+.nf-ic{width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,var(--red),var(--pink));display:flex;align-items:center;justify-content:center;font-size:20px;flex:0 0 auto;}
 .nf-t{font-weight:700;font-size:13.5px;color:var(--ink);}
 .nf-d{font-size:12.5px;color:var(--gray);font-weight:500;margin-top:2px;line-height:1.4;}
 .nf-time{font-size:10.5px;color:var(--gray-2);font-weight:600;flex:0 0 auto;margin-left:auto;}
@@ -294,6 +294,24 @@ body{
 .dv-verify{font-family:var(--body);font-size:11px;font-weight:800;background:rgba(47,168,116,.92);padding:5px 10px;border-radius:30px;}
 .dv-loc{font-size:14px;opacity:.92;margin-top:8px;font-weight:500;}
 .ver-badge{position:fixed;top:3px;left:7px;z-index:5;font-size:9px;color:var(--gray-2);opacity:.45;pointer-events:none;font-family:var(--body);letter-spacing:.3px;}
+.adm-sec{font-family:var(--display);font-size:15px;color:var(--red-deep);font-weight:600;margin:6px 0 10px;}
+.guide-step{padding:11px 0;border-bottom:1px solid var(--gray-bg);}
+.guide-step b{display:block;font-size:14.5px;color:var(--red-deep);margin-bottom:3px;}
+.guide-step span{display:block;font-size:13px;color:var(--gray);line-height:1.5;}
+.date-remind-top{background:var(--gold,#ffd98a);background:linear-gradient(135deg,#fff3d6,#ffe6b0);color:#7a4a00;border:1px solid #f0cf8a;border-radius:14px;padding:12px 14px;font-size:12.5px;font-weight:600;line-height:1.5;margin-bottom:14px;}
+body.dark .date-remind-top{background:linear-gradient(135deg,#3a2e12,#2c2410);color:#ffd98a;border-color:#5a4715;}
+.pay-mode{display:flex;gap:8px;margin-top:8px;}
+.pay-mode .pm-btn{flex:1;padding:11px 6px;border-radius:13px;border:1.5px solid var(--gray-bg);background:var(--card);color:var(--gray);font-weight:600;font-size:12.5px;font-family:var(--body);cursor:pointer;}
+.pay-mode .pm-btn.on{border-color:var(--red);background:var(--pink-bg);color:var(--red-deep);}
+.pay-search-res{max-height:190px;overflow-y:auto;}
+.pay-res-item{display:flex;align-items:center;gap:10px;padding:9px 6px;border-radius:11px;cursor:pointer;border-bottom:1px solid var(--gray-bg);}
+.pay-res-item:active{background:var(--pink-bg);}
+.pay-res-item .ph{width:38px;height:38px;border-radius:50%;background-size:cover;background-position:center;flex:0 0 auto;}
+.pay-res-item .nm{font-weight:700;font-size:13.5px;color:var(--ink);}
+.pay-res-item .meta{font-size:11.5px;color:var(--gray-2);}
+.pay-selected{display:flex;align-items:center;gap:10px;padding:10px;border-radius:12px;background:var(--pink-bg);border:1px solid var(--pink-2);margin-top:6px;}
+.pay-selected .ph{width:34px;height:34px;border-radius:50%;background-size:cover;background-position:center;flex:0 0 auto;}
+.pay-selected .nm{font-weight:700;font-size:13.5px;color:var(--red-deep);}
 .copy-acc{margin-left:auto;border:none;background:var(--pink-bg);color:var(--red);font-weight:800;font-size:11.5px;padding:6px 12px;border-radius:20px;cursor:pointer;font-family:var(--body);}
 .detail-body{flex:1;overflow-y:auto;padding:18px 20px 16px;}
 .dv-gallery{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px;}
@@ -546,8 +564,9 @@ body{
     <div class="women-free">👩 Бүсгүйчүүд <b>төлбөргүй</b> бүртгүүлж, <b>VIP эрхийг ҮНЭГҮЙ</b> авна!</div>
 
     <div class="cta">
+      <button class="btn btn-ghost" onclick="openGuide()">📖 Апп ашиглах заавар</button>
+      <button class="btn btn-ghost" style="background:linear-gradient(135deg,#1faa59,#23c06a);color:#fff;border-color:transparent" onclick="route('login')">Нэвтрэх</button>
       <button class="btn btn-primary" onclick="route('register')">Бүртгүүлэх</button>
-      <button class="btn btn-ghost" onclick="route('login')">Нэвтрэх</button>
       <button class="btn btn-ghost" id="installBtn" style="display:none;background:rgba(255,255,255,.55)" onclick="installApp()">📲 Аппаа суулгах</button>
     </div>
 
@@ -559,6 +578,23 @@ body{
       <a onclick="route('adminLogin')">Админ</a>
     </div>
   </section>
+
+  <!-- install guide modal -->
+  <div class="rules-modal" id="guideModal">
+    <div class="rm-head"><span>📖 Апп хэрхэн ажилладаг вэ?</span><button onclick="closeGuide()">✕</button></div>
+    <div class="rm-body">
+      <p class="lead">Хоёулаа Болзий бол <b>баталгаажсан жинхэнэ хүмүүсийн</b> танилцах, болзох апп. Хуурамч профайл байхгүй — бид болзоог чинь зохион байгуулна.</p>
+      <div class="guide-step"><b>1. Бүртгүүлэх</b><span>Нэр, утас, нас, нүүр зураг, сонирхлоо оруулна. 18+ насны хүн бүртгүүлнэ.</span></div>
+      <div class="guide-step"><b>2. Баталгаажуулалт</b><span>Админ зураг, мэдээллийг шалгаж баталгаажуулна. 👩 Бүсгүйчүүд төлбөргүй (VIP үнэгүй), 👨 эрэгтэйчүүд хураамж төлнө.</span></div>
+      <div class="guide-step"><b>3. Хүмүүстэй танилцах</b><span>«Нээх» хэсгээс бусдыг үзэж, найзын хүсэлт эсвэл ❤️ лайк илгээнэ.</span></div>
+      <div class="guide-step"><b>4. Тохирол ба чат</b><span>Хоёр тал бие биедээ лайк дарвал тохирол үүсэж, чатлаж эхэлнэ.</span></div>
+      <div class="guide-step"><b>5. Болзоо захиалах</b><span>«Болзоо» хэсгээс багц сонгож: <b>нэрээр хайж тодорхой хүн урих</b> эсвэл <b>🎲 сохор болзоо</b> (апп тохируулна) — 2 сонголт.</span></div>
+      <div class="guide-step"><b>6. Төлбөр</b><span>Заасан данс руу шилжүүлээд «Төлбөр төлсөн» дарна. Гүйлгээний утгад утасны дугаараа бичнэ.</span></div>
+      <div class="guide-step"><b>7. Баталгаажуулалт ба болзоо</b><span>Админ төлбөрийг шалгаад болзоог баталгаажуулж, газар, цагийг танд мэдэгдэнэ. Бид 2 цагийн өмнө сануулна.</span></div>
+      <div class="guide-step"><b>8. 🎲 Сохор болзоо (бүсгүйчүүд)</b><span>Бүсгүйчүүд сохор болзоонд бүртгүүлж, ямар залуу сонирхож буйгаа (нас/өндөр/жин — заавал биш) заана. Эрэгтэйчүүд бүртгүүлсэн бүсгүйчүүдтэй тохирно.</span></div>
+    </div>
+    <div class="rm-foot"><button class="btn btn-primary" style="width:100%" onclick="closeGuide()">Ойлголоо 👍</button></div>
+  </div>
 
   <!-- install guide modal -->
   <div class="rules-modal" id="installModal">
@@ -593,6 +629,19 @@ body{
       </div>
     </div>
     <div class="rm-foot"><button class="btn btn-primary" style="width:100%" onclick="closeVipModal()">Ойлголоо</button></div>
+  </div>
+
+  <!-- ============ BLIND DATE REGISTER MODAL ============ -->
+  <div class="rules-modal" id="blindRegModal">
+    <div class="rm-head"><span>Сохор болзоонд бүртгүүлэх 🎲</span><button onclick="ovClose('blindRegModal')">✕</button></div>
+    <div class="rm-body">
+      <div class="pp-warn" style="margin-bottom:14px">👩 Энэ үйлчилгээ зөвхөн <b>эмэгтэй хэрэглэгчдэд</b> хамаатай. Бүртгүүлснээр эрэгтэй хэрэглэгчид тантай сохор болзоонд тохирно.</div>
+      <p class="lead">Ямар залуу сонирхож байна вэ? <b>(заавал биш)</b></p>
+      <div class="form-group"><label>Нас (ойролцоо)</label><input id="brAge" type="number" placeholder="Жишээ нь 28"></div>
+      <div class="form-group"><label>Өндөр (см-ээс дээш)</label><input id="brHeight" type="number" placeholder="Жишээ нь 175"></div>
+      <div class="form-group"><label>Жин (кг, ойролцоо)</label><input id="brWeight" type="number" placeholder="Жишээ нь 75"></div>
+    </div>
+    <div class="rm-foot"><button class="btn btn-primary" style="width:100%" onclick="submitBlindReg()">🎲 Бүртгүүлэх</button></div>
   </div>
 
   <!-- ============ PASSWORD CHANGE MODAL ============ -->
@@ -753,7 +802,7 @@ body{
         </div>
       </div>
       <label class="remember-login"><input type="checkbox" id="rememberLogin"><span>Нэвтрэх нэр сануулах</span></label>
-      <button class="btn btn-primary" style="width:100%" onclick="doLogin()">Нэвтрэх</button>
+      <button class="btn btn-primary" style="width:100%;background:linear-gradient(135deg,#1faa59,#23c06a)" onclick="doLogin()">Нэвтрэх</button>
       <div class="login-alt">Бүртгэл байхгүй юу? <b onclick="route('register')">Бүртгүүлэх</b></div>
     </div>
   </section>
@@ -930,10 +979,21 @@ body{
         <div class="pay-handle"></div>
         <div class="pay-title" id="payTitle">Багц захиалах</div>
         <div class="pay-amt" id="payBig">0₮</div>
-        <div class="form-group" style="margin-top:6px"><label>Хамт явах хүн</label>
-          <select id="payCompanion"></select>
+        <div class="pay-mode">
+          <button id="pmPerson" class="pm-btn on" onclick="setPayMode('person')">👤 Тодорхой хүн урих</button>
+          <button id="pmBlind" class="pm-btn" onclick="setPayMode('blind')">🎲 Сохор болзоо</button>
         </div>
-        <div class="pay-consent">⚠️ Сонгосон хүн зөвшөөрсөн үед болзоо баталгаажна.</div>
+        <div id="payPersonBox">
+          <div class="form-group" style="margin-top:10px;margin-bottom:6px"><label>Урих хүний нэр</label>
+            <input id="paySearch" placeholder="Нэр бичээд хайх…" oninput="searchPayPerson()" autocomplete="off">
+          </div>
+          <div id="paySearchRes" class="pay-search-res"></div>
+          <div id="paySelected" class="pay-selected" style="display:none"></div>
+        </div>
+        <div id="payBlindBox" style="display:none">
+          <div class="blind-note" style="margin-top:10px">🎲 Апп таны нас, сонирхолд тохирох хүнтэй сохор болзоо тохируулна. Хэн болохыг урьдчилан харахгүй.</div>
+        </div>
+        <div class="pay-consent">⚠️ Төлбөр орсныг админ шалгасны дараа болзоо баталгаажна.</div>
         <div class="bank-box" style="margin-top:4px">
           <div class="bank-row"><span>Банк</span><b id="pvBank"></b></div>
           <div class="bank-row"><span>Данс</span><b id="pvAccount"></b><button class="copy-acc" onclick="copyAccount()">📋 Хуулах</button></div>
@@ -1182,7 +1242,7 @@ let dates=[];
 /* ============================================================ ROUTER ============================================================ */
 /* ---- Утасны "буцах" товчоор апп-аас гарахгүй: нээлттэй давхаргыг хаана ---- */
 let _ovStack=[],_fromPop=false;
-const _OVL_IDS=['detailView','chatView','lockView','vipModal','pwModal','payView','blindView','admUserView','notifPanel','lightbox','rulesModal','installModal'];
+const _OVL_IDS=['detailView','chatView','lockView','vipModal','pwModal','payView','blindView','admUserView','notifPanel','lightbox','rulesModal','installModal','guideModal','blindRegModal'];
 function ovOpen(id){const e=document.getElementById(id);if(!e)return;e.classList.add('open');_ovStack.push(id);try{history.pushState({ov:id},'');}catch(_){}}
 function ovClose(id){const e=document.getElementById(id);if(e)e.classList.remove('open');const k=_ovStack.lastIndexOf(id);if(k<0)return;_ovStack.splice(k,1);if(!_fromPop){try{history.back();}catch(_){}}}
 function clearOverlays(){const n=_ovStack.length;_OVL_IDS.forEach(id=>{const e=document.getElementById(id);if(e)e.classList.remove('open');});_ovStack=[];if(n>0){try{history.go(-n);}catch(_){}}}
@@ -1273,32 +1333,59 @@ function openPay(kind,i){
   const pkg=settings.datePkgs[i];
   document.getElementById('payTitle').textContent=pkg.name;
   document.getElementById('payBig').textContent=fmt(pkg.price);
-  // хамт явах хүн — тохирлоос сонгоно, эсвэл сохор болзоо
-  const sel=document.getElementById('payCompanion');
-  let opts=chats.length?chats.map(c=>`<option value="${c.n}">${c.n}</option>`).join(''):'';
-  opts+='<option value="__blind__">🎲 Сохор болзоо — апп тохируулна</option>';
-  sel.innerHTML=opts;
   document.getElementById('pvBank').textContent=settings.bank;
   document.getElementById('pvAccount').textContent=settings.account;
   document.getElementById('pvRecipient').textContent=settings.recipient;
+  setPayMode('person');
   ovOpen('payView');
 }
+let payMode='person',payTarget=null;
+function setPayMode(m){
+  payMode=m;payTarget=null;
+  const pp=document.getElementById('pmPerson'),pb=document.getElementById('pmBlind');
+  if(pp)pp.classList.toggle('on',m==='person');
+  if(pb)pb.classList.toggle('on',m==='blind');
+  const box=document.getElementById('payPersonBox'),bb=document.getElementById('payBlindBox');
+  if(box)box.style.display=m==='person'?'block':'none';
+  if(bb)bb.style.display=m==='blind'?'block':'none';
+  const sel=document.getElementById('paySelected');if(sel)sel.style.display='none';
+  const res=document.getElementById('paySearchRes');if(res)res.innerHTML='';
+  const s=document.getElementById('paySearch');if(s)s.value='';
+}
+async function searchPayPerson(){
+  const q=(document.getElementById('paySearch').value||'').trim();
+  const box=document.getElementById('paySearchRes');if(!box)return;
+  if(q.length<2){box.innerHTML='';return;}
+  try{
+    const {data}=await sb.from('profiles').select('id,name,age,city,photo_url').ilike('name','%'+q+'%').eq('verified',true).neq('id',me.id).limit(8);
+    const rows=(data||[]).filter(p=>p.id!==me.id);
+    box.innerHTML=rows.length?rows.map(p=>`<div class="pay-res-item" onclick="pickPayPerson('${p.id}','${esc(p.name||'')}','${p.photo_url||''}')"><div class="ph" style="${photoBg(p.photo_url||'')}"></div><div><div class="nm">${p.name||'?'}</div><div class="meta">${p.age||''}${p.city?' · '+p.city:''}</div></div></div>`).join(''):'<div style="color:var(--gray-2);font-size:12px;padding:8px 4px;">Олдсонгүй</div>';
+  }catch(e){box.innerHTML='<div style="color:var(--red);font-size:12px;padding:8px 4px;">Хайлтын алдаа</div>';}
+}
+function pickPayPerson(id,name,ph){
+  payTarget={id,name,ph:ph||''};
+  document.getElementById('paySearchRes').innerHTML='';
+  document.getElementById('paySearch').value=name;
+  const sel=document.getElementById('paySelected');
+  sel.style.display='flex';sel.innerHTML=`<div class="ph" style="${photoBg(ph||'')}"></div><div class="nm">✓ ${name}-г урих</div>`;
+}
+function esc(s){return (s||'').replace(/['"\\]/g,'');}
 function closePay(){ovClose('payView');}
-function confirmPay(){
+async function confirmPay(){
   const pkg=settings.datePkgs[payCtx.i];
-  const who=document.getElementById('payCompanion').value;
+  if(payMode==='person'&&!payTarget){toast('Урих хүнээ нэрээр хайж сонгоно уу');return;}
   closePay();
-  toast('💳 Төлбөр хүлээн авлаа · '+pkg.name);
+  toast('💳 Төлбөр илгээлээ · '+pkg.name);
   const ven=venues[Math.floor(Math.random()*venues.length)],slot=slots[Math.floor(Math.random()*slots.length)];
-  if(who==='__blind__'){
-    const p=pickBlindMatch();
-    if(!p){setTimeout(()=>toast('Одоогоор тохирох хүн алга — удахгүй тохируулна'),1200);return;}
-    saveDate({partnerId:p.id,n:'Сохор болзоо 🎲',ph:p.ph,venue:ven.v,area:ven.area,when:slot,blind:true});
-    setTimeout(()=>{toast('🎲 Сохор болзоо тохирлоо — нөгөө талын зөвшөөрлийг хүлээж байна');notify('🎲','Сохор болзоо','Танд нас/сонирхол ойролцоо хүнтэй сохор болзоо тохирлоо');},1300);
-  }else if(who){
-    const c=chats.find(x=>x.n===who);
-    saveDate({partnerId:c?c.id:null,n:who,ph:c?c.ph:'',venue:ven.v,area:ven.area,when:slot,pkg:pkg.name});
-    setTimeout(()=>{toast('⏳ '+who+'-н зөвшөөрлийг хүлээж байна');},1400);
+  if(payMode==='blind'){
+    const p=await pickBlindMatch();
+    if(!p){setTimeout(()=>toast('Одоогоор сохор болзоонд бүртгүүлсэн хүн алга — удахгүй тохируулна'),1200);return;}
+    saveDate({partnerId:p.id,n:'Сохор болзоо 🎲',ph:p.ph,venue:ven.v,area:ven.area,when:slot,pkg:'blind',blind:true});
+    setTimeout(()=>{toast('🎲 Сохор болзоо тохирлоо — админ төлбөр шалгаад баталгаажуулна');notify('🎲','Сохор болзоо','Сохор болзоо тохирлоо — баталгаажуулалт хүлээж байна');},1300);
+  }else{
+    saveDate({partnerId:payTarget.id,n:payTarget.name,ph:payTarget.ph||'',venue:ven.v,area:ven.area,when:slot,pkg:pkg.name});
+    try{sb.from('messages').insert({from_id:me.id,to_id:payTarget.id,text:'📅 '+(me.name||'Нэгэн хэрэглэгч')+' тантай болзохыг урьж байна'});}catch(e){}
+    setTimeout(()=>{toast('📅 '+payTarget.name+'-д болзооны урилга илгээлээ — админ баталгаажуулна');notify('📅','Болзооны урилга',payTarget.name+'-д урилга илгээлээ');},900);
   }
 }
 
@@ -1308,34 +1395,57 @@ let blindJoined=false;
 function renderBlind(){
   const w=document.getElementById('blindActions');if(!w)return;
   if(me&&me.gender==='f'){
-    w.innerHTML=blindJoined
+    w.innerHTML=me.blind_active
       ? `<div class="blind-note">✓ Та сохор болзооны жагсаалтад бүртгэгдсэн. Тохирол гарвал мэдэгдэнэ.</div><button class="blind-women" onclick="leaveBlind()">Бүртгэлээс гарах</button>`
-      : `<button class="blind-btn" onclick="joinBlind()">🎲 Сохор болзоонд бүртгүүлэх</button><div class="blind-note">Та бүртгүүлснээр эрэгтэй хэрэглэгчид тантай сохор болзоонд тохирно.</div>`;
+      : `<button class="blind-btn" onclick="joinBlind()">🎲 Сохор болзоонд бүртгүүлэх</button><div class="blind-note">Зөвхөн бүсгүйчүүд бүртгүүлнэ. Бүртгүүлснээр эрэгтэй хэрэглэгчид тантай тохирно.</div>`;
   }else{
-    w.innerHTML=`<button class="blind-btn" onclick="startBlind('opp')">🎲 Сохор болзоонд оролцох</button><div class="blind-note">👩 Зөвхөн бүсгүйчүүд сохор болзоонд <b>шууд бүртгүүлнэ</b>. Та бүртгүүлсэн бүсгүйчүүдтэй тохирно.</div>`;
+    w.innerHTML=`<button class="blind-btn" onclick="startBlind('opp')">🎲 Сохор болзоонд оролцох</button><div class="blind-note">👩 Зөвхөн бүсгүйчүүд шууд бүртгүүлнэ. Та бүртгүүлсэн бүсгүйчүүдтэй тохирно.</div>`;
   }
 }
 function joinBlind(){
-  blindJoined=true;renderBlind();
-  toast('🎲 Сохор болзоонд бүртгүүллээ! Тохирол гарвал мэдэгдэнэ.');
-  notify('🎲','Сохор болзоо','Та сохор болзооны жагсаалтад бүртгэгдлээ');
+  if(me&&me.gender!=='f'){toast('Энэ зөвхөн эмэгтэй хэрэглэгчдэд хамаатай');return;}
+  const p=(me&&me.blind_pref)||{};
+  document.getElementById('brAge').value=p.age||'';
+  document.getElementById('brHeight').value=p.height||'';
+  document.getElementById('brWeight').value=p.weight||'';
+  ovOpen('blindRegModal');
 }
-function leaveBlind(){blindJoined=false;renderBlind();toast('Сохор болзооны бүртгэлээс гарлаа');}
-function pickBlindMatch(){
+async function submitBlindReg(){
+  const pref={age:parseInt(document.getElementById('brAge').value)||null,height:parseInt(document.getElementById('brHeight').value)||null,weight:parseInt(document.getElementById('brWeight').value)||null};
+  ovClose('blindRegModal');
+  if(me){me.blind_active=true;me.blind_pref=pref;}
+  renderBlind();
+  toast('🎲 Сохор болзоонд бүртгүүллээ!');notify('🎲','Сохор болзоо','Та сохор болзооны жагсаалтад бүртгэгдлээ');
+  if(!me)return;
+  try{
+    let {error}=await sb.from('profiles').update({blind_active:true,blind_pref:pref}).eq('id',me.id);
+    if(error&&/column|schema cache|does not exist|find the/i.test(error.message||''))console.error('blind columns missing',error);
+  }catch(e){console.error('submitBlindReg',e);}
+}
+async function leaveBlind(){
+  if(me)me.blind_active=false;renderBlind();toast('Сохор болзооны бүртгэлээс гарлаа');
+  if(!me)return;
+  try{await sb.from('profiles').update({blind_active:false}).eq('id',me.id);}catch(e){}
+}
+async function pickBlindMatch(){
   const myAge=(me&&me.age)?me.age:26;
   const myTags=(me&&me.tags)||[];
   const opp=(me&&me.gender==='f')?'m':'f';
+  let cands=[];
+  try{
+    const {data}=await sb.from('profiles').select('id,name,age,height,weight,city,photo_url,tags,gender,blind_pref').eq('blind_active',true).eq('gender',opp).eq('verified',true).neq('id',me.id);
+    cands=(data||[]).map(p=>({id:p.id,n:p.name,a:p.age,g:p.gender,ph:p.photo_url||'',tags:p.tags||[],pref:p.blind_pref||{}}));
+  }catch(e){console.error('pickBlindMatch',e);}
+  if(!cands.length)return null;
   const shared=p=>(p.tags||[]).filter(t=>myTags.includes(t)).length;
-  let cands=people.filter(p=>p.g===opp && Math.abs((p.a||myAge)-myAge)<=6);
-  if(!cands.length)cands=people.filter(p=>p.g===opp);
-  if(!cands.length)cands=people.slice();
-  cands.sort((a,b)=>shared(b)-shared(a));            // сонирхол ойролцоог нь түрүүлж
-  const top=cands.filter(p=>shared(p)===shared(cands[0]));
-  return top[Math.floor(Math.random()*top.length)]||null;
+  const fit=p=>{let s=shared(p)*2;if(p.pref&&p.pref.age)s-=Math.abs(p.pref.age-myAge)*0.3;else s-=Math.abs((p.a||myAge)-myAge)*0.2;return s;};
+  cands.sort((a,b)=>fit(b)-fit(a));
+  const top=cands.filter(p=>Math.abs(fit(p)-fit(cands[0]))<0.01);
+  return top[Math.floor(Math.random()*top.length)]||cands[0]||null;
 }
-function startBlind(mode){
-  const p=pickBlindMatch();
-  if(!p){toast('Одоогоор тохирох хүн алга');return;}
+async function startBlind(mode){
+  const p=await pickBlindMatch();
+  if(!p){toast('Одоогоор сохор болзоонд бүртгүүлсэн хүн алга');return;}
   blindPick=p;
   const ven=venues[Math.floor(Math.random()*venues.length)],slot=slots[Math.floor(Math.random()*slots.length)];
   blindPick._ven=ven;blindPick._slot=slot;
@@ -1411,6 +1521,8 @@ function pickGender(g,btn){
 }
 function openInstall(){ovOpen('installModal');}
 function closeInstall(){ovClose('installModal');}
+function openGuide(){ovOpen('guideModal');}
+function closeGuide(){ovClose('guideModal');}
 function togglePw(btn){const inp=btn.parentNode.querySelector('input');const hidden=inp.type==='password';inp.type=hidden?'text':'password';btn.classList.toggle('on',hidden);}
 /* Харанхуй / гэрэлтэй горим солих */
 let darkMode=false;
@@ -1422,13 +1534,12 @@ function toggleTheme(){
   try{localStorage.setItem('bolzii_theme',darkMode?'dark':'light');}catch(e){}
 }
 function applyTheme(){
-  try{
-    if(localStorage.getItem('bolzii_theme')==='dark'){
-      darkMode=true;document.body.classList.add('dark');
-      const tb=document.getElementById('themeBtn');if(tb)tb.textContent='☀️';
-      const tg=document.getElementById('themeToggle');if(tg)tg.classList.add('on');
-    }
-  }catch(e){}
+  let dark=true;
+  try{const s=localStorage.getItem('bolzii_theme');if(s==='light')dark=false;else if(s==='dark')dark=true;}catch(e){}
+  darkMode=dark;
+  document.body.classList.toggle('dark',dark);
+  const tb=document.getElementById('themeBtn');if(tb)tb.textContent=dark?'☀️':'🌙';
+  const tg=document.getElementById('themeToggle');if(tg)tg.classList.toggle('on',dark);
 }
 
 /* ============================================================ ACCOUNTS / LOGIN ============================================================ */
@@ -1527,6 +1638,19 @@ async function doRegister(){
     uid=su.data.user&&su.data.user.id;
   }
   if(!uid){toast('Бүртгэл амжилтгүй. Дахин оролдоно уу');return;}
+  // session байгаа эсэхийг батлах (Supabase-д email confirm ON бол signUp session үүсгэхгүй → RLS баригдана)
+  try{
+    let sg=await sb.auth.getSession();
+    if(!sg.data||!sg.data.session){
+      const si=await sb.auth.signInWithPassword({email:phEmail(phone),password:pass});
+      if(si.error){
+        const m=(si.error.message||'').toLowerCase();
+        if(/email not confirmed|not confirmed/.test(m))toast('Supabase → Authentication → Providers → Email → "Confirm email"-г УНТРААНА уу. Дараа нь дахин бүртгүүлнэ үү.');
+        else toast('Нэвтрэх session үүсгэж чадсангүй: '+si.error.message);
+        return;
+      }
+    }
+  }catch(e){}
   // 2) зураг хуулах (алдаа гарвал бүртгэлийг зогсоохгүй — дараа нь нэмж болно)
   let photoUrl='',photoErr='';
   try{ photoUrl=await uploadPhoto(uid,regPhotoFile); }
@@ -1550,7 +1674,12 @@ async function doRegister(){
     const slim=Object.assign({},fullProfile);delete slim.height;delete slim.weight;delete slim.photos;
     ({error:perr}=await sb.from('profiles').upsert(slim));
   }
-  if(perr){toast('Профайл хадгалах алдаа: '+perr.message);return;}
+  if(perr){
+    const m=(perr.message||'').toLowerCase();
+    if(/row-level security|rls|policy/.test(m))toast('Профайл хадгалах эрх алдаа — Supabase-д имэйл баталгаажуулалтыг унтраана уу (Authentication → Email → Confirm email = OFF)');
+    else toast('Профайл хадгалах алдаа: '+perr.message);
+    return;
+  }
   await loadMe();
   if(photoErr){
     toast('⚠️ Бүртгэл үүслээ, гэхдээ зураг хуулагдсангүй: '+photoErr+' — Профайл → Профайл засахаас зургаа нэмнэ үү.');
@@ -1675,6 +1804,10 @@ async function loadContacts(){
     const {data:mt}=await sb.from('matches').select('a_id,b_id').or(`a_id.eq.${me.id},b_id.eq.${me.id}`);
     (mt||[]).forEach(m=>otherIds.add(m.a_id===me.id?m.b_id:m.a_id));
   }catch(e){console.error('contacts mt',e);}
+  try{
+    const {data:ms}=await sb.from('messages').select('from_id,to_id').or(`from_id.eq.${me.id},to_id.eq.${me.id}`);
+    (ms||[]).forEach(m=>otherIds.add(m.from_id===me.id?m.to_id:m.from_id));
+  }catch(e){console.error('contacts msgs',e);}
   otherIds.delete(me.id);
   const ids=[...otherIds];
   let profs={};
@@ -1776,7 +1909,8 @@ async function markRead(fromId){if(!me||!fromId)return;try{await sb.from('messag
 function renderDates(){
   const el=document.getElementById('datesList');
   if(!dates.length){el.innerHTML=`<div class="empty-dates">Одоогоор товлосон болзоо алга.<br>Тохирсон хүнтэйгээ болзоо товлоорой 💕</div>`;return;}
-  el.innerHTML=dates.map(d=>`<div class="date-card"><div class="dc-top"><div class="ph" style="${photoBg(d.ph)}"></div><div><div class="who">${d.n}</div><div class="stt ${d.status==='confirmed'?'ok':'pend'}">${d.status==='confirmed'?'✓ Хоёр тал баталгаажуулсан':'⏳ Нөгөө талын хариу хүлээж байна'}</div></div></div><div class="dc-body"><div class="venue">📍 ${d.venue}</div><div class="meta">${d.area}</div><div class="meta">🗓 ${d.when}</div><div class="remind">📲 Бид танд 2 цагийн өмнө сануулна</div></div><div class="dc-actions"><button class="resc" onclick="toast('Цаг өөрчлөх хүсэлт илгээлээ')">Цаг өөрчлөх</button><button class="conf" onclick="${d.partnerId?`openChatById('${d.partnerId}')`:`tab('matches')`}">Чатлах</button></div></div>`).join('');
+  const remind=`<div class="date-remind-top">⚠️ <b>Хариуцлагатай байгаарай!</b> Болзоонд урьсан болон уригдсан бол <b>цагтаа очихоо мартуузай</b>. Болзоо тасалдвал нөгөө талын цаг, итгэлийг хохироож, дараагийн боломж хязгаарлагдаж болзошгүй.</div>`;
+  el.innerHTML=remind+dates.map(d=>`<div class="date-card"><div class="dc-top"><div class="ph" style="${photoBg(d.ph)}"></div><div><div class="who">${d.n}</div><div class="stt ${d.status==='confirmed'?'ok':'pend'}">${d.status==='confirmed'?'✓ Хоёр тал баталгаажуулсан':'⏳ Нөгөө талын хариу хүлээж байна'}</div></div></div><div class="dc-body"><div class="venue">📍 ${d.venue}</div><div class="meta">${d.area}</div><div class="meta">🗓 ${d.when}</div><div class="remind">📲 Бид танд 2 цагийн өмнө сануулна</div></div><div class="dc-actions"><button class="resc" onclick="toast('Цаг өөрчлөх хүсэлт илгээлээ')">Цаг өөрчлөх</button><button class="conf" onclick="${d.partnerId?`openChatById('${d.partnerId}')`:`tab('matches')`}">Чатлах</button></div></div>`).join('');
 }
 function makeDate(name,ph,partnerId){
   const ven=venues[Math.floor(Math.random()*venues.length)],slot=slots[Math.floor(Math.random()*slots.length)];
@@ -1853,6 +1987,20 @@ async function admTab(t,btn){
       admData.users=(u.data||[]).filter(x=>!x.is_admin).map(x=>({...x,n:x.name,m:`${x.age||''} · ${x.city||''}`,ph:x.photo_url||'',blocked:!!x.blocked}));
     }catch(e){console.error('admTab load',e);body.innerHTML='<div style="text-align:center;color:var(--red);padding:30px;">Ачаалахад алдаа гарлаа</div>';return;}
   }
+  if(t==='dates'){
+    try{
+      const {data:dts}=await sb.from('dates').select('*').order('created_at',{ascending:false});
+      const rows=dts||[];
+      const pid=[...new Set(rows.reduce((a,d)=>{if(d.organizer_id)a.push(d.organizer_id);if(d.partner_id)a.push(d.partner_id);return a;},[]))];
+      let pm={};
+      if(pid.length){const {data:ps}=await sb.from('profiles').select('id,name').in('id',pid);(ps||[]).forEach(p=>pm[p.id]=p.name);}
+      admData.dates=rows.map(d=>({id:d.id,org_id:d.organizer_id,org:pm[d.organizer_id]||'?',partner:(d.package==='blind'?'Сохор 🎲':(pm[d.partner_id]||'?')),venue:d.venue,area:d.area,when:d.when_text,status:d.status,pkg:d.package}));
+    }catch(e){console.error('adm dates',e);admData.dates=[];}
+    try{
+      const {data:bl}=await sb.from('profiles').select('id,name,age,city,blind_pref,photo_url').eq('blind_active',true);
+      admData.blind=(bl||[]).map(x=>({id:x.id,name:x.name,age:x.age,city:x.city,ph:x.photo_url||'',pref:x.blind_pref||{}}));
+    }catch(e){console.error('adm blind',e);admData.blind=[];}
+  }
   let html='';
   if(t!=='settings'){
     const blk=admData.users.filter(u=>u.blocked).length;
@@ -1876,7 +2024,12 @@ async function admTab(t,btn){
     <div class="av-actions"><button class="av-no" onclick="rejectUser(${i})">✕ Татгалзах</button><button class="av-ok" onclick="approveUser(${i})">✓ Зөвшөөрөх</button></div>
   </div>`).join(''):empty('Баталгаажуулалт хүлээж буй хэрэглэгч алга');}
   else if(t==='users'){html+=admData.users.length?admData.users.map((x,i)=>`<div class="adm-card" style="cursor:pointer;${x.blocked?'opacity:.55':''}" onclick="admViewUser(${i})"><div class="ph" style="${photoBg(x.ph)}"></div><div class="b"><div class="nm">${x.n}</div><div class="meta">${x.m}</div></div><span class="adm-pill ${x.blocked?'warn':'ok'}">${x.blocked?'Блоклогдсон':'Идэвхтэй'}</span><div class="acts"><button class="${x.blocked?'ok-b':'no-b'}" onclick="event.stopPropagation();toggleBlock(${i})" title="${x.blocked?'Блокоос гаргах':'Блоклох'}">${x.blocked?'🔓':'🚫'}</button></div></div>`).join(''):empty('Бүртгэлтэй хэрэглэгч алга');}
-  else if(t==='dates'){html+=empty('Болзоо (удахгүй холбогдоно)');}
+  else if(t==='dates'){
+    html+=`<div class="adm-sec">🎲 Сохор болзоонд бүртгүүлсэн (${(admData.blind||[]).length})</div>`;
+    html+=(admData.blind&&admData.blind.length)?admData.blind.map(b=>{const pr=[b.pref.age?b.pref.age+' нас':'',b.pref.height?b.pref.height+'см+':'',b.pref.weight?b.pref.weight+'кг':''].filter(Boolean).join(', ');return `<div class="adm-card"><div class="ph" style="${photoBg(b.ph)}"></div><div class="b"><div class="nm">${b.name||'?'}${b.age?', '+b.age:''}</div><div class="meta">${b.city||''} · хүсэл: ${pr||'заагаагүй'}</div></div></div>`;}).join(''):empty('Бүртгүүлсэн бүсгүй алга');
+    html+=`<div class="adm-sec" style="margin-top:18px">📅 Бүх болзоо (${(admData.dates||[]).length})</div>`;
+    html+=(admData.dates&&admData.dates.length)?admData.dates.map((d,i)=>`<div class="adm-card"><div class="b"><div class="nm">${d.org} ↔ ${d.partner}</div><div class="meta">📍 ${d.venue||'-'} · 🗓 ${d.when||'-'} · ${d.status==='confirmed'?'✅ Баталгаажсан':'⏳ Төлбөр хүлээж буй'}</div></div><div class="acts">${d.status!=='confirmed'?`<button class="ok-b" onclick="admConfirmDate(${i})" title="Төлбөр баталгаажуулах">✓</button>`:''}<button class="no-b" onclick="admDeleteDate(${i})" title="Устгах">🗑</button></div></div>`).join(''):empty('Болзоо алга');
+  }
   else if(t==='reports'){html+=empty('Гомдол (удахгүй холбогдоно)');}
   else if(t==='settings'){
     html+=`<div style="font-family:var(--display);font-size:17px;color:var(--red-deep);font-weight:600;margin-bottom:14px;">Дансны мэдээлэл & хураамж</div>
@@ -1947,9 +2100,39 @@ function admViewUser(i){
       ${x.tags&&x.tags.length?`<div><span>Сонирхол</span><b>${x.tags.join(', ')}</b></div>`:''}
     </div>
     <button class="btn btn-primary" style="width:100%;margin-top:14px;background:var(--gold);color:#7a4a00" onclick="sendWarning(${i})">⚠️ Анхааруулга илгээх</button>
+    <button class="btn btn-primary" style="width:100%;margin-top:10px;" onclick="admChatUser(${i})">💬 Чатлах</button>
     <button class="btn btn-primary" style="width:100%;margin-top:10px;" onclick="toggleVip(${i});closeAdmUser()">${x.is_vip?'👑 VIP цуцлах':'👑 VIP болгох'}</button>
-    <button class="btn btn-primary" style="width:100%;margin-top:10px;${x.blocked?'':'background:var(--red)'}" onclick="toggleBlock(${i});closeAdmUser()">${x.blocked?'🔓 Блокоос гаргах':'🚫 Блоклох'}</button>`;
+    <button class="btn btn-primary" style="width:100%;margin-top:10px;${x.blocked?'':'background:var(--red)'}" onclick="toggleBlock(${i});closeAdmUser()">${x.blocked?'🔓 Блокоос гаргах':'🚫 Блоклох'}</button>
+    ${x.blocked?`<button class="btn" style="width:100%;margin-top:10px;background:#3a2128;color:#fff" onclick="admDeleteUser(${i})">🗑 Бүртгэлийг бүрмөсөн устгах</button>`:''}`;
   ovOpen('admUserView');
+}
+async function admChatUser(i){
+  const x=admData.users[i];if(!x)return;
+  closeAdmUser();
+  let idx=chats.findIndex(c=>c.id===x.id);
+  if(idx<0){chats.unshift({id:x.id,n:x.name||x.n,ph:x.photo_url||x.ph||'',last:'',time:'',unread:0,msgs:[],loaded:false});idx=0;}
+  openChat(idx);
+}
+async function admDeleteUser(i){
+  const x=admData.users[i];if(!x)return;
+  toast('Устгаж байна…');
+  const {error}=await sb.from('profiles').delete().eq('id',x.id);
+  if(error){toast('Устгах алдаа: '+error.message);return;}
+  closeAdmUser();toast('🗑 Бүртгэл устгагдлаа');admTab('users');
+}
+async function admDeleteDate(i){
+  const d=admData.dates[i];if(!d)return;
+  const {error}=await sb.from('dates').delete().eq('id',d.id);
+  if(error){toast('Устгах алдаа: '+error.message);return;}
+  toast('🗑 Болзоо устгалаа');admTab('dates');
+}
+async function admConfirmDate(i){
+  const d=admData.dates[i];if(!d)return;
+  toast('Баталгаажуулж байна…');
+  const {error}=await sb.from('dates').update({status:'confirmed'}).eq('id',d.id);
+  if(error){toast('Алдаа: '+error.message);return;}
+  if(d.org_id){try{await sb.from('messages').insert({from_id:me.id,to_id:d.org_id,text:'✅ Таны болзоо баталгаажлаа! 📍 '+(d.venue||'')+' · 🗓 '+(d.when||'')+'. Болзоо хэсгээс дэлгэрэнгүйг харна уу.'});}catch(e){}}
+  toast('✅ Болзоо баталгаажиж, хэрэглэгчид мэдэгдлээ');admTab('dates');
 }
 async function admDeleteUserPhoto(i,pi){
   const x=admData.users[i];if(!x)return;
@@ -2101,7 +2284,7 @@ function copyText(t){t=(t||'').trim();if(!t){toast('Данс хоосон бай
 function fallbackCopy(t){try{const ta=document.createElement('textarea');ta.value=t;ta.style.position='fixed';ta.style.opacity='0';document.body.appendChild(ta);ta.focus();ta.select();document.execCommand('copy');document.body.removeChild(ta);toast('📋 Данс хуулагдлаа');}catch(e){toast('Хуулж чадсангүй: '+t);}}
 fillAimags();renderBank();
 applyTheme();
-const APP_VERSION='v27';
+const APP_VERSION='v33';
 try{document.getElementById('verBadge').textContent='Хоёулаа Болзий '+APP_VERSION;}catch(_){}
 loadSettings();
 restoreSession();
