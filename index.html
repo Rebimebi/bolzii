@@ -1126,7 +1126,7 @@ async function enterApp(){
   if(me.is_admin){route('adminPanel');admTab('verify');return;}
   if(me.blocked){await sb.auth.signOut();me=null;route('landing');toast('Таны бүртгэл блоклогдсон байна');return;}
   if(!me.verified){await loadSettings();route('pending');showPending();return;}
-  route('mainapp');try{await initApp();}catch(e){console.error('initApp',e);}ensureNotifPermission();
+  route('mainapp');try{history.pushState({guard:1},'');}catch(_){}try{await initApp();}catch(e){console.error('initApp',e);}ensureNotifPermission();
 }
 function showPending(){
   const pay=document.getElementById('pendingPay');if(!pay)return;
@@ -1246,7 +1246,18 @@ const _OVL_IDS=['detailView','chatView','lockView','vipModal','pwModal','payView
 function ovOpen(id){const e=document.getElementById(id);if(!e)return;e.classList.add('open');_ovStack.push(id);try{history.pushState({ov:id},'');}catch(_){}}
 function ovClose(id){const e=document.getElementById(id);if(e)e.classList.remove('open');const k=_ovStack.lastIndexOf(id);if(k<0)return;_ovStack.splice(k,1);if(!_fromPop){try{history.back();}catch(_){}}}
 function clearOverlays(){const n=_ovStack.length;_OVL_IDS.forEach(id=>{const e=document.getElementById(id);if(e)e.classList.remove('open');});_ovStack=[];if(n>0){try{history.go(-n);}catch(_){}}}
-window.addEventListener('popstate',function(){if(_ovStack.length){_fromPop=true;ovClose(_ovStack[_ovStack.length-1]);_fromPop=false;}});
+let _exitArmed=false,_exitTimer=null;
+function isInApp(){const m=document.getElementById('mainapp');return m&&m.classList.contains('active');}
+window.addEventListener('popstate',function(){
+  if(_ovStack.length){_fromPop=true;ovClose(_ovStack[_ovStack.length-1]);_fromPop=false;return;}
+  if(isInApp()){
+    if(_exitArmed)return; // 2 дахь даралт — гарахыг зөвшөөрнө
+    _exitArmed=true;
+    try{history.pushState({guard:1},'');}catch(_){}
+    toast('Гарахын тулд дахин «буцах» дарна уу');
+    clearTimeout(_exitTimer);_exitTimer=setTimeout(()=>{_exitArmed=false;},2000);
+  }
+});
 function route(p){
   document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));
   document.getElementById(p).classList.add('active');
@@ -1254,6 +1265,7 @@ function route(p){
 }
 async function initApp(){
   clearOverlays();
+  loadNotifs();
   await loadSettings();
   await loadPeople();
   await loadFriendReqs();
@@ -2201,13 +2213,17 @@ async function rejectUser(i){
 
 /* ============================================================ MISC ============================================================ */
 let tt;function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');clearTimeout(tt);tt=setTimeout(()=>t.classList.remove('show'),1800);}
-async function logout(){teardownRealtime();try{await sb.auth.signOut();}catch(e){}me=null;myVip=false;myLikes=0;chats=[];friendReqs=[];try{if(navigator.clearAppBadge)navigator.clearAppBadge();}catch(e){}route('landing');}
+async function logout(){teardownRealtime();try{await sb.auth.signOut();}catch(e){}me=null;myVip=false;myLikes=0;chats=[];friendReqs=[];notifs=[];bumpBell();try{if(navigator.clearAppBadge)navigator.clearAppBadge();}catch(e){}route('landing');}
 /* ============================================================ NOTIFICATIONS ============================================================ */
 let notifs=[];           // {icon,title,body,time,read}
+function notifKey(){return 'bolzii_notifs_'+(me?me.id:'anon');}
+function loadNotifs(){try{notifs=JSON.parse(localStorage.getItem(notifKey())||'[]')||[];}catch(e){notifs=[];}bumpBell();}
+function saveNotifs(){try{localStorage.setItem(notifKey(),JSON.stringify(notifs.slice(0,50)));}catch(e){}}
 let _actx=null,_nbT=null;
 function notify(icon,title,body){
   notifs.unshift({icon,title,body,time:'Одоо',read:false});
   if(notifs.length>50)notifs.length=50;
+  saveNotifs();
   playDing();bumpBell();showNotifBanner(icon,title,body);
   showOSNotification(icon,title,body);
 }
@@ -2266,7 +2282,7 @@ function showNotifBanner(icon,title,body){
 function openNotifs(){
   const w=document.getElementById('notifList');if(!w)return;
   w.innerHTML=notifs.length?notifs.map(x=>`<div class="nf-item${x.read?'':' unread'}"><div class="nf-ic">${x.icon}</div><div class="nf-b"><div class="nf-t">${x.title}</div><div class="nf-d">${x.body}</div></div><div class="nf-time">${x.time}</div></div>`).join(''):'<div style="text-align:center;color:var(--gray-2);padding:50px 20px;font-size:13px;">Одоогоор мэдэгдэл алга</div>';
-  notifs.forEach(x=>x.read=true);bumpBell();
+  notifs.forEach(x=>x.read=true);bumpBell();saveNotifs();
   ovOpen('notifPanel');
 }
 function closeNotifs(){ovClose('notifPanel');}
@@ -2284,7 +2300,8 @@ function copyText(t){t=(t||'').trim();if(!t){toast('Данс хоосон бай
 function fallbackCopy(t){try{const ta=document.createElement('textarea');ta.value=t;ta.style.position='fixed';ta.style.opacity='0';document.body.appendChild(ta);ta.focus();ta.select();document.execCommand('copy');document.body.removeChild(ta);toast('📋 Данс хуулагдлаа');}catch(e){toast('Хуулж чадсангүй: '+t);}}
 fillAimags();renderBank();
 applyTheme();
-const APP_VERSION='v33';
+try{window.addEventListener('pointerdown',function(){try{_actx=_actx||new(window.AudioContext||window.webkitAudioContext)();if(_actx.state==='suspended')_actx.resume();}catch(e){}});}catch(e){}
+const APP_VERSION='v34';
 try{document.getElementById('verBadge').textContent='Хоёулаа Болзий '+APP_VERSION;}catch(_){}
 loadSettings();
 restoreSession();
