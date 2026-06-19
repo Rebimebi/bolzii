@@ -1342,8 +1342,10 @@ async function cancelFR(toId){
 }
 async function acceptFR(i){
   const r=friendReqs[i];if(!r)return;
-  try{const {error}=await sb.from('friend_requests').update({status:'accepted'}).eq('id',r.reqId);if(error)throw error;}
+  let rows=null;
+  try{const {data,error}=await sb.from('friend_requests').update({status:'accepted'}).eq('id',r.reqId).select();if(error)throw error;rows=data;}
   catch(e){toast('Алдаа гарлаа');return;}
+  if(!rows||!rows.length){toast('Хүсэлт олдсонгүй — цуцлагдсан байж магадгүй');await loadFriendReqs();renderNotifs();return;}
   toast('✓ '+r.n+'-г найзаар нэмлээ');notify('🤝','Шинэ найз',r.n+' таны найз боллоо');
   await loadFriendReqs();await loadContacts();renderNotifs();
 }
@@ -1922,6 +1924,9 @@ function setupRealtime(){
       .on('postgres_changes',{event:'UPDATE',schema:'public',table:'friend_requests',filter:'from_id=eq.'+me.id},payload=>{
         if(payload.new&&payload.new.status==='accepted'){loadContacts();notify('🤝','Найз','Таны найзын хүсэлтийг зөвшөөрлөө');}
       })
+      .on('postgres_changes',{event:'DELETE',schema:'public',table:'friend_requests'},()=>{
+        loadFriendReqs().then(()=>{try{renderNotifs();}catch(e){}});
+      })
       .subscribe();
   }catch(e){console.error('realtime',e);}
 }
@@ -1975,7 +1980,7 @@ function tab(name,btn){
   document.querySelectorAll('.nav button').forEach(b=>b.classList.remove('active'));
   if(btn)btn.classList.add('active');else{const map={discover:0,dates:1,matches:2,profile:4};const nb=document.querySelectorAll('.nav button')[map[name]];if(nb)nb.classList.add('active');}
   try{
-    if(name==='matches'){renderMatches();renderFriendReqs();}
+    if(name==='matches'){renderMatches();renderFriendReqs();loadFriendReqs();}
     if(name==='dates'){renderDates();renderPkgs();renderBlind();}
     if(name==='profile'){renderProfileStats();}
   }catch(e){console.error('tab render',e);}
@@ -2379,10 +2384,11 @@ function attachNotifSwipe(){
     row.addEventListener('touchend',()=>{if(!active)return;active=false;row.style.transition='transform .2s,opacity .2s';if(Math.abs(dx)>90){row.style.transform='translateX('+(dx>0?500:-500)+'px)';row.style.opacity='0';const id=row.getAttribute('data-id');setTimeout(()=>removeNotif(id),190);}else{row.style.transform='';row.style.opacity='';}});
   });
 }
-function openNotifs(){
-  renderNotifs();
-  notifs.forEach(x=>x.read=true);bumpBell();saveNotifs();
+async function openNotifs(){
   ovOpen('notifPanel');
+  renderNotifs();
+  try{await loadFriendReqs();renderNotifs();}catch(e){}
+  notifs.forEach(x=>x.read=true);bumpBell();saveNotifs();
 }
 function closeNotifs(){ovClose('notifPanel');}
 /* Зураг томруулж харах */
@@ -2400,7 +2406,7 @@ function fallbackCopy(t){try{const ta=document.createElement('textarea');ta.valu
 fillAimags();renderBank();
 applyTheme();
 try{window.addEventListener('pointerdown',function(){try{_actx=_actx||new(window.AudioContext||window.webkitAudioContext)();if(_actx.state==='suspended')_actx.resume();}catch(e){}});}catch(e){}
-const APP_VERSION='v41';
+const APP_VERSION='v42';
 try{document.getElementById('verBadge').textContent='Хоёулаа Болзий '+APP_VERSION;}catch(_){}
 loadSettings();
 restoreSession();
