@@ -1792,6 +1792,7 @@ function openProfile(i){
   ovOpen('detailView');
 }
 function openLock(i){
+  if(isLocked()){curProfile=i;openLockedModal();return;}
   const p=people[i];curProfile=i;window._lastMatch=p.n;
   document.getElementById('lkHero').style.cssText='background-size:cover;background-position:center;'+(p.ph?`background-image:url('${imgUrl(p.ph)}')`:'background:linear-gradient(135deg,var(--red),var(--pink))');
   document.getElementById('lkName').textContent=`${p.n}, ${p.a}`;
@@ -2428,7 +2429,7 @@ function fallbackCopy(t){try{const ta=document.createElement('textarea');ta.valu
 fillAimags();renderBank();
 applyTheme();
 try{window.addEventListener('pointerdown',function(){try{_actx=_actx||new(window.AudioContext||window.webkitAudioContext)();if(_actx.state==='suspended')_actx.resume();}catch(e){}});}catch(e){}
-const APP_VERSION='v43';
+const APP_VERSION='v44';
 try{document.getElementById('verBadge').textContent='Хоёулаа Болзий '+APP_VERSION;}catch(_){}
 loadSettings();
 restoreSession();
