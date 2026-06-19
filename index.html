@@ -293,6 +293,7 @@ body{
 .dv-name{font-family:var(--display);font-size:30px;font-weight:600;display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
 .dv-verify{font-family:var(--body);font-size:11px;font-weight:800;background:rgba(47,168,116,.92);padding:5px 10px;border-radius:30px;}
 .dv-loc{font-size:14px;opacity:.92;margin-top:8px;font-weight:500;}
+.ver-badge{position:fixed;top:3px;left:7px;z-index:5;font-size:9px;color:var(--gray-2);opacity:.45;pointer-events:none;font-family:var(--body);letter-spacing:.3px;}
 .copy-acc{margin-left:auto;border:none;background:var(--pink-bg);color:var(--red);font-weight:800;font-size:11.5px;padding:6px 12px;border-radius:20px;cursor:pointer;font-family:var(--body);}
 .detail-body{flex:1;overflow-y:auto;padding:18px 20px 16px;}
 .dv-gallery{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px;}
@@ -796,7 +797,6 @@ body{
         Хоёулаа Болзий
       </div>
       <div style="display:flex;align-items:center;gap:8px;">
-        <button class="bell-btn" id="bellBtn" onclick="openNotifs()" aria-label="Мэдэгдэл">🔔<span class="bell-badge" id="bellBadge" style="display:none">0</span></button>
         <button class="theme-btn" id="themeBtn" onclick="toggleTheme()" aria-label="Өнгө солих">🌙</button>
         <div class="vip" onclick="tab('profile')">⭐ VIP</div>
       </div>
@@ -976,6 +976,7 @@ body{
       <button onclick="tab('dates',this)"><span class="ct"><svg width="24" height="24" viewBox="0 0 24 24" stroke-width="2" fill="none"><rect x="3" y="4" width="18" height="18" rx="3"/><path d="M3 9h18M8 2v4M16 2v4"/></svg><span class="dot" id="navDates">1</span></span>Болзоо</button>
       <button onclick="tab('matches',this)"><span class="ct"><svg width="24" height="24" viewBox="0 0 24 24" stroke-width="2" fill="none"><path d="M21 11.5a8.4 8.4 0 0 1-9 8.4 8.4 8.4 0 0 1-4-1L3 20l1.1-4.9A8.4 8.4 0 1 1 21 11.5z"/></svg><span class="dot" id="navUnread">2</span></span>Чат</button>
       <button onclick="tab('profile',this)"><svg width="24" height="24" viewBox="0 0 24 24" stroke-width="2" fill="none"><circle cx="12" cy="8" r="4"/><path d="M5 21c0-4 3-6 7-6s7 2 7 6"/></svg>Профайл</button>
+      <button onclick="openNotifs()"><span class="ct"><svg width="24" height="24" viewBox="0 0 24 24" stroke-width="2" fill="none"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg><span class="dot" id="bellBadge" style="display:none">0</span></span>Мэдэгдэл</button>
     </nav>
   </section>
 
@@ -1023,6 +1024,8 @@ body{
   <!-- ============ IMAGE LIGHTBOX ============ -->
   <div class="lightbox" id="lightbox" onclick="closeLightbox()"><img id="lightboxImg" alt=""></div>
 
+  <div class="ver-badge" id="verBadge"></div>
+
   <div class="toast" id="toast"></div>
 </div>
 
@@ -1063,7 +1066,7 @@ async function enterApp(){
   if(me.is_admin){route('adminPanel');admTab('verify');return;}
   if(me.blocked){await sb.auth.signOut();me=null;route('landing');toast('Таны бүртгэл блоклогдсон байна');return;}
   if(!me.verified){await loadSettings();route('pending');showPending();return;}
-  route('mainapp');await initApp();ensureNotifPermission();
+  route('mainapp');try{await initApp();}catch(e){console.error('initApp',e);}ensureNotifPermission();
 }
 function showPending(){
   const pay=document.getElementById('pendingPay');if(!pay)return;
@@ -1196,7 +1199,8 @@ async function initApp(){
   await loadFriendReqs();
   await loadContacts();
   setupRealtime();
-  renderDates();renderPkgs();renderBlind();bumpUnread();bumpDates();
+  await loadDates();
+  renderPkgs();renderBlind();bumpUnread();
   if(me){applyProfileUI();}
 }
 async function loadPeople(){
@@ -1289,13 +1293,11 @@ function confirmPay(){
   if(who==='__blind__'){
     const p=pickBlindMatch();
     if(!p){setTimeout(()=>toast('Одоогоор тохирох хүн алга — удахгүй тохируулна'),1200);return;}
-    dates.unshift({n:'Сохор болзоо 🎲',ph:p.ph,venue:ven.v,area:ven.area,when:slot,status:'pending'});
-    renderDates();bumpDates();
+    saveDate({partnerId:p.id,n:'Сохор болзоо 🎲',ph:p.ph,venue:ven.v,area:ven.area,when:slot,blind:true});
     setTimeout(()=>{toast('🎲 Сохор болзоо тохирлоо — нөгөө талын зөвшөөрлийг хүлээж байна');notify('🎲','Сохор болзоо','Танд нас/сонирхол ойролцоо хүнтэй сохор болзоо тохирлоо');},1300);
   }else if(who){
     const c=chats.find(x=>x.n===who);
-    dates.unshift({n:who,ph:c?c.ph:(people[0]?people[0].ph:''),venue:ven.v,area:ven.area,when:slot,status:'pending'});
-    renderDates();bumpDates();
+    saveDate({partnerId:c?c.id:null,n:who,ph:c?c.ph:'',venue:ven.v,area:ven.area,when:slot,pkg:pkg.name});
     setTimeout(()=>{toast('⏳ '+who+'-н зөвшөөрлийг хүлээж байна');},1400);
   }
 }
@@ -1344,8 +1346,7 @@ function startBlind(mode){
 function closeBlind(){ovClose('blindView');}
 function acceptBlind(){
   const p=blindPick;if(!p){closeBlind();return;}closeBlind();
-  dates.unshift({n:p.n,ph:p.ph,venue:p._ven.v,area:p._ven.area,when:p._slot,status:'pending'});
-  renderDates();bumpDates();
+  saveDate({partnerId:p.id,n:p.n,ph:p.ph,venue:p._ven.v,area:p._ven.area,when:p._slot,blind:true});
   toast('🎲 Сохор болзоо илгээлээ — '+p.n+'-н зөвшөөрлийг хүлээж байна');
 }
 
@@ -1441,7 +1442,14 @@ async function doLogin(){
   if(!ph||!pw){toast('Утас болон нууц үгээ оруулна уу');return;}
   toast('Нэвтэрч байна…');
   const {data,error}=await sb.auth.signInWithPassword({email:phEmail(ph),password:pw});
-  if(error){toast('Утас эсвэл нууц үг буруу');return;}
+  if(error){
+    const m=(error.message||'').toLowerCase();
+    if(/invalid login credentials/.test(m))toast('Утас эсвэл нууц үг буруу');
+    else if(/email not confirmed/.test(m))toast('Имэйл баталгаажаагүй (Supabase → Authentication → Email confirm-ийг унтраа)');
+    else if(/network|fetch|failed/.test(m))toast('Сүлжээний алдаа — холболтоо шалгана уу');
+    else toast('Нэвтрэх алдаа: '+(error.message||'тодорхойгүй'));
+    return;
+  }
   try{
     const rem=document.getElementById('rememberLogin');
     if(rem&&rem.checked)localStorage.setItem('bolzii_phone',ph);
@@ -1673,6 +1681,11 @@ async function loadContacts(){
   if(ids.length){try{const {data:ps}=await sb.from('profiles').select('id,name,photo_url').in('id',ids);(ps||[]).forEach(p=>profs[p.id]=p);}catch(e){}}
   const prev={};chats.forEach(c=>prev[c.id]=c);
   chats=ids.map(id=>{const ex=prev[id]||{};const p=profs[id]||{};return {id,n:p.name||ex.n||'Хэрэглэгч',ph:p.photo_url||ex.ph||'',last:ex.last||'',time:ex.time||'',unread:ex.unread||0,msgs:ex.msgs||[],loaded:ex.loaded||false};});
+  // уншаагүй зурвасны тоог DB-ээс тооцох
+  try{
+    const {data:un,error:ue}=await sb.from('messages').select('from_id').eq('to_id',me.id).eq('read',false);
+    if(!ue){const counts={};(un||[]).forEach(m=>{counts[m.from_id]=(counts[m.from_id]||0)+1;});chats.forEach(c=>{c.unread=counts[c.id]||0;});}
+  }catch(e){}
   renderMatches();bumpUnread();
 }
 function renderMatches(){
@@ -1681,7 +1694,7 @@ function renderMatches(){
 }
 async function openChat(i){
   curChat=i;const c=chats[i];if(!c)return;
-  c.unread=0;bumpUnread();renderMatches();
+  c.unread=0;bumpUnread();renderMatches();markRead(c.id);
   document.getElementById('cvName').textContent=c.n;
   document.getElementById('cvPh').style.cssText='background-size:cover;background-position:center;'+(c.ph?`background-image:url('${imgUrl(c.ph)}')`:'background:linear-gradient(135deg,var(--red),var(--pink))');
   ovOpen('chatView');
@@ -1722,7 +1735,7 @@ function setupRealtime(){
         const open=document.getElementById('chatView').classList.contains('open')&&chats[curChat]&&chats[curChat].id===m.from_id;
         if(c){
           c.msgs.push({me:0,t:m.text});c.last=m.text;c.time='Одоо';
-          if(open)renderMsgs();else{c.unread=(c.unread||0)+1;notify('💬','Шинэ зурвас',(c.n||'')+': '+m.text);}
+          if(open){renderMsgs();markRead(c.id);}else{c.unread=(c.unread||0)+1;notify('💬','Шинэ зурвас',(c.n||'')+': '+m.text);}
           renderMatches();bumpUnread();
         }else{loadContacts();notify('💬','Шинэ зурвас','Танд шинэ зурвас ирлээ');}
       })
@@ -1738,20 +1751,42 @@ function setupRealtime(){
 function teardownRealtime(){try{if(rtChannel){sb.removeChannel(rtChannel);rtChannel=null;}}catch(e){}}
 
 /* ============================================================ DATES (app organizes) ============================================================ */
+async function loadDates(){
+  if(!me){dates=[];renderDates();bumpDates();return;}
+  try{
+    const {data}=await sb.from('dates').select('*').or(`organizer_id.eq.${me.id},partner_id.eq.${me.id}`).order('created_at',{ascending:false});
+    const rows=data||[];
+    const ids=[...new Set(rows.map(d=>d.organizer_id===me.id?d.partner_id:d.organizer_id).filter(Boolean))];
+    let profs={};
+    if(ids.length){const {data:ps}=await sb.from('profiles').select('id,name,photo_url').in('id',ids);(ps||[]).forEach(p=>profs[p.id]=p);}
+    dates=rows.map(d=>{const otherId=d.organizer_id===me.id?d.partner_id:d.organizer_id;const p=profs[otherId]||{};const blind=(d.package==='blind');return {id:d.id,partnerId:otherId,n:blind?'Сохор болзоо 🎲':(p.name||'Болзоо'),ph:p.photo_url||'',venue:d.venue||'',area:d.area||'',when:d.when_text||'',status:d.status||'pending',blind};});
+  }catch(e){console.error('loadDates',e);}
+  renderDates();bumpDates();
+}
+async function saveDate(o){
+  const local={id:null,partnerId:o.partnerId||null,n:o.n,ph:o.ph||'',venue:o.venue,area:o.area,when:o.when,status:'pending',blind:!!o.blind};
+  dates.unshift(local);renderDates();bumpDates();
+  if(!me)return;
+  try{
+    const {data,error}=await sb.from('dates').insert({organizer_id:me.id,partner_id:o.partnerId||null,venue:o.venue,area:o.area,when_text:o.when,package:o.pkg||(o.blind?'blind':''),status:'pending'}).select().maybeSingle();
+    if(error)console.error('saveDate',error);else if(data)local.id=data.id;
+  }catch(e){console.error('saveDate',e);}
+}
+async function markRead(fromId){if(!me||!fromId)return;try{await sb.from('messages').update({read:true}).eq('to_id',me.id).eq('from_id',fromId).eq('read',false);}catch(e){}}
 function renderDates(){
   const el=document.getElementById('datesList');
   if(!dates.length){el.innerHTML=`<div class="empty-dates">Одоогоор товлосон болзоо алга.<br>Тохирсон хүнтэйгээ болзоо товлоорой 💕</div>`;return;}
-  el.innerHTML=dates.map(d=>`<div class="date-card"><div class="dc-top"><div class="ph" style="${photoBg(d.ph)}"></div><div><div class="who">${d.n}</div><div class="stt ${d.status==='confirmed'?'ok':'pend'}">${d.status==='confirmed'?'✓ Хоёр тал баталгаажуулсан':'⏳ Нөгөө талын хариу хүлээж байна'}</div></div></div><div class="dc-body"><div class="venue">📍 ${d.venue}</div><div class="meta">${d.area}</div><div class="meta">🗓 ${d.when}</div><div class="remind">📲 Бид танд 2 цагийн өмнө сануулна</div></div><div class="dc-actions"><button class="resc" onclick="toast('Цаг өөрчлөх хүсэлт илгээлээ')">Цаг өөрчлөх</button><button class="conf" onclick="openChatByName('${d.n}')">Чатлах</button></div></div>`).join('');
+  el.innerHTML=dates.map(d=>`<div class="date-card"><div class="dc-top"><div class="ph" style="${photoBg(d.ph)}"></div><div><div class="who">${d.n}</div><div class="stt ${d.status==='confirmed'?'ok':'pend'}">${d.status==='confirmed'?'✓ Хоёр тал баталгаажуулсан':'⏳ Нөгөө талын хариу хүлээж байна'}</div></div></div><div class="dc-body"><div class="venue">📍 ${d.venue}</div><div class="meta">${d.area}</div><div class="meta">🗓 ${d.when}</div><div class="remind">📲 Бид танд 2 цагийн өмнө сануулна</div></div><div class="dc-actions"><button class="resc" onclick="toast('Цаг өөрчлөх хүсэлт илгээлээ')">Цаг өөрчлөх</button><button class="conf" onclick="${d.partnerId?`openChatById('${d.partnerId}')`:`tab('matches')`}">Чатлах</button></div></div>`).join('');
 }
-function makeDate(name,ph){
+function makeDate(name,ph,partnerId){
   const ven=venues[Math.floor(Math.random()*venues.length)],slot=slots[Math.floor(Math.random()*slots.length)];
-  dates.unshift({n:name,ph:ph,venue:ven.v,area:ven.area,when:slot,status:'pending'});
-  tab('dates',document.querySelectorAll('.nav button')[1]);renderDates();bumpDates();
-  toast('📅 Болзооны санал илгээлээ...');
-  setTimeout(()=>{if(dates[0]){dates[0].status='confirmed';renderDates();toast('🎉 '+name+' болзоог баталгаажууллаа!');}},1700);
+  saveDate({partnerId:partnerId||null,n:name,ph:ph,venue:ven.v,area:ven.area,when:slot});
+  tab('dates',document.querySelectorAll('.nav button')[1]);
+  toast('📅 '+name+'-д болзооны санал илгээлээ');
+  notify('📅','Болзооны санал',name+'-д болзооны санал илгээлээ');
 }
 function scheduleFromMatch(){const name=window._lastMatch,src=people.find(x=>x.n===name)||chats.find(x=>x.n===name)||{};hideMatch();makeDate(name,src.ph);}
-function scheduleFromChat(){const c=chats[curChat];closeChat();makeDate(c.n,c.ph);}
+function scheduleFromChat(){const c=chats[curChat];closeChat();makeDate(c.n,c.ph,c.id);}
 function openChatByName(n){const i=chats.findIndex(c=>c.n===n);if(i>=0){tab('matches',document.querySelectorAll('.nav button')[2]);openChat(i);}else toast('Чатлахын тулд найз болох/тохирох хэрэгтэй');}
 
 /* ============================================================ TABS / BADGES ============================================================ */
@@ -2066,6 +2101,8 @@ function copyText(t){t=(t||'').trim();if(!t){toast('Данс хоосон бай
 function fallbackCopy(t){try{const ta=document.createElement('textarea');ta.value=t;ta.style.position='fixed';ta.style.opacity='0';document.body.appendChild(ta);ta.focus();ta.select();document.execCommand('copy');document.body.removeChild(ta);toast('📋 Данс хуулагдлаа');}catch(e){toast('Хуулж чадсангүй: '+t);}}
 fillAimags();renderBank();
 applyTheme();
+const APP_VERSION='v27';
+try{document.getElementById('verBadge').textContent='Хоёулаа Болзий '+APP_VERSION;}catch(_){}
 loadSettings();
 restoreSession();
 /* Бүртгэлийн талбар бүрд listener — бөглөх бүрт товчийг шалгана */
