@@ -1296,6 +1296,7 @@ async function loadPeople(){
 /* ============================================================ FRIEND REQUESTS ============================================================ */
 let allowFR=true;
 let friendReqs=[];
+let sentReqIds=new Set();
 async function loadFriendReqs(){
   if(!me){friendReqs=[];renderFriendReqs();return;}
   try{
@@ -1305,6 +1306,10 @@ async function loadFriendReqs(){
     if(ids.length){const {data:ps}=await sb.from('profiles').select('id,name,photo_url').in('id',ids);(ps||[]).forEach(p=>profs[p.id]=p);}
     friendReqs=(data||[]).map(r=>({reqId:r.id,fromId:r.from_id,n:(profs[r.from_id]||{}).name||'Хэрэглэгч',ph:(profs[r.from_id]||{}).photo_url||''}));
   }catch(e){console.error('loadFriendReqs',e);friendReqs=[];}
+  try{
+    const {data:sent}=await sb.from('friend_requests').select('to_id').eq('from_id',me.id).eq('status','pending');
+    sentReqIds=new Set((sent||[]).map(r=>r.to_id));
+  }catch(e){}
   renderFriendReqs();
 }
 function renderFriendReqs(){
@@ -1321,18 +1326,29 @@ async function sendFriendReq(){
     if(error&&!/duplicate|unique/i.test(error.message||'')){toast('Алдаа: '+error.message);return;}
   }catch(e){}
   toast('👤 '+p.n+'-д найзын хүсэлт илгээлээ');notify('👋','Найзын хүсэлт',p.n+'-д найзын хүсэлт илгээлээ');
+  sentReqIds.add(p.id);
+}
+async function cancelFR(toId){
+  closeProfile();closeLock();
+  if(!me||!toId)return;
+  try{
+    const {data}=await sb.from('friend_requests').delete().eq('from_id',me.id).eq('to_id',toId).eq('status','pending').select();
+    if(!data||!data.length){toast('Цуцлах эрх алдаа — Supabase SQL policy ажиллуулна уу');return;}
+  }catch(e){}
+  sentReqIds.delete(toId);
+  toast('Найзын хүсэлтийг цуцаллаа');
 }
 async function acceptFR(i){
   const r=friendReqs[i];if(!r)return;
   try{const {error}=await sb.from('friend_requests').update({status:'accepted'}).eq('id',r.reqId);if(error)throw error;}
   catch(e){toast('Алдаа гарлаа');return;}
   toast('✓ '+r.n+'-г найзаар нэмлээ');notify('🤝','Шинэ найз',r.n+' таны найз боллоо');
-  await loadFriendReqs();await loadContacts();
+  await loadFriendReqs();await loadContacts();renderNotifs();
 }
 async function declineFR(i){
   const r=friendReqs[i];if(!r)return;
   try{await sb.from('friend_requests').update({status:'declined'}).eq('id',r.reqId);}catch(e){}
-  toast(r.n+'-н хүсэлтийг татгалзлаа');await loadFriendReqs();
+  toast(r.n+'-н хүсэлтийг татгалзлаа');await loadFriendReqs();renderNotifs();
 }
 function toggleFRSetting(){allowFR=!allowFR;document.getElementById('frToggle').classList.toggle('on',allowFR);toast(allowFR?'Найзын хүсэлт зөвшөөрөв':'Найзын хүсэлт хаалаа');}
 function renderPkgs(){
@@ -1749,7 +1765,9 @@ function openProfile(i){
   const isFriend=chats.some(c=>c.id===p.id);
   document.getElementById('dvActions').innerHTML=isFriend
     ? `<button class="da-like" style="flex:1" onclick="closeProfile();openChatById(${JSON.stringify(p.id)})">💬 Чат бичих</button>`
-    : `<button class="da-pass" onclick="sendFriendReq()">👤 Найзын хүсэлт</button><button class="da-like" onclick="likeUser()">❤️ Таалагдлаа</button>`;
+    : (sentReqIds.has(p.id)
+      ? `<button class="da-pass" style="flex:1" onclick="cancelFR(${JSON.stringify(p.id)})">⏳ Хүсэлт цуцлах</button>`
+      : `<button class="da-pass" onclick="sendFriendReq()">👤 Найзын хүсэлт</button><button class="da-like" onclick="likeUser()">❤️ Таалагдлаа</button>`);
   ovOpen('detailView');
 }
 function openLock(i){
@@ -1893,7 +1911,7 @@ function setupRealtime(){
         }else{loadContacts();notify('💬','Шинэ зурвас','Танд шинэ зурвас ирлээ');}
       })
       .on('postgres_changes',{event:'INSERT',schema:'public',table:'friend_requests',filter:'to_id=eq.'+me.id},()=>{
-        loadFriendReqs();notify('👋','Найзын хүсэлт','Танд шинэ найзын хүсэлт ирлээ');
+        loadFriendReqs().then(()=>{try{renderNotifs();}catch(e){}});notify('👋','Найзын хүсэлт','Танд шинэ найзын хүсэлт ирлээ');
       })
       .on('postgres_changes',{event:'UPDATE',schema:'public',table:'friend_requests',filter:'from_id=eq.'+me.id},payload=>{
         if(payload.new&&payload.new.status==='accepted'){loadContacts();notify('🤝','Найз','Таны найзын хүсэлтийг зөвшөөрлөө');}
@@ -2008,14 +2026,17 @@ async function admTab(t,btn){
     }catch(e){console.error('admTab load',e);body.innerHTML='<div style="text-align:center;color:var(--red);padding:30px;">Ачаалахад алдаа гарлаа</div>';return;}
   }
   if(t==='dates'){
+    admData.datesErr='';
     try{
-      const {data:dts}=await sb.from('dates').select('*').order('created_at',{ascending:false});
-      const rows=dts||[];
+      let r=await sb.from('dates').select('*').order('created_at',{ascending:false});
+      if(r.error){ r=await sb.from('dates').select('*'); } // created_at байхгүй бол order-гүй
+      if(r.error)admData.datesErr=r.error.message||'';
+      const rows=r.data||[];
       const pid=[...new Set(rows.reduce((a,d)=>{if(d.organizer_id)a.push(d.organizer_id);if(d.partner_id)a.push(d.partner_id);return a;},[]))];
       let pm={};
       if(pid.length){const {data:ps}=await sb.from('profiles').select('id,name').in('id',pid);(ps||[]).forEach(p=>pm[p.id]=p.name);}
       admData.dates=rows.map(d=>({id:d.id,org_id:d.organizer_id,org:pm[d.organizer_id]||'?',partner:(d.package==='blind'?'Сохор 🎲':(pm[d.partner_id]||'?')),venue:d.venue,area:d.area,when:d.when_text,status:d.status,pkg:d.package}));
-    }catch(e){console.error('adm dates',e);admData.dates=[];}
+    }catch(e){console.error('adm dates',e);admData.dates=[];admData.datesErr=(e&&e.message)||'алдаа';}
     try{
       const {data:bl}=await sb.from('profiles').select('id,name,age,city,blind_pref,photo_url').eq('blind_active',true);
       admData.blind=(bl||[]).map(x=>({id:x.id,name:x.name,age:x.age,city:x.city,ph:x.photo_url||'',pref:x.blind_pref||{}}));
@@ -2048,7 +2069,7 @@ async function admTab(t,btn){
     html+=`<div class="adm-sec">🎲 Сохор болзоонд бүртгүүлсэн (${(admData.blind||[]).length})</div>`;
     html+=(admData.blind&&admData.blind.length)?admData.blind.map(b=>{const pr=[b.pref.age?b.pref.age+' нас':'',b.pref.height?b.pref.height+'см+':'',b.pref.weight?b.pref.weight+'кг':''].filter(Boolean).join(', ');return `<div class="adm-card"><div class="ph" style="${photoBg(b.ph)}"></div><div class="b"><div class="nm">${b.name||'?'}${b.age?', '+b.age:''}</div><div class="meta">${b.city||''} · хүсэл: ${pr||'заагаагүй'}</div></div></div>`;}).join(''):empty('Бүртгүүлсэн бүсгүй алга');
     html+=`<div class="adm-sec" style="margin-top:18px">📅 Бүх болзоо (${(admData.dates||[]).length})</div>`;
-    html+=(admData.dates&&admData.dates.length)?admData.dates.map((d,i)=>`<div class="adm-card"><div class="b"><div class="nm">${d.org} ↔ ${d.partner}</div><div class="meta">📍 ${d.venue||'-'} · 🗓 ${d.when||'-'} · ${d.status==='confirmed'?'✅ Баталгаажсан':'⏳ Төлбөр хүлээж буй'}</div></div><div class="acts">${d.status!=='confirmed'?`<button class="ok-b" onclick="admConfirmDate(${i})" title="Төлбөр баталгаажуулах">✓</button>`:''}<button class="no-b" onclick="admDeleteDate(${i})" title="Устгах">🗑</button></div></div>`).join(''):empty('Болзоо алга');
+    html+=(admData.dates&&admData.dates.length)?admData.dates.map((d,i)=>`<div class="adm-card"><div class="b"><div class="nm">${d.org} ↔ ${d.partner}</div><div class="meta">📍 ${d.venue||'-'} · 🗓 ${d.when||'-'} · ${d.status==='confirmed'?'✅ Баталгаажсан':'⏳ Төлбөр хүлээж буй'}</div></div><div class="acts">${d.status!=='confirmed'?`<button class="ok-b" onclick="admConfirmDate(${i})" title="Төлбөр баталгаажуулах">✓</button>`:''}<button class="no-b" onclick="admDeleteDate(${i})" title="Устгах">🗑</button></div></div>`).join(''):empty(admData.datesErr?('⚠️ '+admData.datesErr):'Болзоо алга. Хэрэв хэрэглэгч болзоо захиалсан ч энд харагдахгүй бол Supabase-д <b>admin_all_dates</b> SQL policy-г ажиллуулна уу.');
   }
   else if(t==='reports'){html+=empty('Гомдол (удахгүй холбогдоно)');}
   else if(t==='settings'){
@@ -2289,9 +2310,17 @@ function showNotifBanner(icon,title,body){
   el.classList.add('show');clearTimeout(_nbT);_nbT=setTimeout(()=>el.classList.remove('show'),3300);
   el.onclick=()=>{el.classList.remove('show');openNotifs();};
 }
-function openNotifs(){
+function renderNotifs(){
   const w=document.getElementById('notifList');if(!w)return;
-  w.innerHTML=notifs.length?notifs.map(x=>`<div class="nf-item${x.read?'':' unread'}"><div class="nf-ic">${x.icon}</div><div class="nf-b"><div class="nf-t">${x.title}</div><div class="nf-d">${x.body}</div></div><div class="nf-time">${x.time}</div></div>`).join(''):'<div style="text-align:center;color:var(--gray-2);padding:50px 20px;font-size:13px;">Одоогоор мэдэгдэл алга</div>';
+  let html='';
+  if(friendReqs.length){
+    html+=friendReqs.map((r,i)=>`<div class="nf-item unread"><div class="nf-ic">👋</div><div class="nf-b"><div class="nf-t">${r.n}</div><div class="nf-d">танд найзын хүсэлт илгээлээ</div><div class="fr-btns" style="margin-top:9px"><button class="acc" onclick="acceptFR(${i})">Зөвшөөрөх</button><button class="dec" onclick="declineFR(${i})">Татгалзах</button></div></div></div>`).join('');
+  }
+  html+=notifs.map(x=>`<div class="nf-item${x.read?'':' unread'}"><div class="nf-ic">${x.icon}</div><div class="nf-b"><div class="nf-t">${x.title}</div><div class="nf-d">${x.body}</div></div><div class="nf-time">${x.time}</div></div>`).join('');
+  w.innerHTML=html||'<div style="text-align:center;color:var(--gray-2);padding:50px 20px;font-size:13px;">Одоогоор мэдэгдэл алга</div>';
+}
+function openNotifs(){
+  renderNotifs();
   notifs.forEach(x=>x.read=true);bumpBell();saveNotifs();
   ovOpen('notifPanel');
 }
@@ -2311,7 +2340,7 @@ function fallbackCopy(t){try{const ta=document.createElement('textarea');ta.valu
 fillAimags();renderBank();
 applyTheme();
 try{window.addEventListener('pointerdown',function(){try{_actx=_actx||new(window.AudioContext||window.webkitAudioContext)();if(_actx.state==='suspended')_actx.resume();}catch(e){}});}catch(e){}
-const APP_VERSION='v36';
+const APP_VERSION='v38';
 try{document.getElementById('verBadge').textContent='Хоёулаа Болзий '+APP_VERSION;}catch(_){}
 loadSettings();
 restoreSession();
