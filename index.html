@@ -1089,7 +1089,7 @@ body.dark .date-remind-top{background:linear-gradient(135deg,#3a2e12,#2c2410);co
 
   <!-- ============ ADMIN PANEL ============ -->
   <section class="page" id="adminPanel">
-    <div class="admin-head"><div class="ttl">Хоёулаа Болзий — Админ</div><button class="out" onclick="logout()">Гарах</button></div>
+    <div class="admin-head"><div class="ttl">Хоёулаа Болзий — Админ</div><div style="display:flex;gap:8px"><button class="out" onclick="refreshAdm()" title="Шинэчлэх">🔄 Шинэчлэх</button><button class="out" onclick="logout()">Гарах</button></div></div>
     <div class="admin-tabs">
       <button class="on" onclick="admTab('verify',this)">Баталгаажуулалт</button>
       <button onclick="admTab('users',this)">Хэрэглэгчид</button>
@@ -2070,7 +2070,10 @@ const admData={
   dates:[],
   reports:[],
 };
+let _admCurTab='verify';
+function refreshAdm(){admTab(_admCurTab);}
 async function admTab(t,btn){
+  _admCurTab=t;
   if(btn){document.querySelectorAll('.admin-tabs button').forEach(b=>b.classList.remove('on'));btn.classList.add('on');}
   const body=document.getElementById('admBody');
   body.innerHTML='<div style="text-align:center;color:var(--gray-2);padding:30px;font-size:13px;">Ачааллаж байна…</div>';
@@ -2454,7 +2457,7 @@ function fallbackCopy(t){try{const ta=document.createElement('textarea');ta.valu
 fillAimags();renderBank();
 applyTheme();
 try{window.addEventListener('pointerdown',function(){try{_actx=_actx||new(window.AudioContext||window.webkitAudioContext)();if(_actx.state==='suspended')_actx.resume();}catch(e){}});}catch(e){}
-const APP_VERSION='v47';
+const APP_VERSION='v48';
 try{document.getElementById('verBadge').textContent='Хоёулаа Болзий '+APP_VERSION;}catch(_){}
 loadSettings();
 restoreSession();
