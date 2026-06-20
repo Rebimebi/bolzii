@@ -517,6 +517,14 @@ body.dark .date-remind-top{background:linear-gradient(135deg,#3a2e12,#2c2410);co
 .kpi{flex:1;background:var(--card);border-radius:16px;padding:14px;text-align:center;}
 .kpi .v{font-family:var(--display);font-size:22px;color:var(--red);font-weight:600;}
 .kpi .l{font-size:10.5px;color:var(--gray-2);font-weight:600;margin-top:2px;}
+.gstat-row{display:flex;gap:12px;margin-bottom:14px;}
+.gstat{flex:1;border-radius:20px;padding:22px 14px;text-align:center;border:1.5px solid transparent;}
+.gstat.f{background:rgba(255,122,162,.13);border-color:rgba(255,122,162,.45);}
+.gstat.m{background:rgba(91,155,213,.13);border-color:rgba(91,155,213,.45);}
+.gstat .gn{font-family:var(--display);font-weight:700;font-size:52px;line-height:1;}
+.gstat.f .gn{color:#ff7aa2;}
+.gstat.m .gn{color:#5b9bd5;}
+.gstat .gl{font-size:14px;font-weight:600;margin-top:8px;color:var(--text);}
 .adm-card{background:var(--card);border-radius:16px;padding:13px;margin-bottom:10px;display:flex;align-items:center;gap:12px;}
 .adm-card .ph{width:46px;height:46px;border-radius:12px;background-size:cover;background-position:center;flex:0 0 auto;}
 .adm-card .b{flex:1;min-width:0;}
@@ -2097,7 +2105,11 @@ async function admTab(t,btn){
   let html='';
   if(t!=='settings'){
     const blk=admData.users.filter(u=>u.blocked).length;
-    html+=`<div class="kpi-row"><div class="kpi"><div class="v">${admData.users.length}</div><div class="l">Хэрэглэгч</div></div><div class="kpi"><div class="v">${admData.verify.length}</div><div class="l">Хүлээгдэж буй</div></div><div class="kpi"><div class="v">${blk}</div><div class="l">Блоклосон</div></div></div>`;
+    const allU=[...admData.users.map(u=>u.gender),...admData.verify.map(u=>u.g)];
+    const men=allU.filter(g=>g==='m').length;
+    const women=allU.filter(g=>g==='f').length;
+    html+=`<div class="gstat-row"><div class="gstat f"><div class="gn">${women}</div><div class="gl">♀ Эмэгтэй хэрэглэгч</div></div><div class="gstat m"><div class="gn">${men}</div><div class="gl">♂ Эрэгтэй хэрэглэгч</div></div></div>`;
+    html+=`<div class="kpi-row"><div class="kpi"><div class="v">${allU.length}</div><div class="l">Нийт</div></div><div class="kpi"><div class="v">${admData.verify.length}</div><div class="l">Хүлээгдэж буй</div></div><div class="kpi"><div class="v">${blk}</div><div class="l">Блоклосон</div></div></div>`;
   }
   const empty=msg=>`<div style="text-align:center;color:var(--gray-2);font-size:13px;padding:30px 10px;">${msg}</div>`;
   if(t==='verify'){html+=admData.verify.length?admData.verify.map((x,i)=>`<div class="adm-verify">
@@ -2442,7 +2454,7 @@ function fallbackCopy(t){try{const ta=document.createElement('textarea');ta.valu
 fillAimags();renderBank();
 applyTheme();
 try{window.addEventListener('pointerdown',function(){try{_actx=_actx||new(window.AudioContext||window.webkitAudioContext)();if(_actx.state==='suspended')_actx.resume();}catch(e){}});}catch(e){}
-const APP_VERSION='v45';
+const APP_VERSION='v47';
 try{document.getElementById('verBadge').textContent='Хоёулаа Болзий '+APP_VERSION;}catch(_){}
 loadSettings();
 restoreSession();
