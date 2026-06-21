@@ -907,6 +907,8 @@ body.dark .date-remind-top{background:linear-gradient(135deg,#3a2e12,#2c2410);co
         </div>
         <div class="sec-title">Сохор болзоонд бэлэн бүсгүйчүүд</div>
         <div id="availWomen"></div>
+        <div class="sec-title">🎉 Болзох болсон хосууд</div>
+        <div id="publicDates"></div>
         <div class="sec-title">Болзоо зохион байгуулах багц</div>
         <div id="pkgList"></div>
       </div>
@@ -1030,7 +1032,12 @@ body.dark .date-remind-top{background:linear-gradient(135deg,#3a2e12,#2c2410);co
         <div id="payBlindBox" style="display:none">
           <div class="blind-note" style="margin-top:10px">🎲 Апп таны нас, сонирхолд тохирох хүнтэй сохор болзоо тохируулна. Хэн болохыг урьдчилан харахгүй.</div>
         </div>
-        <div class="pay-consent">⚠️ Төлбөр орсныг админ шалгасны дараа болзоо баталгаажна.</div>
+        <div class="form-group" style="margin-top:12px;margin-bottom:8px"><label>📅 Болзооны өдөр</label><input type="date" id="payDate" style="width:100%;padding:12px;border-radius:12px;border:1px solid var(--gray-bg);background:var(--card);color:var(--text);font-family:var(--body);font-size:14px;"></div>
+        <div class="form-group" style="margin-bottom:8px"><label>🕐 Цаг</label><select id="payTime" style="width:100%;padding:12px;border-radius:12px;border:1px solid var(--gray-bg);background:var(--card);color:var(--text);font-family:var(--body);font-size:14px;">
+          <option value="12:00">12:00</option><option value="13:00">13:00</option><option value="14:00">14:00</option><option value="15:00">15:00</option><option value="16:00">16:00</option><option value="17:00">17:00</option><option value="18:00">18:00</option><option value="19:00" selected>19:00</option><option value="20:00">20:00</option><option value="21:00">21:00</option>
+        </select></div>
+        <div class="form-group" style="margin-bottom:2px"><label>📍 Хүссэн дүүрэг / газар <span style="color:var(--gray-2);font-weight:500">(заавал биш)</span></label><input id="payArea" placeholder="Жишээ: Сүхбаатар дүүрэг" style="width:100%;padding:12px;border-radius:12px;border:1px solid var(--gray-bg);background:var(--card);color:var(--text);font-family:var(--body);font-size:14px;"></div>
+        <div class="pay-consent">⚠️ Төлбөр орсныг админ шалгасны дараа болзоо баталгаажна. Газрыг админ эцэслэн тохируулна.</div>
         <div class="bank-box" style="margin-top:4px">
           <div class="bank-row"><span>Банк</span><b id="pvBank"></b></div>
           <div class="bank-row"><span>Данс</span><b id="pvAccount"></b><button class="copy-acc" onclick="copyAccount()">📋 Хуулах</button></div>
@@ -1322,7 +1329,7 @@ async function initApp(){
   await loadContacts();
   setupRealtime();
   await loadDates();
-  renderPkgs();renderBlind();renderAvailWomen();bumpUnread();
+  renderPkgs();renderBlind();renderAvailWomen();renderPublicDates();bumpUnread();
   if(me){applyProfileUI();}
 }
 async function loadPeople(){
@@ -1418,6 +1425,12 @@ function openPay(kind,i){
   document.getElementById('pvAccount').textContent=settings.account;
   document.getElementById('pvRecipient').textContent=settings.recipient;
   setPayMode('person');
+  const pad=n=>String(n).padStart(2,'0');
+  const today=new Date(),tmr=new Date();tmr.setDate(tmr.getDate()+1);
+  const di=document.getElementById('payDate');
+  if(di){di.min=today.getFullYear()+'-'+pad(today.getMonth()+1)+'-'+pad(today.getDate());di.value=tmr.getFullYear()+'-'+pad(tmr.getMonth()+1)+'-'+pad(tmr.getDate());}
+  const ti=document.getElementById('payTime');if(ti)ti.value='19:00';
+  const ar=document.getElementById('payArea');if(ar)ar.value='';
   ovOpen('payView');
 }
 let payMode='person',payTarget=null;
@@ -1455,19 +1468,28 @@ function closePay(){ovClose('payView');}
 async function confirmPay(){
   const pkg=settings.datePkgs[payCtx.i];
   if(payMode==='person'&&!payTarget){toast('Урих хүнээ нэрээр хайж сонгоно уу');return;}
+  const dv=(document.getElementById('payDate')||{}).value||'';
+  const tv=(document.getElementById('payTime')||{}).value||'19:00';
+  const av=((document.getElementById('payArea')||{}).value||'').trim();
+  if(!dv){toast('📅 Болзооны өдрөө сонгоно уу');return;}
+  const when=fmtDateTime(dv,tv);
+  const venue=av||'Админ тохируулна';
   closePay();
   toast('💳 Төлбөр илгээлээ · '+pkg.name);
-  const ven=venues[Math.floor(Math.random()*venues.length)],slot=slots[Math.floor(Math.random()*slots.length)];
   if(payMode==='blind'){
     const p=await pickBlindMatch();
     if(!p){setTimeout(()=>toast('Одоогоор сохор болзоонд бүртгүүлсэн хүн алга — удахгүй тохируулна'),1200);return;}
-    saveDate({partnerId:p.id,n:'Сохор болзоо 🎲',ph:p.ph,venue:ven.v,area:ven.area,when:slot,pkg:'blind',blind:true});
+    saveDate({partnerId:p.id,n:'Сохор болзоо 🎲',ph:p.ph,venue,area:av,when,pkg:'blind',blind:true});
     setTimeout(()=>{toast('🎲 Сохор болзоо тохирлоо — админ төлбөр шалгаад баталгаажуулна');notify('🎲','Сохор болзоо','Сохор болзоо тохирлоо — баталгаажуулалт хүлээж байна');},1300);
   }else{
-    saveDate({partnerId:payTarget.id,n:payTarget.name,ph:payTarget.ph||'',venue:ven.v,area:ven.area,when:slot,pkg:pkg.name});
-    try{sb.from('messages').insert({from_id:me.id,to_id:payTarget.id,text:'📅 '+(me.name||'Нэгэн хэрэглэгч')+' тантай болзохыг урьж байна'});}catch(e){}
+    saveDate({partnerId:payTarget.id,n:payTarget.name,ph:payTarget.ph||'',venue,area:av,when,pkg:pkg.name});
+    try{sb.from('messages').insert({from_id:me.id,to_id:payTarget.id,text:'📅 '+(me.name||'Нэгэн хэрэглэгч')+' тантай '+when+'-д болзохыг урьж байна'});}catch(e){}
     setTimeout(()=>{toast('📅 '+payTarget.name+'-д болзооны урилга илгээлээ — админ баталгаажуулна');notify('📅','Болзооны урилга',payTarget.name+'-д урилга илгээлээ');},900);
   }
+}
+function fmtDateTime(dstr,tstr){
+  try{const d=new Date(dstr+'T00:00:00');if(isNaN(d.getTime()))return dstr+' '+tstr;const wd=['Ням','Даваа','Мягмар','Лхагва','Пүрэв','Баасан','Бямба'][d.getDay()];return (d.getMonth()+1)+'/'+d.getDate()+' ('+wd+') '+(tstr||'');}
+  catch(e){return dstr+' '+(tstr||'');}
 }
 
 /* ============================================================ СОХОР БОЛЗОО (blind date) ============================================================ */
@@ -1485,10 +1507,31 @@ async function renderAvailWomen(){
     w.innerHTML=list.map(p=>`<div style="display:flex;align-items:center;gap:12px;background:var(--card);border-radius:16px;padding:10px;margin-bottom:10px;"><div style="width:54px;height:54px;border-radius:12px;flex:0 0 auto;background-size:cover;background-position:center;${photoBg(p.photo_url||'')}" onclick="${p.photo_url?`openLightbox('${imgUrl(p.photo_url)}')`:''}"></div><div style="flex:1;min-width:0"><div style="font-weight:700;color:var(--ink)">${(p.name||'Бүсгүй')}${p.age?', '+p.age:''}</div><div style="font-size:12.5px;color:var(--gray-2)">📍 ${p.city||'-'}</div></div>${(me&&me.gender==='m')?`<button style="background:linear-gradient(135deg,var(--red),var(--pink));color:#fff;border:none;border-radius:30px;padding:9px 13px;font-size:12.5px;font-weight:700;flex:0 0 auto" onclick="requestDateWith('${p.id}','${esc(p.name||'')}','${p.photo_url||''}')">🎲 Болзоо хүсэх</button>`:''}</div>`).join('');
   }catch(e){console.error('availWomen',e);w.innerHTML='<div style="color:var(--gray-2);font-size:13px;padding:6px 2px;">Ачаалж чадсангүй.</div>';}
 }
+async function renderPublicDates(){
+  const w=document.getElementById('publicDates');if(!w)return;
+  w.innerHTML='<div style="color:var(--gray-2);font-size:13px;padding:6px 2px;">Ачааллаж байна…</div>';
+  try{
+    const {data}=await sb.from('dates').select('organizer_id,partner_id,package,status,created_at').in('status',['accepted','confirmed']).neq('package','blind').order('created_at',{ascending:false}).limit(20);
+    const rows=(data||[]);
+    if(!rows.length){w.innerHTML='<div style="color:var(--gray-2);font-size:13px;padding:6px 2px;">Одоогоор зарлагдсан хос алга. Анхных нь та байж магадгүй! 💕</div>';return;}
+    const ids=[...new Set(rows.reduce((a,d)=>{if(d.organizer_id)a.push(d.organizer_id);if(d.partner_id)a.push(d.partner_id);return a;},[]))];
+    let pm={};
+    if(ids.length){const {data:ps}=await sb.from('profiles').select('id,name,photo_url').in('id',ids);(ps||[]).forEach(p=>pm[p.id]=p);}
+    w.innerHTML=rows.map(d=>{
+      const a=pm[d.organizer_id]||{},b=pm[d.partner_id]||{};
+      const an=a.name||'Нэгэн',bn=b.name||'Нэгэн';
+      return `<div style="display:flex;align-items:center;gap:10px;background:linear-gradient(135deg,rgba(226,62,87,.09),rgba(255,140,170,.09));border-radius:16px;padding:12px;margin-bottom:10px;"><div style="display:flex;flex:0 0 auto"><div style="width:42px;height:42px;border-radius:50%;background-size:cover;background-position:center;border:2px solid #fff;${photoBg(a.photo_url||'')}"></div><div style="width:42px;height:42px;border-radius:50%;background-size:cover;background-position:center;border:2px solid #fff;margin-left:-14px;${photoBg(b.photo_url||'')}"></div></div><div style="flex:1;min-width:0"><div style="font-weight:700;color:var(--ink)">${an} ❤️ ${bn}</div><div style="font-size:12px;color:var(--red)">Болзох гэж байна — Баяр хүргэе! Амжилт хүсье 🎉</div></div></div>`;
+    }).join('');
+  }catch(e){console.error('publicDates',e);w.innerHTML='<div style="color:var(--gray-2);font-size:13px;padding:6px 2px;">Ачаалж чадсангүй.</div>';}
+}
+function bookDateWith(id,name,ph){
+  if(!id){toast('Хэрэглэгч олдсонгүй');return;}
+  openPay('pkg',0);
+  setTimeout(()=>{try{setPayMode('person');pickPayPerson(id,name,ph||'');}catch(e){}},80);
+}
 function requestDateWith(id,name,ph){
   if(!(me&&me.gender==='m')){toast('Энэ зөвхөн эрэгтэй хэрэглэгчдэд хамаатай');return;}
-  openPay('pkg',0);
-  setTimeout(()=>{try{setPayMode('person');pickPayPerson(id,name,ph);}catch(e){}},80);
+  bookDateWith(id,name,ph);
 }
 function renderBlind(){
   const w=document.getElementById('blindActions');if(!w)return;
@@ -2018,7 +2061,7 @@ async function loadDates(){
     const ids=[...new Set(rows.map(d=>d.organizer_id===me.id?d.partner_id:d.organizer_id).filter(Boolean))];
     let profs={};
     if(ids.length){const {data:ps}=await sb.from('profiles').select('id,name,photo_url').in('id',ids);(ps||[]).forEach(p=>profs[p.id]=p);}
-    dates=rows.map(d=>{const otherId=d.organizer_id===me.id?d.partner_id:d.organizer_id;const p=profs[otherId]||{};const blind=(d.package==='blind');return {id:d.id,partnerId:otherId,n:blind?'Сохор болзоо 🎲':(p.name||'Болзоо'),ph:p.photo_url||'',venue:d.venue||'',area:d.area||'',when:d.when_text||'',status:d.status||'pending',blind};});
+    dates=rows.map(d=>{const otherId=d.organizer_id===me.id?d.partner_id:d.organizer_id;const p=profs[otherId]||{};const blind=(d.package==='blind');return {id:d.id,partnerId:otherId,mine:d.organizer_id===me.id,n:blind?'Сохор болзоо 🎲':(p.name||'Болзоо'),ph:p.photo_url||'',venue:d.venue||'',area:d.area||'',when:d.when_text||'',status:d.status||'pending',blind,pkg:d.package||''};});
   }catch(e){console.error('loadDates',e);}
   renderDates();bumpDates();
 }
@@ -2032,11 +2075,43 @@ async function saveDate(o){
   }catch(e){console.error('saveDate',e);}
 }
 async function markRead(fromId){if(!me||!fromId)return;try{await sb.from('messages').update({read:true}).eq('to_id',me.id).eq('from_id',fromId).eq('read',false);}catch(e){}}
+function dateStatusText(d){
+  if(d.status==='confirmed')return {cls:'ok',t:'✅ Баталгаажсан'};
+  if(d.status==='accepted')return {cls:'ok',t:'✓ Хоёр тал зөвшөөрсөн 🎉'};
+  if(d.status==='declined')return {cls:'pend',t:'✕ Татгалзсан'};
+  if(!d.mine)return {cls:'pend',t:'💌 Тантай болзохыг урьж байна'};
+  return {cls:'pend',t:'⏳ Нөгөө талын хариу хүлээж байна'};
+}
 function renderDates(){
   const el=document.getElementById('datesList');
   if(!dates.length){el.innerHTML=`<div class="empty-dates">Одоогоор товлосон болзоо алга.<br>Тохирсон хүнтэйгээ болзоо товлоорой 💕</div>`;return;}
   const remind=`<div class="date-remind-top">⚠️ <b>Хариуцлагатай байгаарай!</b> Болзоонд урьсан болон уригдсан бол <b>цагтаа очихоо мартуузай</b>. Болзоо тасалдвал нөгөө талын цаг, итгэлийг хохироож, дараагийн боломж хязгаарлагдаж болзошгүй.</div>`;
-  el.innerHTML=remind+dates.map(d=>`<div class="date-card"><div class="dc-top"><div class="ph" style="${photoBg(d.ph)}"></div><div><div class="who">${d.n}</div><div class="stt ${d.status==='confirmed'?'ok':'pend'}">${d.status==='confirmed'?'✓ Хоёр тал баталгаажуулсан':'⏳ Нөгөө талын хариу хүлээж байна'}</div></div></div><div class="dc-body"><div class="venue">📍 ${d.venue}</div><div class="meta">${d.area}</div><div class="meta">🗓 ${d.when}</div><div class="remind">📲 Бид танд 2 цагийн өмнө сануулна</div></div><div class="dc-actions"><button class="resc" onclick="toast('Цаг өөрчлөх хүсэлт илгээлээ')">Цаг өөрчлөх</button><button class="conf" onclick="${d.partnerId?`openChatById('${d.partnerId}')`:`tab('matches')`}">Чатлах</button></div></div>`).join('');
+  el.innerHTML=remind+dates.map(d=>{
+    const st=dateStatusText(d);
+    const acts=(d.status==='pending'&&!d.mine&&d.id)
+      ? `<button class="resc" style="background:rgba(226,62,87,.12);color:var(--red);font-weight:700;border:none" onclick="declineDate('${d.id}')">✕ Татгалзах</button><button class="conf" onclick="acceptDate('${d.id}')">✓ Зөвшөөрөх</button>`
+      : `<button class="conf" style="flex:1" onclick="${d.partnerId?`openChatById('${d.partnerId}')`:`tab('matches')`}">💬 Чатлах</button>`;
+    return `<div class="date-card"><div class="dc-top"><div class="ph" style="${photoBg(d.ph)}"></div><div><div class="who">${d.n}</div><div class="stt ${st.cls}">${st.t}</div></div></div><div class="dc-body">${(d.pkg&&!d.blind)?`<div class="meta">🎁 Багц: <b>${d.pkg}</b></div>`:''}<div class="venue">📍 ${d.venue}</div>${d.area?`<div class="meta">${d.area}</div>`:''}<div class="meta">🗓 ${d.when}</div><div class="remind">📲 Бид танд 2 цагийн өмнө сануулна</div></div><div class="dc-actions">${acts}</div></div>`;
+  }).join('');
+}
+async function acceptDate(id){
+  if(!id)return;
+  toast('Зөвшөөрч байна…');
+  const {data,error}=await sb.from('dates').update({status:'accepted'}).eq('id',id).select();
+  if(error){toast('Алдаа: '+error.message);return;}
+  if(!data||!data.length){toast('Зөвшөөрч чадсангүй — болзооны эрхийн SQL шалгана уу');return;}
+  const d=dates.find(x=>x.id===id);if(d)d.status='accepted';
+  try{const row=data[0];const orgId=row.organizer_id;if(orgId&&orgId!==me.id)await sb.from('messages').insert({from_id:me.id,to_id:orgId,text:'🎉 '+(me.name||'Таны урьсан хүн')+' болзоог тань ЗӨВШӨӨРЛӨӨ! 📅 '+(d?d.when:'')+'. Уулзалт ойртоход бид сануулна.'});}catch(e){}
+  renderDates();renderAvailWomen();
+  toast('🎉 Болзоог зөвшөөрлөө! Баяр хүргэе!');notify('🎉','Болзоо','Та болзоог зөвшөөрлөө. Амжилт хүсье!');
+}
+async function declineDate(id){
+  if(!id)return;
+  const {data,error}=await sb.from('dates').update({status:'declined'}).eq('id',id).select();
+  if(error){toast('Алдаа: '+error.message);return;}
+  const d=dates.find(x=>x.id===id);if(d)d.status='declined';
+  renderDates();
+  toast('Болзооноос татгалзлаа');
 }
 function makeDate(name,ph,partnerId){
   const ven=venues[Math.floor(Math.random()*venues.length)],slot=slots[Math.floor(Math.random()*slots.length)];
@@ -2045,8 +2120,8 @@ function makeDate(name,ph,partnerId){
   toast('📅 '+name+'-д болзооны санал илгээлээ');
   notify('📅','Болзооны санал',name+'-д болзооны санал илгээлээ');
 }
-function scheduleFromMatch(){const name=window._lastMatch,src=people.find(x=>x.n===name)||chats.find(x=>x.n===name)||{};hideMatch();makeDate(name,src.ph);}
-function scheduleFromChat(){const c=chats[curChat];closeChat();makeDate(c.n,c.ph,c.id);}
+function scheduleFromMatch(){const name=window._lastMatch,src=people.find(x=>x.n===name)||chats.find(x=>x.n===name)||{};hideMatch();bookDateWith(src.id,name,src.ph);}
+function scheduleFromChat(){const c=chats[curChat];closeChat();bookDateWith(c.id,c.n,c.ph);}
 function openChatByName(n){const i=chats.findIndex(c=>c.n===n);if(i>=0){tab('matches',document.querySelectorAll('.nav button')[2]);openChat(i);}else toast('Чатлахын тулд найз болох/тохирох хэрэгтэй');}
 
 /* ============================================================ TABS / BADGES ============================================================ */
@@ -2065,7 +2140,7 @@ function tab(name,btn){
   if(btn)btn.classList.add('active');else{const map={discover:0,dates:1,matches:2,profile:4};const nb=document.querySelectorAll('.nav button')[map[name]];if(nb)nb.classList.add('active');}
   try{
     if(name==='matches'){renderMatches();renderFriendReqs();loadFriendReqs();loadContacts();}
-    if(name==='dates'){renderDates();renderPkgs();renderBlind();renderAvailWomen();}
+    if(name==='dates'){renderDates();renderPkgs();renderBlind();renderAvailWomen();renderPublicDates();}
     if(name==='profile'){renderProfileStats();}
   }catch(e){console.error('tab render',e);}
 }
@@ -2202,7 +2277,7 @@ async function admTab(t,btn){
     html+=`<div class="adm-sec" style="margin-top:18px">🎲 Идэвхтэй сохор болзоо (${act.length})</div>`;
     html+=act.length?act.map(b=>`<div class="adm-card">${blindRow(b).html}<div class="acts"><button class="no-b" onclick="admRejectBlind('${b.id}')" title="Идэвхгүй болгох">🚫</button></div></div>`).join(''):empty('Идэвхтэй бүсгүй алга');
     html+=`<div class="adm-sec" style="margin-top:18px">📅 Бүх болзоо (${(admData.dates||[]).length})</div>`;
-    html+=(admData.dates&&admData.dates.length)?admData.dates.map((d,i)=>`<div class="adm-card"><div class="b"><div class="nm">${d.org} ↔ ${d.partner}</div><div class="meta">📍 ${d.venue||'-'} · 🗓 ${d.when||'-'} · ${d.status==='confirmed'?'✅ Баталгаажсан':'⏳ Төлбөр хүлээж буй'}</div></div><div class="acts">${d.status!=='confirmed'?`<button class="ok-b" onclick="admConfirmDate(${i})" title="Төлбөр баталгаажуулах">✓</button>`:''}<button class="no-b" onclick="admDeleteDate(${i})" title="Устгах">🗑</button></div></div>`).join(''):empty(admData.datesErr?('⚠️ '+admData.datesErr):'Болзоо алга. Хэрэв хэрэглэгч болзоо захиалсан ч энд харагдахгүй бол Supabase-д <b>admin_all_dates</b> SQL policy-г ажиллуулна уу.');
+    html+=(admData.dates&&admData.dates.length)?admData.dates.map((d,i)=>`<div class="adm-card"><div class="b"><div class="nm">${d.org} ↔ ${d.partner}</div><div class="meta">${d.pkg==='blind'?'🎲 Сохор болзоо':(d.pkg?'🎁 '+d.pkg:'🎁 -')} · 📍 ${d.venue||'-'} · 🗓 ${d.when||'-'} · ${d.status==='confirmed'?'✅ Баталгаажсан':(d.status==='accepted'?'✓ Хоёр тал зөвшөөрсөн':'⏳ Төлбөр хүлээж буй')}</div></div><div class="acts">${d.status!=='confirmed'?`<button class="ok-b" onclick="admConfirmDate(${i})" title="Төлбөр баталгаажуулах">✓</button>`:''}<button class="no-b" onclick="admDeleteDate(${i})" title="Устгах">🗑</button></div></div>`).join(''):empty(admData.datesErr?('⚠️ '+admData.datesErr):'Болзоо алга. Хэрэв хэрэглэгч болзоо захиалсан ч энд харагдахгүй бол Supabase-д <b>admin_all_dates</b> SQL policy-г ажиллуулна уу.');
   }
   else if(t==='reports'){html+=empty('Гомдол (удахгүй холбогдоно)');}
   else if(t==='settings'){
@@ -2578,7 +2653,7 @@ function fallbackCopy(t){try{const ta=document.createElement('textarea');ta.valu
 fillAimags();renderBank();
 applyTheme();
 try{window.addEventListener('pointerdown',function(){try{_actx=_actx||new(window.AudioContext||window.webkitAudioContext)();if(_actx.state==='suspended')_actx.resume();}catch(e){}});}catch(e){}
-const APP_VERSION='v59';
+const APP_VERSION='v62';
 try{document.getElementById('verBadge').textContent='Хоёулаа Болзий '+APP_VERSION;}catch(_){}
 loadSettings();
 restoreSession();
