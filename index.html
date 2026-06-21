@@ -2308,11 +2308,13 @@ async function admNudgeAllPending(){
   if(typeof confirm==='function'&&!confirm(list.length+' хүлээгдэж буй хэрэглэгчид төлбөрийн сануулга илгээх үү?'))return;
   toast('Илгээж байна…');
   const msg='Сайн байна уу! 💕 Та бүртгэлийн хураамжаа төлснөөр админ нэвтрэх эрхийг тань нээнэ. Төлбөрөө төлөөд "Хоёулаа Болзий"-г бүрэн ашиглаарай. Дэлгэрэнгүйг апп доторх «Төлбөр / Төлөв шалгах» хэсгээс харна уу.';
-  let ok=0;
+  let ok=0,firstErr=null;
   for(const x of list){
-    try{const {error}=await sb.from('messages').insert({from_id:me.id,to_id:x.id,text:msg});if(!error)ok++;}catch(e){}
+    try{const {error}=await sb.from('messages').insert({from_id:me.id,to_id:x.id,text:msg});if(error){if(!firstErr)firstErr=error.message;}else ok++;}
+    catch(e){if(!firstErr)firstErr=e.message||'тодорхойгүй';}
   }
-  toast('📢 '+ok+' хүнд төлбөрийн сануулга илгээлээ');
+  if(ok===0){toast('❌ Илгээж чадсангүй: '+(firstErr||'тодорхойгүй алдаа')+' — messages RLS SQL шалгана уу');return;}
+  toast('📢 '+ok+'/'+list.length+' хүнд илгээлээ'+(firstErr?(' · '+(list.length-ok)+' амжилтгүй: '+firstErr):''));
 }
 async function admDeleteUser(i){
   const x=admData.users[i];if(!x)return;
@@ -2528,7 +2530,7 @@ function fallbackCopy(t){try{const ta=document.createElement('textarea');ta.valu
 fillAimags();renderBank();
 applyTheme();
 try{window.addEventListener('pointerdown',function(){try{_actx=_actx||new(window.AudioContext||window.webkitAudioContext)();if(_actx.state==='suspended')_actx.resume();}catch(e){}});}catch(e){}
-const APP_VERSION='v53';
+const APP_VERSION='v54';
 try{document.getElementById('verBadge').textContent='Хоёулаа Болзий '+APP_VERSION;}catch(_){}
 loadSettings();
 restoreSession();
