@@ -2193,6 +2193,7 @@ async function admTab(t,btn){
   </div>`).join(''):empty('Баталгаажуулалт хүлээж буй хэрэглэгч алга');}
   else if(t==='users'){html+=admData.users.length?admData.users.map((x,i)=>`<div class="adm-card" style="cursor:pointer;${x.blocked?'opacity:.55':''}" onclick="admViewUser(${i})"><div class="ph" style="${photoBg(x.ph)}"></div><div class="b"><div class="nm">${x.n}</div><div class="meta">${x.m}</div></div><span class="adm-pill ${x.blocked?'warn':'ok'}">${x.blocked?'Блоклогдсон':'Идэвхтэй'}</span><div class="acts"><button class="ok-b" onclick="event.stopPropagation();admChatUser(${i})" title="Чат бичих">💬</button><button class="${x.blocked?'ok-b':'no-b'}" onclick="event.stopPropagation();toggleBlock(${i})" title="${x.blocked?'Блокоос гаргах':'Блоклох'}">${x.blocked?'🔓':'🚫'}</button></div></div>`).join(''):empty('Бүртгэлтэй хэрэглэгч алга');}
   else if(t==='dates'){
+    html+=`<button class="btn" style="width:100%;margin-bottom:14px;background:linear-gradient(135deg,#c9961e,#e0b020);color:#fff;font-weight:700;border:none;border-radius:30px;padding:13px;" onclick="admRemindWomen()">🛡️ Бүх эмэгтэйд аюулгүй байдлын сануулга илгээх</button>`;
     const blindRow=b=>{const pr=[b.pref.age?b.pref.age+' нас':'',b.pref.height?b.pref.height+'см+':'',b.pref.weight?b.pref.weight+'кг':''].filter(Boolean).join(', ');return {pr,html:`<div class="ph" style="${photoBg(b.ph)}"></div><div class="b"><div class="nm">${b.name||'?'}${b.age?', '+b.age:''}</div><div class="meta">${b.city||''} · хүсэл: ${pr||'заагаагүй'}</div></div>`};};
     const pend=(admData.blind||[]).filter(b=>b.pending&&!b.active);
     const act=(admData.blind||[]).filter(b=>b.active);
@@ -2334,6 +2335,20 @@ async function admChatVerify(i){
   _adminChatReturn=true;route('mainapp');
   openChat(idx);
   setTimeout(()=>{const inp=document.getElementById('cvInput');if(inp&&!inp.value)inp.value='Сайн байна уу! 💕 Та бүртгэлийн хураамжаа төлснөөр админ нэвтрэх эрхийг тань нээх болно. Төлбөрөө төлөөд апп-аа бүрэн ашиглаарай.';},250);
+}
+async function admRemindWomen(){
+  toast('Эмэгтэй хэрэглэгчдийг ачааллаж байна…');
+  let women=[];
+  try{const {data,error}=await sb.from('profiles').select('id').eq('gender','f').neq('id',me.id);if(error)throw error;women=data||[];}
+  catch(e){toast('❌ Алдаа: '+(e.message||'тодорхойгүй'));return;}
+  if(!women.length){toast('Эмэгтэй хэрэглэгч алга');return;}
+  if(typeof confirm==='function'&&!confirm(women.length+' эмэгтэй хэрэглэгчид аюулгүй байдлын сануулга илгээх үү?'))return;
+  const msg='Сайн байна уу! 💕 Аюулгүй байдлынхаа үүднээс болзоогоо ЗААВАЛ "Хоёулаа Болзий" апп-аар дамжуулан зохион байгуулаарай. Апп-аас гадуур танихгүй хүнтэй шууд уулзаж болзохоос сэргийлээрэй — газар, цаг, найдвартай орчныг бид баталгаажуулж өгнө. Таны аюулгүй байдал бидэнд хамгийн чухал. 🙏';
+  toast('Илгээж байна…');
+  let ok=0,firstErr=null;
+  for(const x of women){try{const {error}=await sb.from('messages').insert({from_id:me.id,to_id:x.id,text:msg});if(error){if(!firstErr)firstErr=error.message;}else ok++;}catch(e){if(!firstErr)firstErr=e.message||'тодорхойгүй';}}
+  if(ok===0){toast('❌ Илгээж чадсангүй: '+(firstErr||'тодорхойгүй алдаа'));return;}
+  toast('🛡️ '+ok+'/'+women.length+' эмэгтэйд сануулга илгээлээ'+(firstErr?(' · '+(women.length-ok)+' амжилтгүй: '+firstErr):''));
 }
 async function admNudgeAllPending(){
   const list=(admData.verify||[]).slice();
@@ -2563,7 +2578,7 @@ function fallbackCopy(t){try{const ta=document.createElement('textarea');ta.valu
 fillAimags();renderBank();
 applyTheme();
 try{window.addEventListener('pointerdown',function(){try{_actx=_actx||new(window.AudioContext||window.webkitAudioContext)();if(_actx.state==='suspended')_actx.resume();}catch(e){}});}catch(e){}
-const APP_VERSION='v58';
+const APP_VERSION='v59';
 try{document.getElementById('verBadge').textContent='Хоёулаа Болзий '+APP_VERSION;}catch(_){}
 loadSettings();
 restoreSession();
