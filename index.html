@@ -2042,7 +2042,7 @@ function tab(name,btn){
   document.querySelectorAll('.nav button').forEach(b=>b.classList.remove('active'));
   if(btn)btn.classList.add('active');else{const map={discover:0,dates:1,matches:2,profile:4};const nb=document.querySelectorAll('.nav button')[map[name]];if(nb)nb.classList.add('active');}
   try{
-    if(name==='matches'){renderMatches();renderFriendReqs();loadFriendReqs();}
+    if(name==='matches'){renderMatches();renderFriendReqs();loadFriendReqs();loadContacts();}
     if(name==='dates'){renderDates();renderPkgs();renderBlind();}
     if(name==='profile'){renderProfileStats();}
   }catch(e){console.error('tab render',e);}
@@ -2528,7 +2528,7 @@ function fallbackCopy(t){try{const ta=document.createElement('textarea');ta.valu
 fillAimags();renderBank();
 applyTheme();
 try{window.addEventListener('pointerdown',function(){try{_actx=_actx||new(window.AudioContext||window.webkitAudioContext)();if(_actx.state==='suspended')_actx.resume();}catch(e){}});}catch(e){}
-const APP_VERSION='v52';
+const APP_VERSION='v53';
 try{document.getElementById('verBadge').textContent='Хоёулаа Болзий '+APP_VERSION;}catch(_){}
 loadSettings();
 restoreSession();
