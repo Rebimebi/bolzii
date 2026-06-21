@@ -592,6 +592,7 @@ body.dark .date-remind-top{background:linear-gradient(135deg,#3a2e12,#2c2410);co
       <button class="btn btn-ghost" style="background:linear-gradient(135deg,#1faa59,#23c06a);color:#fff;border-color:transparent" onclick="route('login')">Нэвтрэх</button>
       <button class="btn btn-primary" onclick="route('register')">Бүртгүүлэх</button>
       <button class="btn btn-ghost" id="installBtn" style="display:none;background:rgba(255,255,255,.55)" onclick="installApp()">📲 Аппаа суулгах</button>
+      <button class="btn btn-ghost" style="background:#1877f2;color:#fff;border-color:transparent" onclick="openFacebook()">📘 Facebook хуудас — мэдээлэл аваарай</button>
     </div>
 
     <div class="landing-links">
@@ -951,6 +952,7 @@ body.dark .date-remind-top{background:linear-gradient(135deg,#3a2e12,#2c2410);co
         </div>
         <div class="setting" onclick="enableNotifs()">🔔 Утасны мэдэгдэл асаах ›</div>
         <div class="setting" onclick="openEditProfile()">Профайл засах ›</div>
+        <div class="setting" onclick="openFacebook()" style="color:#1877f2;font-weight:600">📘 Манай Facebook хуудас ›</div>
         <div class="setting" onclick="openPwModal()">Нууц үг солих ›</div>
         <div class="setting" onclick="verifyStatus()">Баталгаажуулалтын төлөв ›</div>
         <div class="setting" onclick="route('info')">Тусламж & холбоо ›</div>
@@ -1603,6 +1605,15 @@ function pickGender(g,btn){
   selectedPlan='free';pickPlan('free');
   validateReg();
 }
+function fbUrl(){
+  let f=(settings.facebook||'').trim();
+  if(!f)return 'https://www.facebook.com/profile.php?id=61591203896028';
+  if(/^https?:\/\//i.test(f))return f;
+  if(f.startsWith('@'))f=f.slice(1);
+  if(f.startsWith('facebook.com')||f.startsWith('www.facebook.com')||f.startsWith('fb.com'))return 'https://'+f;
+  return 'https://www.facebook.com/'+f;
+}
+function openFacebook(){try{window.open(fbUrl(),'_blank');}catch(e){location.href=fbUrl();}}
 function openInstall(){ovOpen('installModal');}
 function closeInstall(){ovClose('installModal');}
 function openGuide(){ovOpen('guideModal');}
@@ -2072,7 +2083,8 @@ function renderContact(){
   if(an){const a=settings.announce;an.innerHTML=(a&&a.text)?`<div style="background:linear-gradient(135deg,rgba(226,62,87,.16),rgba(255,122,162,.10));border:1.5px solid rgba(255,122,162,.4);border-radius:16px;padding:16px 18px;margin-bottom:18px;"><div style="font-weight:700;color:var(--red);margin-bottom:6px;">📢 Зарлал</div><div style="color:var(--text);font-size:14px;line-height:1.55;white-space:pre-wrap;">${(a.text||'').replace(/</g,'&lt;')}</div></div>`:'';}
   const w=document.getElementById('infoContact');if(!w)return;
   const row=(ic,label,val)=>val?`<div class="info-row"><div class="ic">${ic}</div><div class="t"><b>${label}</b><span>${val}</span></div></div>`:'';
-  w.innerHTML=(row('📞','Утас',settings.phone)+row('✉️','И-мэйл',settings.email)+row('📘','Facebook',settings.facebook)+row('📷','Instagram',settings.instagram))||'<div style="color:var(--gray-2);font-size:13px;">Холбоо барих мэдээлэл оруулаагүй байна.</div>';
+  const fbBtn=`<div class="info-row" onclick="openFacebook()" style="cursor:pointer;background:#1877f2;border-radius:14px;margin-bottom:12px;"><div class="ic" style="background:transparent">📘</div><div class="t"><b style="color:#fff">Facebook хуудас</b><span style="color:rgba(255,255,255,.85)">Шинэ мэдээлэл, зарлалыг эндээс аваарай ›</span></div></div>`;
+  w.innerHTML=fbBtn+(row('📞','Утас',settings.phone)+row('✉️','И-мэйл',settings.email)+row('📷','Instagram',settings.instagram));
 }
 function checkAnnounce(){
   try{
@@ -2516,7 +2528,7 @@ function fallbackCopy(t){try{const ta=document.createElement('textarea');ta.valu
 fillAimags();renderBank();
 applyTheme();
 try{window.addEventListener('pointerdown',function(){try{_actx=_actx||new(window.AudioContext||window.webkitAudioContext)();if(_actx.state==='suspended')_actx.resume();}catch(e){}});}catch(e){}
-const APP_VERSION='v51';
+const APP_VERSION='v52';
 try{document.getElementById('verBadge').textContent='Хоёулаа Болзий '+APP_VERSION;}catch(_){}
 loadSettings();
 restoreSession();
