@@ -1950,7 +1950,7 @@ async function sendMsg(){
   try{const {error}=await sb.from('messages').insert({from_id:me.id,to_id:c.id,text:t});if(error)toast('Илгээхэд алдаа: '+error.message);}
   catch(e){toast('Илгээхэд алдаа гарлаа');}
 }
-function closeChat(){ovClose('chatView');renderMatches();}
+function closeChat(){ovClose('chatView');renderMatches();if(_adminChatReturn){_adminChatReturn=false;route('adminPanel');admTab(_admCurTab||'verify');}}
 function openChatById(id){
   const i=chats.findIndex(c=>c.id===id);
   if(i>=0){tab('matches',document.querySelectorAll('.nav button')[2]);openChat(i);return;}
@@ -2280,11 +2280,13 @@ function admViewUser(i){
     ${x.blocked?`<button class="btn" style="width:100%;margin-top:10px;background:#3a2128;color:#fff" onclick="admDeleteUser(${i})">🗑 Бүртгэлийг бүрмөсөн устгах</button>`:''}`;
   ovOpen('admUserView');
 }
+let _adminChatReturn=false;
 async function admChatUser(i){
   const x=admData.users[i];if(!x)return;
   closeAdmUser();
   let idx=chats.findIndex(c=>c.id===x.id);
   if(idx<0){chats.unshift({id:x.id,n:x.name||x.n,ph:x.photo_url||x.ph||'',last:'',time:'',unread:0,msgs:[],loaded:false});idx=0;}
+  _adminChatReturn=true;route('mainapp');
   openChat(idx);
 }
 async function admWaiveVerify(i){
@@ -2299,6 +2301,7 @@ async function admChatVerify(i){
   const x=admData.verify[i];if(!x)return;
   let idx=chats.findIndex(c=>c.id===x.id);
   if(idx<0){chats.unshift({id:x.id,n:x.name||'?',ph:x.ph||'',last:'',time:'',unread:0,msgs:[],loaded:false});idx=0;}
+  _adminChatReturn=true;route('mainapp');
   openChat(idx);
   setTimeout(()=>{const inp=document.getElementById('cvInput');if(inp&&!inp.value)inp.value='Сайн байна уу! 💕 Та бүртгэлийн хураамжаа төлснөөр админ нэвтрэх эрхийг тань нээх болно. Төлбөрөө төлөөд апп-аа бүрэн ашиглаарай.';},250);
 }
@@ -2530,7 +2533,7 @@ function fallbackCopy(t){try{const ta=document.createElement('textarea');ta.valu
 fillAimags();renderBank();
 applyTheme();
 try{window.addEventListener('pointerdown',function(){try{_actx=_actx||new(window.AudioContext||window.webkitAudioContext)();if(_actx.state==='suspended')_actx.resume();}catch(e){}});}catch(e){}
-const APP_VERSION='v54';
+const APP_VERSION='v55';
 try{document.getElementById('verBadge').textContent='Хоёулаа Болзий '+APP_VERSION;}catch(_){}
 loadSettings();
 restoreSession();
