@@ -855,7 +855,7 @@ body.dark .date-remind-top{background:linear-gradient(135deg,#3a2e12,#2c2410);co
 
   <!-- ============ EDIT PROFILE ============ -->
   <section class="page" id="editProfile">
-    <div class="sub-head"><button class="back" onclick="route('mainapp');tab('profile')">‹</button><div class="ttl">Профайл засах</div></div>
+    <div class="sub-head"><button class="back" onclick="closeEditProfile()">‹</button><div class="ttl">Профайл засах</div></div>
     <div class="sub-body">
       <div class="form-group"><label>Нэр</label><input id="eName" placeholder="Таны нэр"></div>
       <div class="form-group"><label>Нас</label><input id="eAge" type="number" placeholder="25"></div>
@@ -905,6 +905,8 @@ body.dark .date-remind-top{background:linear-gradient(135deg,#3a2e12,#2c2410);co
           <p>🎲 Хэн болохыг нь урьдчилан мэдэхгүй. Апп таны насанд ойролцоо, эсрэг хүйсийн баталгаажсан хүнтэй болзоог зохион байгуулна. Нэр, зураг нь нөгөө тал зөвшөөрсний дараа нээгдэнэ.</p>
           <div id="blindActions"></div>
         </div>
+        <div class="sec-title">Сохор болзоонд бэлэн бүсгүйчүүд</div>
+        <div id="availWomen"></div>
         <div class="sec-title">Болзоо зохион байгуулах багц</div>
         <div id="pkgList"></div>
       </div>
@@ -1238,7 +1240,7 @@ async function saveProfile(){
   await loadMe();
   applyProfileUI();
   toast('✓ Профайл хадгалагдлаа');
-  route('mainapp');tab('profile');
+  closeEditProfile();
 }
 function applyProfileUI(){
   if(!me)return;
@@ -1288,7 +1290,7 @@ function clearOverlays(){_OVL_IDS.forEach(id=>{const e=document.getElementById(i
 let _exitArmed=false,_exitTimer=null;
 function backNav(){
   const active=document.querySelector('.page.active');const id=active?active.id:'';
-  if(id==='editProfile'){route('mainapp');tab('profile');return true;}
+  if(id==='editProfile'){closeEditProfile();return true;}
   if(['about','rules','info','login','register','adminLogin','pending'].indexOf(id)>=0){route('landing');return true;}
   if(id==='mainapp'){const dt=document.getElementById('t-discover');if(dt&&!dt.classList.contains('active')){tab('discover');return true;}}
   return false;
@@ -1320,7 +1322,7 @@ async function initApp(){
   await loadContacts();
   setupRealtime();
   await loadDates();
-  renderPkgs();renderBlind();bumpUnread();
+  renderPkgs();renderBlind();renderAvailWomen();bumpUnread();
   if(me){applyProfileUI();}
 }
 async function loadPeople(){
@@ -1471,6 +1473,23 @@ async function confirmPay(){
 /* ============================================================ СОХОР БОЛЗОО (blind date) ============================================================ */
 let blindPick=null;
 let blindJoined=false;
+async function renderAvailWomen(){
+  const w=document.getElementById('availWomen');if(!w)return;
+  w.innerHTML='<div style="color:var(--gray-2);font-size:13px;padding:6px 2px;">Ачааллаж байна…</div>';
+  try{
+    let q=sb.from('profiles').select('id,name,age,city,photo_url').eq('blind_active',true).eq('verified',true);
+    if(me)q=q.neq('id',me.id);
+    const {data}=await q;
+    const list=(data||[]);
+    if(!list.length){w.innerHTML='<div style="color:var(--gray-2);font-size:13px;padding:6px 2px;">Одоогоор сохор болзоонд бүртгүүлсэн бүсгүй алга. Удахгүй нэмэгдэнэ.</div>';return;}
+    w.innerHTML=list.map(p=>`<div style="display:flex;align-items:center;gap:12px;background:var(--card);border-radius:16px;padding:10px;margin-bottom:10px;"><div style="width:54px;height:54px;border-radius:12px;flex:0 0 auto;background-size:cover;background-position:center;${photoBg(p.photo_url||'')}" onclick="${p.photo_url?`openLightbox('${imgUrl(p.photo_url)}')`:''}"></div><div style="flex:1;min-width:0"><div style="font-weight:700;color:var(--ink)">${(p.name||'Бүсгүй')}${p.age?', '+p.age:''}</div><div style="font-size:12.5px;color:var(--gray-2)">📍 ${p.city||'-'}</div></div>${(me&&me.gender==='m')?`<button style="background:linear-gradient(135deg,var(--red),var(--pink));color:#fff;border:none;border-radius:30px;padding:9px 13px;font-size:12.5px;font-weight:700;flex:0 0 auto" onclick="requestDateWith('${p.id}','${esc(p.name||'')}','${p.photo_url||''}')">🎲 Болзоо хүсэх</button>`:''}</div>`).join('');
+  }catch(e){console.error('availWomen',e);w.innerHTML='<div style="color:var(--gray-2);font-size:13px;padding:6px 2px;">Ачаалж чадсангүй.</div>';}
+}
+function requestDateWith(id,name,ph){
+  if(!(me&&me.gender==='m')){toast('Энэ зөвхөн эрэгтэй хэрэглэгчдэд хамаатай');return;}
+  openPay('pkg',0);
+  setTimeout(()=>{try{setPayMode('person');pickPayPerson(id,name,ph);}catch(e){}},80);
+}
 function renderBlind(){
   const w=document.getElementById('blindActions');if(!w)return;
   if(me&&me.gender==='f'){
@@ -1502,8 +1521,11 @@ async function submitBlindReg(){
   if(!me)return;
   try{
     let {error}=await sb.from('profiles').update({blind_pending:true,blind_active:false,blind_pref:pref}).eq('id',me.id);
-    if(error&&/column|schema cache|does not exist|find the/i.test(error.message||''))console.error('blind columns missing',error);
-  }catch(e){console.error('submitBlindReg',e);}
+    if(error){
+      if(/column|schema cache|does not exist|find the/i.test(error.message||'')){toast('⚠️ Бүртгэл хадгалагдсангүй: blind_pending баганы SQL ажиллаагүй байна');console.error('blind columns missing',error);}
+      else toast('⚠️ Хадгалахад алдаа: '+error.message);
+    }
+  }catch(e){console.error('submitBlindReg',e);toast('⚠️ Алдаа гарлаа');}
 }
 async function leaveBlind(){
   if(me){me.blind_active=false;me.blind_pending=false;}renderBlind();toast('Сохор болзооны бүртгэлээс гарлаа');
@@ -2043,7 +2065,7 @@ function tab(name,btn){
   if(btn)btn.classList.add('active');else{const map={discover:0,dates:1,matches:2,profile:4};const nb=document.querySelectorAll('.nav button')[map[name]];if(nb)nb.classList.add('active');}
   try{
     if(name==='matches'){renderMatches();renderFriendReqs();loadFriendReqs();loadContacts();}
-    if(name==='dates'){renderDates();renderPkgs();renderBlind();}
+    if(name==='dates'){renderDates();renderPkgs();renderBlind();renderAvailWomen();}
     if(name==='profile'){renderProfileStats();}
   }catch(e){console.error('tab render',e);}
 }
@@ -2133,9 +2155,11 @@ async function admTab(t,btn){
       admData.dates=rows.map(d=>({id:d.id,org_id:d.organizer_id,org:pm[d.organizer_id]||'?',partner:(d.package==='blind'?'Сохор 🎲':(pm[d.partner_id]||'?')),venue:d.venue,area:d.area,when:d.when_text,status:d.status,pkg:d.package}));
     }catch(e){console.error('adm dates',e);admData.dates=[];admData.datesErr=(e&&e.message)||'алдаа';}
     try{
-      const {data:bl}=await sb.from('profiles').select('id,name,age,city,blind_pref,photo_url,blind_pending,blind_active').or('blind_pending.eq.true,blind_active.eq.true');
+      const {data:bl,error:be}=await sb.from('profiles').select('id,name,age,city,blind_pref,photo_url,blind_pending,blind_active').or('blind_pending.eq.true,blind_active.eq.true');
+      if(be)throw be;
       admData.blind=(bl||[]).map(x=>({id:x.id,name:x.name,age:x.age,city:x.city,ph:x.photo_url||'',pref:x.blind_pref||{},pending:!!x.blind_pending,active:!!x.blind_active}));
-    }catch(e){console.error('adm blind',e);admData.blind=[];}
+      admData.blindErr=null;
+    }catch(e){console.error('adm blind',e);admData.blind=[];admData.blindErr=(e&&e.message)||'тодорхойгүй';}
   }
   let html='';
   if(t!=='settings'){
@@ -2173,7 +2197,7 @@ async function admTab(t,btn){
     const pend=(admData.blind||[]).filter(b=>b.pending&&!b.active);
     const act=(admData.blind||[]).filter(b=>b.active);
     html+=`<div class="adm-sec">⏳ Сохор болзоо — зөвшөөрөл хүлээж буй (${pend.length})</div>`;
-    html+=pend.length?pend.map(b=>`<div class="adm-card">${blindRow(b).html}<div class="acts"><button class="ok-b" onclick="admApproveBlind('${b.id}')" title="Зөвшөөрөх">✓</button><button class="no-b" onclick="admRejectBlind('${b.id}')" title="Татгалзах">✕</button></div></div>`).join(''):empty('Хүлээгдэж буй хүсэлт алга');
+    html+=pend.length?pend.map(b=>`<div class="adm-card">${blindRow(b).html}<div class="acts"><button class="ok-b" onclick="admApproveBlind('${b.id}')" title="Зөвшөөрөх">✓</button><button class="no-b" onclick="admRejectBlind('${b.id}')" title="Татгалзах">✕</button></div></div>`).join(''):empty(admData.blindErr?('⚠️ Алдаа: '+admData.blindErr+' — Supabase-д <b>blind_pending</b> баганы SQL ажиллуулна уу.'):'Хүлээгдэж буй хүсэлт алга');
     html+=`<div class="adm-sec" style="margin-top:18px">🎲 Идэвхтэй сохор болзоо (${act.length})</div>`;
     html+=act.length?act.map(b=>`<div class="adm-card">${blindRow(b).html}<div class="acts"><button class="no-b" onclick="admRejectBlind('${b.id}')" title="Идэвхгүй болгох">🚫</button></div></div>`).join(''):empty('Идэвхтэй бүсгүй алга');
     html+=`<div class="adm-sec" style="margin-top:18px">📅 Бүх болзоо (${(admData.dates||[]).length})</div>`;
@@ -2181,7 +2205,10 @@ async function admTab(t,btn){
   }
   else if(t==='reports'){html+=empty('Гомдол (удахгүй холбогдоно)');}
   else if(t==='settings'){
-    html+=`<div style="font-family:var(--display);font-size:17px;color:var(--red-deep);font-weight:600;margin-bottom:14px;">Дансны мэдээлэл & хураамж</div>
+    html+=`<div style="font-family:var(--display);font-size:17px;color:var(--red-deep);font-weight:600;margin-bottom:14px;">Миний профайл</div>
+    <button class="btn btn-primary" style="width:100%;margin-bottom:6px" onclick="adminEditProfile()">👤 Профайл / зураг засах</button>
+    <p style="font-size:11.5px;color:var(--gray-2);margin:0 0 18px;line-height:1.5;">Хэрэглэгчтэй чатлахад харагдах нэр, зургаа эндээс өөрчилнө.</p>
+    <div style="font-family:var(--display);font-size:17px;color:var(--red-deep);font-weight:600;margin-bottom:14px;">Дансны мэдээлэл & хураамж</div>
     <div class="form-group"><label>Банкны нэр</label><input id="setBank" value="${settings.bank}"></div>
     <div class="form-group"><label>Дансны дугаар</label><input id="setAccount" value="${settings.account}"></div>
     <div class="form-group"><label>Хүлээн авагч</label><input id="setRecipient" value="${settings.recipient}"></div>
@@ -2281,6 +2308,9 @@ function admViewUser(i){
   ovOpen('admUserView');
 }
 let _adminChatReturn=false;
+let _editFromAdmin=false;
+function adminEditProfile(){_editFromAdmin=true;openEditProfile();}
+function closeEditProfile(){if(_editFromAdmin){_editFromAdmin=false;route('adminPanel');admTab(_admCurTab||'settings');}else{route('mainapp');tab('profile');}}
 async function admChatUser(i){
   const x=admData.users[i];if(!x)return;
   closeAdmUser();
@@ -2533,7 +2563,7 @@ function fallbackCopy(t){try{const ta=document.createElement('textarea');ta.valu
 fillAimags();renderBank();
 applyTheme();
 try{window.addEventListener('pointerdown',function(){try{_actx=_actx||new(window.AudioContext||window.webkitAudioContext)();if(_actx.state==='suspended')_actx.resume();}catch(e){}});}catch(e){}
-const APP_VERSION='v55';
+const APP_VERSION='v58';
 try{document.getElementById('verBadge').textContent='Хоёулаа Болзий '+APP_VERSION;}catch(_){}
 loadSettings();
 restoreSession();
