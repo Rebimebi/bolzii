@@ -882,6 +882,7 @@ body.dark .date-remind-top{background:linear-gradient(135deg,#3a2e12,#2c2410);co
       <div style="display:flex;align-items:center;gap:8px;">
         <button class="theme-btn" id="themeBtn" onclick="toggleTheme()" aria-label="Өнгө солих">🌙</button>
         <div class="vip" onclick="tab('profile')">⭐ VIP</div>
+        <button onclick="logout()" style="background:rgba(226,62,87,.12);color:var(--red);border:none;border-radius:20px;padding:7px 12px;font-size:12.5px;font-weight:700;cursor:pointer;font-family:var(--body);white-space:nowrap;">🚪 Гарах</button>
       </div>
     </div>
 
@@ -2227,7 +2228,7 @@ async function admTab(t,btn){
       const pid=[...new Set(rows.reduce((a,d)=>{if(d.organizer_id)a.push(d.organizer_id);if(d.partner_id)a.push(d.partner_id);return a;},[]))];
       let pm={};
       if(pid.length){const {data:ps}=await sb.from('profiles').select('id,name').in('id',pid);(ps||[]).forEach(p=>pm[p.id]=p.name);}
-      admData.dates=rows.map(d=>({id:d.id,org_id:d.organizer_id,org:pm[d.organizer_id]||'?',partner:(d.package==='blind'?'Сохор 🎲':(pm[d.partner_id]||'?')),venue:d.venue,area:d.area,when:d.when_text,status:d.status,pkg:d.package}));
+      admData.dates=rows.map(d=>({id:d.id,org_id:d.organizer_id,partner_id:d.partner_id,org:pm[d.organizer_id]||'?',partner:(d.package==='blind'?'Сохор 🎲':(pm[d.partner_id]||'?')),venue:d.venue,area:d.area,when:d.when_text,status:d.status,pkg:d.package}));
     }catch(e){console.error('adm dates',e);admData.dates=[];admData.datesErr=(e&&e.message)||'алдаа';}
     try{
       const {data:bl,error:be}=await sb.from('profiles').select('id,name,age,city,blind_pref,photo_url,blind_pending,blind_active').or('blind_pending.eq.true,blind_active.eq.true');
@@ -2277,7 +2278,7 @@ async function admTab(t,btn){
     html+=`<div class="adm-sec" style="margin-top:18px">🎲 Идэвхтэй сохор болзоо (${act.length})</div>`;
     html+=act.length?act.map(b=>`<div class="adm-card">${blindRow(b).html}<div class="acts"><button class="no-b" onclick="admRejectBlind('${b.id}')" title="Идэвхгүй болгох">🚫</button></div></div>`).join(''):empty('Идэвхтэй бүсгүй алга');
     html+=`<div class="adm-sec" style="margin-top:18px">📅 Бүх болзоо (${(admData.dates||[]).length})</div>`;
-    html+=(admData.dates&&admData.dates.length)?admData.dates.map((d,i)=>`<div class="adm-card"><div class="b"><div class="nm">${d.org} ↔ ${d.partner}</div><div class="meta">${d.pkg==='blind'?'🎲 Сохор болзоо':(d.pkg?'🎁 '+d.pkg:'🎁 -')} · 📍 ${d.venue||'-'} · 🗓 ${d.when||'-'} · ${d.status==='confirmed'?'✅ Баталгаажсан':(d.status==='accepted'?'✓ Хоёр тал зөвшөөрсөн':'⏳ Төлбөр хүлээж буй')}</div></div><div class="acts">${d.status!=='confirmed'?`<button class="ok-b" onclick="admConfirmDate(${i})" title="Төлбөр баталгаажуулах">✓</button>`:''}<button class="no-b" onclick="admDeleteDate(${i})" title="Устгах">🗑</button></div></div>`).join(''):empty(admData.datesErr?('⚠️ '+admData.datesErr):'Болзоо алга. Хэрэв хэрэглэгч болзоо захиалсан ч энд харагдахгүй бол Supabase-д <b>admin_all_dates</b> SQL policy-г ажиллуулна уу.');
+    html+=(admData.dates&&admData.dates.length)?admData.dates.map((d,i)=>`<div class="adm-card"><div class="b"><div class="nm">${d.org} ↔ ${d.partner}</div><div class="meta">${d.pkg==='blind'?'🎲 Сохор болзоо':(d.pkg?'🎁 '+d.pkg:'🎁 -')} · 📍 ${d.venue||'-'} · 🗓 ${d.when||'-'} · ${d.status==='confirmed'?'✅ Баталгаажсан':(d.status==='accepted'?'✓ Хоёр тал зөвшөөрсөн':'⏳ Төлбөр хүлээж буй')}</div></div><div class="acts"><button class="ok-b" style="background:rgba(80,140,255,.15);color:#2f6bd8" onclick="admSendDateInfo(${i})" title="Болзооны мэдээлэл илгээх">💬</button>${d.status!=='confirmed'?`<button class="ok-b" onclick="admConfirmDate(${i})" title="Төлбөр баталгаажуулах">✓</button>`:''}<button class="no-b" onclick="admDeleteDate(${i})" title="Устгах">🗑</button></div></div>`).join(''):empty(admData.datesErr?('⚠️ '+admData.datesErr):'Болзоо алга. Хэрэв хэрэглэгч болзоо захиалсан ч энд харагдахгүй бол Supabase-д <b>admin_all_dates</b> SQL policy-г ажиллуулна уу.');
   }
   else if(t==='reports'){html+=empty('Гомдол (удахгүй холбогдоно)');}
   else if(t==='settings'){
@@ -2453,6 +2454,24 @@ async function admDeleteDate(i){
   if(error){toast('Устгах алдаа: '+error.message);return;}
   if(!data||!data.length){toast('Устгаж чадсангүй — Supabase-д админ устгах SQL-ийг ажиллуулна уу');return;}
   toast('🗑 Болзоо устгалаа');admTab('dates');
+}
+async function admSendDateInfo(i){
+  const d=admData.dates[i];if(!d)return;
+  if(typeof confirm==='function'&&!confirm('Энэ болзооны мэдээллийг хоёр талд нь илгээх үү?'))return;
+  const blind=d.pkg==='blind';
+  const msg=(blind?'🎲 Таны СОХОР БОЛЗООНЫ мэдээлэл:\n':'📅 Таны болзооны мэдээлэл:\n')
+    +'📍 Газар: '+(d.venue||'Тодорхойлогдоогүй')
+    +'\n🗓 Огноо/цаг: '+(d.when||'Тодорхойлогдоогүй')
+    +(d.area?('\n📌 '+d.area):'')
+    +'\n\nЦагтаа очихоо мартуузай! Асуулт байвал энд бичээрэй. 💕';
+  toast('Илгээж байна…');
+  let ok=0,firstErr=null;
+  for(const uid of [d.org_id,d.partner_id]){
+    if(!uid)continue;
+    try{const {error}=await sb.from('messages').insert({from_id:me.id,to_id:uid,text:msg});if(error){if(!firstErr)firstErr=error.message;}else ok++;}catch(e){if(!firstErr)firstErr=e.message||'тодорхойгүй';}
+  }
+  if(ok===0){toast('❌ Илгээж чадсангүй: '+(firstErr||'тодорхойгүй'));return;}
+  toast('💬 '+ok+' хүнд болзооны мэдээлэл илгээлээ');
 }
 async function admConfirmDate(i){
   const d=admData.dates[i];if(!d)return;
@@ -2653,7 +2672,7 @@ function fallbackCopy(t){try{const ta=document.createElement('textarea');ta.valu
 fillAimags();renderBank();
 applyTheme();
 try{window.addEventListener('pointerdown',function(){try{_actx=_actx||new(window.AudioContext||window.webkitAudioContext)();if(_actx.state==='suspended')_actx.resume();}catch(e){}});}catch(e){}
-const APP_VERSION='v62';
+const APP_VERSION='v64';
 try{document.getElementById('verBadge').textContent='Хоёулаа Болзий '+APP_VERSION;}catch(_){}
 loadSettings();
 restoreSession();
