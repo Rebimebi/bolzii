@@ -2284,6 +2284,7 @@ async function admTab(t,btn){
   }
   else if(t==='chat'){
     html+=`<div class="adm-sec">💬 Хэрэглэгчидтэй харилцах</div>`;
+    html+=`<button class="btn" style="width:100%;margin-bottom:10px;background:linear-gradient(135deg,var(--red),var(--pink));color:#fff;font-weight:700;border:none;border-radius:30px;padding:13px;" onclick="admInviteQuestions()">📣 Бүх хэрэглэгчид «асуулт байвал бичээрэй» илгээх</button>`;
     html+=`<p style="font-size:11.5px;color:var(--gray-2);margin:0 0 14px;line-height:1.5;">Хэрэглэгч рүү анх бичихийн тулд «Хэрэглэгчид» эсвэл «Баталгаажуулалт» табаас 💬 дарна. Хариу бичсэн бүх харилцаа энд хадгалагдаж харагдана.</p>`;
     html+=`<button class="btn" style="width:100%;margin-bottom:14px;background:var(--gray-bg);color:var(--red);font-weight:700;border:none;border-radius:30px;padding:11px;" onclick="admTab('chat')">🔄 Шинэчлэх</button>`;
     html+=chats.length?chats.map((c,i)=>`<div class="adm-card" style="cursor:pointer" onclick="admOpenChat(${i})"><div class="ph" style="${photoBg(c.ph)}"></div><div class="b"><div class="nm">${c.n||'Хэрэглэгч'}</div><div class="meta">${((c.last||'').slice(0,42))||'Шинэ харилцаа'}</div></div>${c.unread?`<span class="adm-pill warn">${c.unread}</span>`:''}<div class="acts"><button class="ok-b" onclick="event.stopPropagation();admOpenChat(${i})" title="Чат нээх">💬</button></div></div>`).join(''):empty('Одоогоор харилцаа алга. «Хэрэглэгчид» табаас хэрэглэгч сонгоод 💬 дарж чат эхлүүлээрэй.');
@@ -2420,6 +2421,20 @@ async function admChatVerify(i){
   _adminChatReturn=true;route('mainapp');
   openChat(idx);
   setTimeout(()=>{const inp=document.getElementById('cvInput');if(inp&&!inp.value)inp.value='Сайн байна уу! 💕 Та бүртгэлийн хураамжаа төлснөөр админ нэвтрэх эрхийг тань нээх болно. Төлбөрөө төлөөд апп-аа бүрэн ашиглаарай.';},250);
+}
+async function admInviteQuestions(){
+  toast('Хэрэглэгчдийг ачааллаж байна…');
+  let users=[];
+  try{const {data,error}=await sb.from('profiles').select('id,is_admin').neq('id',me.id);if(error)throw error;users=(data||[]).filter(u=>!u.is_admin);}
+  catch(e){toast('❌ Алдаа: '+(e.message||'тодорхойгүй'));return;}
+  if(!users.length){toast('Хэрэглэгч алга');return;}
+  if(typeof confirm==='function'&&!confirm(users.length+' хэрэглэгчид "асуулт байвал бичээрэй" гэсэн зурвас илгээх үү?'))return;
+  const msg='Сайн байна уу! 💕 «Хоёулаа Болзий»-д тавтай морил. Танд асууж тодруулах зүйл, тусламж хэрэгтэй бол энэ чатаар чөлөөтэй бичээрэй — бид хариулахад үргэлж бэлэн байна. 💬';
+  toast('Илгээж байна…');
+  let ok=0,firstErr=null;
+  for(const u of users){try{const {error}=await sb.from('messages').insert({from_id:me.id,to_id:u.id,text:msg});if(error){if(!firstErr)firstErr=error.message;}else ok++;}catch(e){if(!firstErr)firstErr=e.message||'тодорхойгүй';}}
+  if(ok===0){toast('❌ Илгээж чадсангүй: '+(firstErr||'тодорхойгүй'));return;}
+  toast('📣 '+ok+'/'+users.length+' хэрэглэгчид илгээлээ'+(firstErr?(' · '+(users.length-ok)+' амжилтгүй'):''));
 }
 async function admRemindWomen(){
   toast('Эмэгтэй хэрэглэгчдийг ачааллаж байна…');
@@ -2681,7 +2696,7 @@ function fallbackCopy(t){try{const ta=document.createElement('textarea');ta.valu
 fillAimags();renderBank();
 applyTheme();
 try{window.addEventListener('pointerdown',function(){try{_actx=_actx||new(window.AudioContext||window.webkitAudioContext)();if(_actx.state==='suspended')_actx.resume();}catch(e){}});}catch(e){}
-const APP_VERSION='v66';
+const APP_VERSION='v67';
 try{document.getElementById('verBadge').textContent='Хоёулаа Болзий '+APP_VERSION;}catch(_){}
 loadSettings();
 restoreSession();
