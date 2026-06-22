@@ -1118,6 +1118,7 @@ body.dark .date-remind-top{background:linear-gradient(135deg,#3a2e12,#2c2410);co
     <div class="admin-head"><div class="ttl">Хоёулаа Болзий — Админ</div><div style="display:flex;gap:8px"><button class="out" onclick="refreshAdm()" title="Шинэчлэх">🔄 Шинэчлэх</button><button class="out" onclick="logout()">Гарах</button></div></div>
     <div class="admin-tabs">
       <button class="on" onclick="admTab('verify',this)">Баталгаажуулалт</button>
+      <button onclick="admTab('stats',this)">📊 Статистик</button>
       <button onclick="admTab('users',this)">Хэрэглэгчид</button>
       <button onclick="admTab('dates',this)">Болзоо</button>
       <button onclick="admTab('chat',this)">💬 Чат</button>
@@ -2266,7 +2267,7 @@ async function admTab(t,btn){
   const body=document.getElementById('admBody');
   body.innerHTML='<div style="text-align:center;color:var(--gray-2);padding:30px;font-size:13px;">Ачааллаж байна…</div>';
   // өгөгдөл татах
-  if(t!=='settings'&&t!=='chat'){
+  if(t!=='settings'&&t!=='chat'&&t!=='stats'){
     try{
       const [v,u]=await Promise.all([
         sb.from('profiles').select('*').eq('verified',false).eq('blocked',false).order('created_at',{ascending:false}),
@@ -2275,6 +2276,21 @@ async function admTab(t,btn){
       admData.verify=(v.data||[]).filter(x=>!x.is_admin).map(x=>({id:x.id,name:x.name,g:x.gender,age:x.age||'-',height:x.height,weight:x.weight,phone:x.phone,city:x.city,soum:x.soum,bio:x.bio,tags:x.tags,ph:x.photo_url||'',photos:x.photos||[],waived:!!x.fee_waived,plan:x.gender==='f'?(x.fee_waived?'Бүсгүй · 🎁 хураамжгүй':'Бүсгүй · 50% хураамж'):'Эрэгтэй · бүтэн хураамж'}));
       admData.users=(u.data||[]).filter(x=>!x.is_admin).map(x=>({...x,n:x.name,m:`${x.age||''} · ${x.city||''}`,ph:x.photo_url||'',blocked:!!x.blocked}));
     }catch(e){console.error('admTab load',e);body.innerHTML='<div style="text-align:center;color:var(--red);padding:30px;">Ачаалахад алдаа гарлаа</div>';return;}
+  }
+  if(t==='stats'){
+    admData.stats={views:0,registered:0,verified:0,men:0,women:0,vip:0,pending:0,err:''};
+    try{
+      const {data:profs,error:pe}=await sb.from('profiles').select('is_admin,verified,gender,is_vip');
+      if(pe)throw pe;
+      const list=(profs||[]).filter(p=>!p.is_admin);
+      admData.stats.registered=list.length;
+      admData.stats.verified=list.filter(p=>p.verified).length;
+      admData.stats.pending=list.filter(p=>!p.verified).length;
+      admData.stats.men=list.filter(p=>p.gender==='m').length;
+      admData.stats.women=list.filter(p=>p.gender==='f').length;
+      admData.stats.vip=list.filter(p=>p.is_vip).length;
+    }catch(e){admData.stats.err=(e&&e.message)||'тодорхойгүй';}
+    try{const {data:s}=await sb.from('stats').select('views').eq('id',1).maybeSingle();admData.stats.views=(s&&s.views)||0;}catch(e){admData.stats.viewsErr=(e&&e.message)||'';}
   }
   if(t==='dates'){
     admData.datesErr='';
@@ -2297,7 +2313,7 @@ async function admTab(t,btn){
   }
   if(t==='chat'){try{await loadContacts();}catch(e){console.error('adm chat load',e);}}
   let html='';
-  if(t!=='settings'){
+  if(t!=='settings'&&t!=='stats'){
     const blk=admData.users.filter(u=>u.blocked).length;
     const allU=[...admData.users.map(u=>u.gender),...admData.verify.map(u=>u.g)];
     const men=allU.filter(g=>g==='m').length;
@@ -2327,6 +2343,27 @@ async function admTab(t,btn){
     <button class="btn" style="width:100%;margin-bottom:8px;background:var(--gray-bg);color:var(--red);font-weight:700;border:none;border-radius:30px;padding:10px;" onclick="admChatVerify(${i})">💬 Чат бичих / төлбөр сануулах</button>
     <div class="av-actions"><button class="av-no" onclick="rejectUser(${i})">✕ Татгалзах</button><button class="av-ok" onclick="approveUser(${i})">✓ Зөвшөөрөх</button></div>
   </div>`).join(''):empty('Баталгаажуулалт хүлээж буй хэрэглэгч алга');}
+  else if(t==='stats'){
+    const s=admData.stats||{};
+    if(s.err){html+=empty('⚠️ Статистик ачаалахад алдаа: '+s.err);}
+    else{
+      const views=s.views||0,reg=s.registered||0,ver=s.verified||0,pend=s.pending||0;
+      const base=Math.max(views,reg,1);
+      const pct=(n,d)=>d>0?Math.round(n/d*100):0;
+      const wpct=n=>Math.max(3,Math.round(n/base*100));
+      const bar=(emoji,label,count,sub,color)=>`<div style="margin-bottom:15px"><div style="display:flex;justify-content:space-between;align-items:baseline;font-size:13px;font-weight:700;margin-bottom:6px"><span>${emoji} ${label}</span><span>${count}${sub?` · <span style="color:var(--gray-2);font-weight:600;font-size:12px">${sub}</span>`:''}</span></div><div style="height:28px;background:var(--gray-bg);border-radius:14px;overflow:hidden"><div style="height:100%;width:${wpct(count)}%;background:${color};border-radius:14px"></div></div></div>`;
+      html+=`<div class="adm-sec">📊 Статистик — юүлүүр</div>`;
+      html+=`<button class="btn" style="width:100%;margin-bottom:16px;background:var(--gray-bg);color:var(--red);font-weight:700;border:none;border-radius:30px;padding:11px;" onclick="admTab('stats')">🔄 Шинэчлэх</button>`;
+      html+=bar('👀','Сайт үзсэн (зочид)',views,'',`linear-gradient(90deg,#5b8def,#7aa5f5)`);
+      html+=bar('📝','Бүртгүүлсэн',reg,views>0?pct(reg,views)+'% зочдоос':'',`linear-gradient(90deg,var(--red),var(--pink))`);
+      html+=bar('✅','Төлбөр төлж баталгаажсан',ver,reg>0?pct(ver,reg)+'% бүртгэлээс':'',`linear-gradient(90deg,#1faa59,#23c06a)`);
+      if(s.viewsErr)html+=`<div style="font-size:11.5px;color:#c9961e;margin:-4px 2px 12px;line-height:1.5">⚠️ «Үзсэн» тоо 0 байна — <b>stats</b> хүснэгтийн SQL ажиллуулсан эсэхээ шалгана уу.</div>`;
+      html+=`<div class="adm-sec" style="margin-top:20px">Дэлгэрэнгүй</div>`;
+      html+=`<div class="kpi-row"><div class="kpi"><div class="v">${s.women||0}</div><div class="l">♀ Эмэгтэй</div></div><div class="kpi"><div class="v">${s.men||0}</div><div class="l">♂ Эрэгтэй</div></div></div>`;
+      html+=`<div class="kpi-row" style="margin-top:10px"><div class="kpi"><div class="v">${pend}</div><div class="l">⏳ Хүлээгдэж буй</div></div><div class="kpi"><div class="v">${s.vip||0}</div><div class="l">👑 VIP</div></div></div>`;
+      html+=`<p style="font-size:11.5px;color:var(--gray-2);margin:16px 4px 0;line-height:1.65">«Сайт үзсэн» = аппыг нээсэн зочдын тоо (нэг төхөөрөмж нэг удаа тоологдоно). «Бүртгүүлсэн» = бүртгэлээ үүсгэсэн хүн. «Баталгаажсан» = төлбөр төлж таны зөвшөөрсөн хүн. Зочдын тоо энэ шинэчлэлээс хойш цуглуулагдана.</p>`;
+    }
+  }
   else if(t==='users'){html+=admData.users.length?admData.users.map((x,i)=>`<div class="adm-card" style="cursor:pointer;${x.blocked?'opacity:.55':''}" onclick="admViewUser(${i})"><div class="ph" style="${photoBg(x.ph)}"></div><div class="b"><div class="nm">${x.n}</div><div class="meta">${x.m}</div></div><span class="adm-pill ${x.blocked?'warn':'ok'}">${x.blocked?'Блоклогдсон':'Идэвхтэй'}</span><div class="acts"><button class="ok-b" style="background:rgba(201,150,30,.18);color:#a87a12" onclick="event.stopPropagation();admGiftPromoU(${i})" title="Урамшуулал бэлэглэх">🎁</button><button class="ok-b" onclick="event.stopPropagation();admChatUser(${i})" title="Чат бичих">💬</button><button class="${x.blocked?'ok-b':'no-b'}" onclick="event.stopPropagation();toggleBlock(${i})" title="${x.blocked?'Блокоос гаргах':'Блоклох'}">${x.blocked?'🔓':'🚫'}</button></div></div>`).join(''):empty('Бүртгэлтэй хэрэглэгч алга');}
   else if(t==='dates'){
     html+=`<button class="btn" style="width:100%;margin-bottom:14px;background:linear-gradient(135deg,#c9961e,#e0b020);color:#fff;font-weight:700;border:none;border-radius:30px;padding:13px;" onclick="admRemindWomen()">🛡️ Бүх эмэгтэйд аюулгүй байдлын сануулга илгээх</button>`;
@@ -2789,10 +2826,12 @@ function fallbackCopy(t){try{const ta=document.createElement('textarea');ta.valu
 fillAimags();renderBank();
 applyTheme();
 try{window.addEventListener('pointerdown',function(){try{_actx=_actx||new(window.AudioContext||window.webkitAudioContext)();if(_actx.state==='suspended')_actx.resume();}catch(e){}});}catch(e){}
-const APP_VERSION='v73';
+const APP_VERSION='v74';
 try{document.getElementById('verBadge').textContent='Хоёулаа Болзий '+APP_VERSION;}catch(_){}
 loadSettings();
 restoreSession();
+function bumpVisit(){try{if(localStorage.getItem('_bz_seen'))return;localStorage.setItem('_bz_seen','1');sb.rpc('bump_views').then(()=>{},()=>{});}catch(e){}}
+bumpVisit();
 try{history.pushState({g:1},'');}catch(_){}
 /* Бүртгэлийн талбар бүрд listener — бөглөх бүрт товчийг шалгана */
 ['rName','rAge','rHeight','rWeight','rPhone','rPass','rBio','rAimag','rSoum'].forEach(id=>{
