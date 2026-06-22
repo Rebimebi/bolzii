@@ -587,7 +587,7 @@ body.dark .date-remind-top{background:linear-gradient(135deg,#3a2e12,#2c2410);co
 
     <div id="regPromoBanner" style="display:none;position:relative;z-index:5;margin-top:18px;background:linear-gradient(135deg,#c9961e,#e0b020);color:#fff;border-radius:16px;padding:14px 16px;font-size:15px;font-weight:800;line-height:1.4;text-align:center;box-shadow:0 12px 28px -12px rgba(201,150,30,.7);"></div>
 
-    <div class="women-free">👩 Бүсгүйчүүд хураамжийн <b>зөвхөн 50%</b> төлж, <b>VIP эрхийг ҮНЭГҮЙ</b> авна!</div>
+    <div class="women-free">👩 Бүсгүйчүүд <b>үнэ төлбөргүй</b> бүртгүүлж, <b>VIP эрхийг ҮНЭГҮЙ</b> авна!</div>
 
     <div class="cta">
       <button class="btn btn-ghost" onclick="openGuide()">📖 Апп ашиглах заавар</button>
@@ -612,7 +612,7 @@ body.dark .date-remind-top{background:linear-gradient(135deg,#3a2e12,#2c2410);co
     <div class="rm-body">
       <p class="lead">Хоёулаа Болзий бол зүгээр нэг танилцах апп биш — <b>таны болзоог бид өөрсдөө зохион байгуулдаг</b>. Танилцаад, тохирвол болзоог нь бэлдэж өгнө. Чи зүгээр л очоод уулзана.</p>
       <div class="guide-step"><b>1. Бүртгүүлэх</b><span>Нэр, утас, нас, нүүр зураг, сонирхлоо оруулна. 18+ насны хүн бүртгүүлнэ.</span></div>
-      <div class="guide-step"><b>2. Баталгаажуулалт</b><span>Админ зураг, мэдээллийг шалгаж баталгаажуулна. 👩 Бүсгүйчүүд хураамжийн 50% (VIP үнэгүй), 👨 эрэгтэйчүүд бүтэн хураамж төлнө.</span></div>
+      <div class="guide-step"><b>2. Баталгаажуулалт</b><span>Админ зураг, мэдээллийг шалгаж баталгаажуулна. 👩 Бүсгүйчүүд үнэ төлбөргүй (VIP ч үнэгүй), 👨 эрэгтэйчүүд бүртгэлийн хураамж төлнө.</span></div>
       <div class="guide-step"><b>3. Хүмүүстэй танилцах</b><span>«Нээх» хэсгээс бусдыг үзэж, найзын хүсэлт эсвэл ❤️ лайк илгээнэ.</span></div>
       <div class="guide-step"><b>4. Тохирол ба чат</b><span>Хоёр тал бие биедээ лайк дарвал тохирол үүсэж, чатлаж эхэлнэ.</span></div>
       <div class="guide-step"><b>5. Болзоо захиалах</b><span>«Болзоо» хэсгээс багц сонгож: <b>нэрээр хайж тодорхой хүн урих</b> эсвэл <b>🎲 сохор болзоо</b> (апп тохируулна) — 2 сонголт.</span></div>
@@ -748,14 +748,14 @@ body.dark .date-remind-top{background:linear-gradient(135deg,#3a2e12,#2c2410);co
         <div class="rule-read" id="ruleBox" onclick="openRules()"><span id="ruleState">📜 Дүрэмтэй танилцаж зөвшөөрөх</span><span class="chev">›</span></div>
       </div>
       <div id="womenFree" style="display:none">
-        <div class="verify-note" style="background:rgba(226,62,87,.1);color:var(--red-deep)">👩 Бүсгүйчүүд бүртгэлийн хураамжийн <b>зөвхөн 50%</b>-ийг төлнө. VIP эрх <b>ҮНЭГҮЙ</b>. (Админ хүсвэл хураамжгүй болгож магадгүй.)</div>
+        <div class="verify-note" style="background:rgba(226,62,87,.1);color:var(--red-deep)">👩 Бүсгүйчүүд <b>үнэ төлбөргүй</b> бүртгүүлнэ! VIP эрх ч мөн <b>ҮНЭГҮЙ</b>. Та зөвхөн жинхэнэ нүүр зургаа оруулахад л хангалттай.</div>
       </div>
       <div id="paidArea">
-        <div class="form-group"><label>Бүртгэлийн хураамж</label>
+        <div class="form-group" id="feeGroup"><label>Бүртгэлийн хураамж</label>
           <div class="plan on" id="planFree" style="cursor:default"><div><b>Бүртгэлийн хураамж</b><span>Аппд нэгдэхэд нэг удаа төлнө</span></div><div class="pr" id="planFreePr">5,000₮</div></div>
           <div style="display:flex;gap:10px;background:rgba(255,200,90,.12);border:1px solid rgba(201,150,30,.25);border-radius:12px;padding:11px 13px;margin-top:10px;font-size:12px;color:#a87a12;line-height:1.5;"><span style="font-size:18px">👑</span><span><b>VIP эрх бол тусдаа, ЗААВАЛ БИШ.</b> Энэ нь бүртгэлийн хураамжид <b>ороогүй</b>. Аппд орсныхоо дараа хүсвэл доторх «VIP болох» товчоор сонгож авна.</span></div>
         </div>
-        <div class="form-group"><label>Төлбөрийн данс</label>
+        <div class="form-group" id="bankGroup"><label>Төлбөрийн данс</label>
           <div class="bank-box">
             <div class="bank-row"><span>Банк</span><b id="bkBank">Хаан банк</b></div>
             <div class="bank-row"><span>Данс</span><b id="bkAccount">5041 234 567</b><button class="copy-acc" onclick="copyAccount()">📋 Хуулах</button></div>
@@ -799,7 +799,7 @@ body.dark .date-remind-top{background:linear-gradient(135deg,#3a2e12,#2c2410);co
       <div class="feat"><div class="ic">👤</div><div><b>Найзын хүсэлт</b><span>Бусдад найзын хүсэлт илгээж, ирсэн хүсэлтийг зурагтай нь хараад зөвшөөрөх/татгалзах боломжтой.</span></div></div>
       <div class="feat"><div class="ic">🎲</div><div><b>Сохор болзоо</b><span>Хэн болохыг урьдчилан мэдэхгүй — апп насанд ойролцоо, эсрэг хүйсийн хүнтэй болзоог зохион байгуулна. Нэр, зураг нь нөгөө тал зөвшөөрсний дараа нээгдэнэ.</span></div></div>
       <div class="feat"><div class="ic">🎀</div><div><b>Болзоо зохион байгуулах багц</b><span>Энгийнээс VIP хүртэл 5 багц — ресторан захиалга, цэцэг, тээвэр, хувийн зохион байгуулагч зэрэг.</span></div></div>
-      <div class="feat"><div class="ic">👩</div><div><b>Бүсгүйчүүд хямдралтай</b><span>Бүсгүйчүүд бүртгэлийн хураамжийн зөвхөн 50%-ийг төлж, VIP эрхийг ҮНЭГҮЙ авна. Админ хүсвэл хураамжгүй болгож болно.</span></div></div>
+      <div class="feat"><div class="ic">👩</div><div><b>Бүсгүйчүүд үнэгүй</b><span>Бүсгүйчүүд бүртгэлийн хураамж <b>огт төлөхгүй</b>, VIP эрхийг ч <b>ҮНЭГҮЙ</b> авна. Зөвхөн бүртгүүлээд л орно.</span></div></div>
       <div class="feat"><div class="ic">🌙</div><div><b>Харанхуй / гэрэлтэй горим</b><span>Нүдэнд ээлтэй харанхуй горимыг нэг товчоор сэлгэнэ.</span></div></div>
       <div class="feat"><div class="ic">📲</div><div><b>Утсандаа суулгах</b><span>Аппыг утасны нүүр дэлгэцэд нэмж, апп шиг бүтэн дэлгэцээр ашиглана. ("Суулгах заавар"-аас үзнэ үү.)</span></div></div>
     </div>
@@ -1207,8 +1207,8 @@ async function notifyPaid(){
 function showPending(){
   const pay=document.getElementById('pendingPay');if(!pay)return;
   if(!me){pay.innerHTML='';return;}
-  if(me.gender==='f'&&me.fee_waived){
-    pay.innerHTML=`<div class="pend-pay"><div class="pp-title">🎁 Танд хураамжгүй!</div><div class="pp-note">Админ танд бүртгэлийн хураамжгүйгээр зөвшөөрсөн байна. Та төлбөргүйгээр баталгаажих тул түр хүлээнэ үү.</div><button class="btn" style="width:100%;margin-top:14px;background:linear-gradient(135deg,#1faa59,#23c06a);color:#fff;font-weight:700;border:none;border-radius:30px;padding:13px;font-size:13px;line-height:1.45;cursor:pointer" onclick="notifyPaid()">⏳ Удаан хүлээж байна уу? Энд дарж админд сануулаарай</button></div>`;
+  if(me.gender==='f'){
+    pay.innerHTML=`<div class="pend-pay"><div class="pp-title">🎁 Бүсгүйчүүд үнэгүй!</div><div class="pp-note">Танаас бүртгэлийн ямар ч төлбөр авахгүй. Админ таны зургийг хараад баталгаажуулмагц аппад бүрэн орох боломжтой болно. Түр хүлээнэ үү. 💕</div><button class="btn" style="width:100%;margin-top:14px;background:linear-gradient(135deg,#1faa59,#23c06a);color:#fff;font-weight:700;border:none;border-radius:30px;padding:13px;font-size:13px;line-height:1.45;cursor:pointer" onclick="notifyPaid()">⏳ Удаан хүлээж байна уу? Энд дарж админд сануулаарай</button></div>`;
     return;
   }
   let base=me.gender==='f'?Math.round((settings.fee||0)/2):settings.fee;
@@ -1692,7 +1692,7 @@ function fillSoums(){
 function openRules(){ovOpen('rulesModal');}
 function closeRules(){ovClose('rulesModal');}
 function agreeRules(){rulesAgreed=true;const b=document.getElementById('ruleBox');b.classList.add('done');document.getElementById('ruleState').textContent='✓ Дүрэмтэй танилцсан';closeRules();validateReg();}
-function regFee(){let f=regGender==='f'?Math.round((settings.fee||0)/2):(settings.fee||0);if(regPromoActive())f=Math.round(f*0.5);return f;}
+function regFee(){let f=regGender==='f'?0:(settings.fee||0);if(regPromoActive()&&regGender!=='f')f=Math.round(f*0.5);return f;}
 function pickPlan(p){
   selectedPlan=p;
   const pf=document.getElementById('planFree');if(pf)pf.classList.toggle('on',p==='free');
@@ -1707,7 +1707,9 @@ function pickGender(g,btn){
   document.getElementById('paidArea').style.display='block';
   document.getElementById('womenFree').style.display=g==='f'?'block':'none';
   const vp=document.getElementById('planVip');if(vp)vp.style.display=g==='f'?'none':'';
-  const pf=document.getElementById('planFreePr');if(pf)pf.textContent=fmt(regFee());
+  const fg=document.getElementById('feeGroup');if(fg)fg.style.display=g==='f'?'none':'block';
+  const bg=document.getElementById('bankGroup');if(bg)bg.style.display=g==='f'?'none':'block';
+  const pf=document.getElementById('planFreePr');if(pf)pf.textContent=g==='f'?'ҮНЭГҮЙ':fmt(regFee());
   selectedPlan='free';pickPlan('free');
   validateReg();
 }
@@ -1885,7 +1887,7 @@ async function doRegister(){
   if(photoErr){
     toast('⚠️ Бүртгэл үүслээ, гэхдээ зураг хуулагдсангүй: '+photoErr+' — Профайл → Профайл засахаас зургаа нэмнэ үү.');
   }else if(regGender==='f'){
-    toast('🎉 Бүртгэл амжилттай! Бүсгүйчүүд хураамжийн 50% төлнө (VIP үнэгүй). Төлбөр + админ баталгаажуулсны дараа орно.');
+    toast(regGender==='f'?'🎉 Бүртгэл амжилттай! Бүсгүйчүүд үнэгүй — админ баталгаажуулсны дараа аппад орно.':'🎉 Бүртгэл амжилттай! Төлбөрөө төлж, админ баталгаажуулсны дараа орно.');
   }else{
     toast('🎉 Бүртгэл амжилттай! Төлбөр + админ баталгаажуулсны дараа идэвхжинэ.');
   }
@@ -2188,7 +2190,7 @@ function openChatByName(n){const i=chats.findIndex(c=>c.n===n);if(i>=0){tab('mat
 function isLocked(){return !!(me&&!me.verified&&!me.is_admin);}
 function openLockedModal(){
   const m=document.getElementById('lockedMsg');
-  if(m)m.textContent=(me&&me.gender==='f')?(me.fee_waived?'Админ танд хураамжгүйгээр зөвшөөрсөн. Баталгаажуулалт хүлээгээд түр хүлээнэ үү.':'Та бүртгэлийн хураамжийн 50%-ийг төлснөөр админ нэвтрэх эрхийг тань нээнэ.'):'Та бүртгэлийн хураамжаа төлснөөр админ нэвтрэх эрх олгоно.';
+  if(m)m.textContent=(me&&me.gender==='f')?'Бүсгүйчүүд үнэгүй! Админ таны зургийг хараад баталгаажуулмагц нэвтрэх эрх нээгдэнэ.':'Та бүртгэлийн хураамжаа төлснөөр админ нэвтрэх эрх олгоно.';
   ovOpen('lockedModal');
 }
 function tab(name,btn){
@@ -2274,7 +2276,7 @@ async function admTab(t,btn){
         sb.from('profiles').select('*').eq('verified',false).eq('blocked',false).order('created_at',{ascending:false}),
         sb.from('profiles').select('*').eq('verified',true)
       ]);
-      admData.verify=(v.data||[]).filter(x=>!x.is_admin).map(x=>({id:x.id,name:x.name,g:x.gender,age:x.age||'-',height:x.height,weight:x.weight,phone:x.phone,city:x.city,soum:x.soum,bio:x.bio,tags:x.tags,ph:x.photo_url||'',photos:x.photos||[],waived:!!x.fee_waived,plan:x.gender==='f'?(x.fee_waived?'Бүсгүй · 🎁 хураамжгүй':'Бүсгүй · 50% хураамж'):'Эрэгтэй · бүтэн хураамж'}));
+      admData.verify=(v.data||[]).filter(x=>!x.is_admin).map(x=>({id:x.id,name:x.name,g:x.gender,age:x.age||'-',height:x.height,weight:x.weight,phone:x.phone,city:x.city,soum:x.soum,bio:x.bio,tags:x.tags,ph:x.photo_url||'',photos:x.photos||[],waived:!!x.fee_waived,plan:x.gender==='f'?'Бүсгүй · 🎁 ҮНЭГҮЙ':'Эрэгтэй · бүтэн хураамж'}));
       admData.users=(u.data||[]).filter(x=>!x.is_admin).map(x=>({...x,n:x.name,m:`${x.age||''} · ${x.city||''}`,ph:x.photo_url||'',blocked:!!x.blocked}));
     }catch(e){console.error('admTab load',e);body.innerHTML='<div style="text-align:center;color:var(--red);padding:30px;">Ачаалахад алдаа гарлаа</div>';return;}
   }
@@ -2338,8 +2340,7 @@ async function admTab(t,btn){
       ${x.bio?`<div><span>Танилцуулга</span><b>${x.bio}</b></div>`:''}
       ${x.tags&&x.tags.length?`<div><span>Сонирхол</span><b>${x.tags.join(', ')}</b></div>`:''}
     </div>
-    <div class="av-check">${x.g==='f'?(x.waived?'👩🎁 Энэ бүсгүйг <b>хураамжгүй</b> болгосон. Зургийг хараад баталгаажуул.':'👩 Зургийг хараад <b>бүсгүй мөн эсэх</b> + <b>50% хураамж төлсөн</b> эсэхийг шалгаад баталгаажуул.'):'👨 <b>Төлбөр төлсөн</b> эсэх + зургийг шалгаад баталгаажуул.'}</div>
-    ${x.g==='f'?`<button class="btn" style="width:100%;margin-bottom:8px;background:${x.waived?'var(--gray-bg)':'rgba(255,200,90,.18)'};color:${x.waived?'var(--gray)':'#c9961e'};font-weight:700;border:none;border-radius:30px;padding:10px;" onclick="admWaiveVerify(${i})">${x.waived?'💰 Хураамж сэргээх':'🎁 Хураамжгүй болгох'}</button>`:''}
+    <div class="av-check">${x.g==='f'?'👩 Зургийг хараад <b>жинхэнэ бүсгүй мөн эсэхийг</b> шалгаад баталгаажуул. Бүсгүйчүүд <b>үнэгүй</b> тул төлбөр шалгах шаардлагагүй.':'👨 <b>Төлбөр төлсөн</b> эсэх + зургийг шалгаад баталгаажуул.'}</div>
     <button class="btn" style="width:100%;margin-bottom:8px;background:rgba(201,150,30,.16);color:#a87a12;font-weight:700;border:none;border-radius:30px;padding:10px;" onclick="admGiftPromoV(${i})">🎁 Урамшуулал бэлэглэх (1 цаг)</button>
     <button class="btn" style="width:100%;margin-bottom:8px;background:var(--gray-bg);color:var(--red);font-weight:700;border:none;border-radius:30px;padding:10px;" onclick="admChatVerify(${i})">💬 Чат бичих / төлбөр сануулах</button>
     <div class="av-actions"><button class="av-no" onclick="rejectUser(${i})">✕ Татгалзах</button><button class="av-ok" onclick="approveUser(${i})">✓ Зөвшөөрөх</button></div>
@@ -2827,7 +2828,7 @@ function fallbackCopy(t){try{const ta=document.createElement('textarea');ta.valu
 fillAimags();renderBank();
 applyTheme();
 try{window.addEventListener('pointerdown',function(){try{_actx=_actx||new(window.AudioContext||window.webkitAudioContext)();if(_actx.state==='suspended')_actx.resume();}catch(e){}});}catch(e){}
-const APP_VERSION='v76';
+const APP_VERSION='v77';
 try{document.getElementById('verBadge').textContent='Хоёулаа Болзий '+APP_VERSION;}catch(_){}
 loadSettings();
 restoreSession();
