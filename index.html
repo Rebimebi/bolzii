@@ -635,7 +635,7 @@ body.dark .date-remind-top{background:linear-gradient(135deg,#3a2e12,#2c2410);co
       <div class="rule-item"><div class="num">2</div><div>Баруун дээд буланд <b>⋮</b> цэсийг дарна.</div></div>
       <div class="rule-item"><div class="num">3</div><div><b>"Аппликэйшн суулгах"</b> эсвэл <b>"Нүүр дэлгэцэд нэмэх"</b>-ийг сонгоно.</div></div>
     </div>
-    <div class="rm-foot"><button class="btn btn-primary" style="width:100%" onclick="installApp()">📲 Шууд суулгах</button></div>
+    <div class="rm-foot"><button class="btn btn-primary" id="installNowBtn" style="width:100%" onclick="installNow()">📲 Шууд суулгах</button></div>
   </div>
 
   <!-- ============ VIP PAYMENT MODAL ============ -->
@@ -1107,6 +1107,7 @@ body.dark .date-remind-top{background:linear-gradient(135deg,#3a2e12,#2c2410);co
       <button class="on" onclick="admTab('verify',this)">Баталгаажуулалт</button>
       <button onclick="admTab('users',this)">Хэрэглэгчид</button>
       <button onclick="admTab('dates',this)">Болзоо</button>
+      <button onclick="admTab('chat',this)">💬 Чат</button>
       <button onclick="admTab('reports',this)">Гомдол</button>
       <button onclick="admTab('settings',this)">Тохиргоо</button>
     </div>
@@ -1680,7 +1681,7 @@ function fbUrl(){
   return 'https://www.facebook.com/'+f;
 }
 function openFacebook(){try{window.open(fbUrl(),'_blank');}catch(e){location.href=fbUrl();}}
-function openInstall(){ovOpen('installModal');}
+function openInstall(){const b=document.getElementById('installNowBtn');if(b)b.textContent=deferredPrompt?'📲 Шууд суулгах':'Ойлголоо ✓';ovOpen('installModal');}
 function closeInstall(){ovClose('installModal');}
 function openGuide(){ovOpen('guideModal');}
 function closeGuide(){ovClose('guideModal');}
@@ -2208,7 +2209,7 @@ async function admTab(t,btn){
   const body=document.getElementById('admBody');
   body.innerHTML='<div style="text-align:center;color:var(--gray-2);padding:30px;font-size:13px;">Ачааллаж байна…</div>';
   // өгөгдөл татах
-  if(t!=='settings'){
+  if(t!=='settings'&&t!=='chat'){
     try{
       const [v,u]=await Promise.all([
         sb.from('profiles').select('*').eq('verified',false).eq('blocked',false).order('created_at',{ascending:false}),
@@ -2237,6 +2238,7 @@ async function admTab(t,btn){
       admData.blindErr=null;
     }catch(e){console.error('adm blind',e);admData.blind=[];admData.blindErr=(e&&e.message)||'тодорхойгүй';}
   }
+  if(t==='chat'){try{await loadContacts();}catch(e){console.error('adm chat load',e);}}
   let html='';
   if(t!=='settings'){
     const blk=admData.users.filter(u=>u.blocked).length;
@@ -2279,6 +2281,12 @@ async function admTab(t,btn){
     html+=act.length?act.map(b=>`<div class="adm-card">${blindRow(b).html}<div class="acts"><button class="no-b" onclick="admRejectBlind('${b.id}')" title="Идэвхгүй болгох">🚫</button></div></div>`).join(''):empty('Идэвхтэй бүсгүй алга');
     html+=`<div class="adm-sec" style="margin-top:18px">📅 Бүх болзоо (${(admData.dates||[]).length})</div>`;
     html+=(admData.dates&&admData.dates.length)?admData.dates.map((d,i)=>`<div class="adm-card"><div class="b"><div class="nm">${d.org} ↔ ${d.partner}</div><div class="meta">${d.pkg==='blind'?'🎲 Сохор болзоо':(d.pkg?'🎁 '+d.pkg:'🎁 -')} · 📍 ${d.venue||'-'} · 🗓 ${d.when||'-'} · ${d.status==='confirmed'?'✅ Баталгаажсан':(d.status==='accepted'?'✓ Хоёр тал зөвшөөрсөн':'⏳ Төлбөр хүлээж буй')}</div></div><div class="acts"><button class="ok-b" style="background:rgba(80,140,255,.15);color:#2f6bd8" onclick="admSendDateInfo(${i})" title="Болзооны мэдээлэл илгээх">💬</button>${d.status!=='confirmed'?`<button class="ok-b" onclick="admConfirmDate(${i})" title="Төлбөр баталгаажуулах">✓</button>`:''}<button class="no-b" onclick="admDeleteDate(${i})" title="Устгах">🗑</button></div></div>`).join(''):empty(admData.datesErr?('⚠️ '+admData.datesErr):'Болзоо алга. Хэрэв хэрэглэгч болзоо захиалсан ч энд харагдахгүй бол Supabase-д <b>admin_all_dates</b> SQL policy-г ажиллуулна уу.');
+  }
+  else if(t==='chat'){
+    html+=`<div class="adm-sec">💬 Хэрэглэгчидтэй харилцах</div>`;
+    html+=`<p style="font-size:11.5px;color:var(--gray-2);margin:0 0 14px;line-height:1.5;">Хэрэглэгч рүү анх бичихийн тулд «Хэрэглэгчид» эсвэл «Баталгаажуулалт» табаас 💬 дарна. Хариу бичсэн бүх харилцаа энд хадгалагдаж харагдана.</p>`;
+    html+=`<button class="btn" style="width:100%;margin-bottom:14px;background:var(--gray-bg);color:var(--red);font-weight:700;border:none;border-radius:30px;padding:11px;" onclick="admTab('chat')">🔄 Шинэчлэх</button>`;
+    html+=chats.length?chats.map((c,i)=>`<div class="adm-card" style="cursor:pointer" onclick="admOpenChat(${i})"><div class="ph" style="${photoBg(c.ph)}"></div><div class="b"><div class="nm">${c.n||'Хэрэглэгч'}</div><div class="meta">${((c.last||'').slice(0,42))||'Шинэ харилцаа'}</div></div>${c.unread?`<span class="adm-pill warn">${c.unread}</span>`:''}<div class="acts"><button class="ok-b" onclick="event.stopPropagation();admOpenChat(${i})" title="Чат нээх">💬</button></div></div>`).join(''):empty('Одоогоор харилцаа алга. «Хэрэглэгчид» табаас хэрэглэгч сонгоод 💬 дарж чат эхлүүлээрэй.');
   }
   else if(t==='reports'){html+=empty('Гомдол (удахгүй холбогдоно)');}
   else if(t==='settings'){
@@ -2396,6 +2404,7 @@ async function admChatUser(i){
   _adminChatReturn=true;route('mainapp');
   openChat(idx);
 }
+function admOpenChat(i){_adminChatReturn=true;route('mainapp');openChat(i);}
 async function admWaiveVerify(i){
   const x=admData.verify[i];if(!x)return;
   const nw=!x.waived;
@@ -2672,7 +2681,7 @@ function fallbackCopy(t){try{const ta=document.createElement('textarea');ta.valu
 fillAimags();renderBank();
 applyTheme();
 try{window.addEventListener('pointerdown',function(){try{_actx=_actx||new(window.AudioContext||window.webkitAudioContext)();if(_actx.state==='suspended')_actx.resume();}catch(e){}});}catch(e){}
-const APP_VERSION='v65';
+const APP_VERSION='v66';
 try{document.getElementById('verBadge').textContent='Хоёулаа Болзий '+APP_VERSION;}catch(_){}
 loadSettings();
 restoreSession();
@@ -2693,9 +2702,16 @@ try{
 let deferredPrompt=null;
 window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredPrompt=e;const b=document.getElementById('installBtn');if(b)b.style.display='block';});
 function installApp(){
-  if(deferredPrompt){deferredPrompt.prompt();deferredPrompt.userChoice.then(()=>{deferredPrompt=null;const b=document.getElementById('installBtn');if(b)b.style.display='none';});}
-  else{toast('Хөтчийн цэснээс "Нүүр дэлгэцэд нэмэх"-ийг сонгоно уу 📲');}
+  if(deferredPrompt){deferredPrompt.prompt();deferredPrompt.userChoice.then(()=>{deferredPrompt=null;const b=document.getElementById('installBtn');if(b)b.style.display='none';});return;}
+  openInstall();
 }
+function installNow(){
+  if(deferredPrompt){deferredPrompt.prompt();deferredPrompt.userChoice.then(()=>{deferredPrompt=null;const b=document.getElementById('installBtn');if(b)b.style.display='none';closeInstall();});}
+  else{closeInstall();}
+}
+function isIOSDevice(){return /iphone|ipad|ipod/i.test(navigator.userAgent||'')&&!window.MSStream;}
+function isStandalonePWA(){return (window.matchMedia&&window.matchMedia('(display-mode: standalone)').matches)||navigator.standalone===true;}
+window.addEventListener('load',()=>{try{if((isIOSDevice()||/android/i.test(navigator.userAgent||''))&&!isStandalonePWA()){const b=document.getElementById('installBtn');if(b)b.style.display='block';}}catch(e){}});
 window.addEventListener('appinstalled',()=>{const b=document.getElementById('installBtn');if(b)b.style.display='none';toast('🎉 Апп амжилттай суулаа!');});
 if('serviceWorker' in navigator){
   let _swReloaded=false;
