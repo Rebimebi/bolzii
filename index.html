@@ -1338,11 +1338,10 @@ let _exitArmed=false,_exitTimer=null;
 function backNav(){
   const active=document.querySelector('.page.active');const id=active?active.id:'';
   if(id==='editProfile'){closeEditProfile();return true;}
-  if(id==='pending'){route(me?'mainapp':'landing');return true;}
   if(['about','rules','info'].indexOf(id)>=0){route(me?'mainapp':'landing');return true;}
   if(['login','register','adminLogin'].indexOf(id)>=0){route('landing');return true;}
   if(id==='mainapp'){const dt=document.getElementById('t-discover');if(dt&&!dt.classList.contains('active')){tab('discover');return true;}}
-  return false;
+  return false; // mainapp(discover) · pending · landing · adminPanel → «2 дарж гарах» сэрэмжлүүлэг
 }
 window.addEventListener('popstate',function(){
   if(_ignorePop){_ignorePop=false;return;}
@@ -2828,7 +2827,7 @@ function fallbackCopy(t){try{const ta=document.createElement('textarea');ta.valu
 fillAimags();renderBank();
 applyTheme();
 try{window.addEventListener('pointerdown',function(){try{_actx=_actx||new(window.AudioContext||window.webkitAudioContext)();if(_actx.state==='suspended')_actx.resume();}catch(e){}});}catch(e){}
-const APP_VERSION='v75';
+const APP_VERSION='v76';
 try{document.getElementById('verBadge').textContent='Хоёулаа Болзий '+APP_VERSION;}catch(_){}
 loadSettings();
 restoreSession();
