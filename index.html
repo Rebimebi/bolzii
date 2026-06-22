@@ -638,11 +638,21 @@ body.dark .date-remind-top{background:linear-gradient(135deg,#3a2e12,#2c2410);co
     <div class="rm-foot"><button class="btn btn-primary" id="installNowBtn" style="width:100%" onclick="installNow()">📲 Шууд суулгах</button></div>
   </div>
 
+  <div class="rules-modal" id="promoModal">
+    <div class="rm-head"><span>🎁 Урамшуулал бэлэглэх</span><button onclick="closePromo()">✕</button></div>
+    <div class="rm-body">
+      <p class="lead"><b id="promoName"></b>-д хугацаатай хямдрал бэлэглэнэ. Хэрэглэгч <b>1 цагийн дотор</b> төлбөл хүчинтэй, дараа нь автоматаар дуусна. Сонголтоо дарвал хэрэглэгч рүү чатаар мэдэгдэл очно.</p>
+      <button class="btn btn-primary" style="width:100%;margin-bottom:10px" onclick="sendPromo('reg50')">💳 Бүртгэлийн хураамж 50% хямдрал</button>
+      <button class="btn btn-primary" style="width:100%;background:linear-gradient(135deg,#c9961e,#e0b020);border:none" onclick="sendPromo('vip50')">👑 VIP эрх 50% хямдрал</button>
+    </div>
+  </div>
+
   <!-- ============ VIP PAYMENT MODAL ============ -->
   <div class="rules-modal" id="vipModal">
     <div class="rm-head"><span>VIP эрх авах 👑</span><button onclick="closeVipModal()">✕</button></div>
     <div class="rm-body">
       <p class="lead">VIP болсноор: хэн танд таалагдсаныг харах, найзын хүсэлтгүйгээр бусдыг шууд харах, хязгааргүй сонголт.</p>
+      <div id="vmPromo" style="display:none;background:linear-gradient(135deg,#c9961e,#e0b020);color:#fff;border-radius:12px;padding:10px 14px;font-size:13px;margin-bottom:12px;line-height:1.5;"></div>
       <div class="pend-pay">
         <div class="pp-title">💳 VIP төлбөр</div>
         <div class="pp-row"><span>Банк</span><b id="vmBank"></b></div>
@@ -1174,6 +1184,10 @@ async function enterApp(){
   route('mainapp');try{await initApp();}catch(e){console.error('initApp',e);}ensureNotifPermission();
   if(isLocked())setTimeout(()=>{try{toast('🔒 Зарим боломж түгжээтэй — баталгаажуулна уу');}catch(e){}},900);
 }
+function activePromo(p){
+  try{let pr=p&&p.promo;if(!pr)return null;const o=typeof pr==='string'?JSON.parse(pr):pr;if(!o||!o.type||!o.exp)return null;if(new Date(o.exp).getTime()<Date.now())return null;return o;}catch(e){return null;}
+}
+function promoClock(o){try{const d=new Date(o.exp);return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');}catch(e){return'';}}
 function showPending(){
   const pay=document.getElementById('pendingPay');if(!pay)return;
   if(!me){pay.innerHTML='';return;}
@@ -1181,13 +1195,18 @@ function showPending(){
     pay.innerHTML=`<div class="pend-pay"><div class="pp-title">🎁 Танд хураамжгүй!</div><div class="pp-note">Админ танд бүртгэлийн хураамжгүйгээр зөвшөөрсөн байна. Та төлбөргүйгээр баталгаажих тул түр хүлээнэ үү.</div></div>`;
     return;
   }
-  const fee=me.gender==='f'?Math.round((settings.fee||0)/2):settings.fee;
+  const base=me.gender==='f'?Math.round((settings.fee||0)/2):settings.fee;
+  const pr=activePromo(me);
+  const reg50=pr&&pr.type==='reg50';
+  const fee=reg50?Math.round(base*0.5):base;
+  const promoBanner=reg50?`<div class="pp-warn" style="background:linear-gradient(135deg,#c9961e,#e0b020);color:#fff;border:none">🎁 ТУСГАЙ УРАМШУУЛАЛ: бүртгэлийн хураамж <b>нэмж 50% хямдарлаа</b>! Зөвхөн <b>${promoClock(pr)}</b> цаг хүртэл хүчинтэй — яаралтай төлөөрэй.</div>`:'';
   pay.innerHTML=`<div class="pend-pay">
       <div class="pp-title">💳 Эхлээд төлбөрөө төлнө үү</div>
+      ${promoBanner}
       <div class="pp-row"><span>Банк</span><b>${settings.bank}</b></div>
       <div class="pp-row"><span>Данс</span><b>${settings.account}</b><button class="copy-acc" onclick="copyAccount()">📋 Хуулах</button></div>
       <div class="pp-row"><span>Хүлээн авагч</span><b>${settings.recipient}</b></div>
-      <div class="pp-row"><span>Бүртгэлийн дүн</span><b>${fmt(fee)}${me.gender==='f'?' <small style="color:var(--gray-2)">(50%)</small>':''}</b></div>
+      <div class="pp-row"><span>Бүртгэлийн дүн</span><b>${fmt(fee)}${reg50?` <small style="color:#c9961e">🎁 урамшуулал</small>`:(me.gender==='f'?' <small style="color:var(--gray-2)">(50%)</small>':'')}</b></div>
       ${me.gender==='m'?`<div class="pp-row"><span>VIP эрх (заавал биш)</span><b>+${fmt(settings.vip)}/сар</b></div>`:''}
       <div class="pp-warn">⚠️ Төлбөр хийгээгүй бол бүртгэл <b>баталгаажихгүй</b>.</div>
       <div class="pp-note">Гүйлгээний утга дээр <b>бүртгүүлсэн утасны дугаараа</b> заавал бичээрэй.${me.gender==='m'?' VIP авах бол утгад <b>"VIP"</b> гэж нэмж бичнэ.':''} Төлбөр + админ баталгаажуулсны дараа орно.</div>
@@ -1292,7 +1311,7 @@ let dates=[];
 /* ============================================================ ROUTER ============================================================ */
 /* ---- Утасны "буцах" товчоор апп-аас гарахгүй: нээлттэй давхаргыг хаана ---- */
 let _ovStack=[],_fromPop=false,_ignorePop=false;
-const _OVL_IDS=['detailView','chatView','lockView','vipModal','pwModal','payView','blindView','admUserView','notifPanel','lightbox','rulesModal','installModal','guideModal','blindRegModal','lockedModal'];
+const _OVL_IDS=['detailView','chatView','lockView','vipModal','promoModal','pwModal','payView','blindView','admUserView','notifPanel','lightbox','rulesModal','installModal','guideModal','blindRegModal','lockedModal'];
 function ovOpen(id){const e=document.getElementById(id);if(!e)return;e.classList.add('open');_ovStack.push(id);try{history.pushState({ov:id},'');}catch(_){}}
 function ovClose(id){const e=document.getElementById(id);if(e)e.classList.remove('open');const k=_ovStack.lastIndexOf(id);if(k<0)return;_ovStack.splice(k,1);if(!_fromPop){_ignorePop=true;try{history.back();}catch(_){_ignorePop=false;}}}
 function clearOverlays(){_OVL_IDS.forEach(id=>{const e=document.getElementById(id);if(e)e.classList.remove('open');});_ovStack=[];}
@@ -1910,7 +1929,10 @@ function becomeVip(){
   if(myVip){toast('Та аль хэдийн VIP байна 👑');return;}
   closeLock();
   const set=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v;};
-  set('vmBank',settings.bank);set('vmAccount',settings.account);set('vmRecipient',settings.recipient);set('vmAmount',fmt(settings.vip));
+  const pr=activePromo(me);const vip50=pr&&pr.type==='vip50';
+  const vipAmt=vip50?Math.round((settings.vip||0)*0.5):settings.vip;
+  set('vmBank',settings.bank);set('vmAccount',settings.account);set('vmRecipient',settings.recipient);set('vmAmount',fmt(vipAmt)+(vip50?' 🎁 (-50%)':''));
+  const vn=document.getElementById('vmPromo');if(vn){vn.innerHTML=vip50?`🎁 Тусгай урамшуулал: VIP эрх <b>50% хямдарлаа</b>! Зөвхөн <b>${promoClock(pr)}</b> цаг хүртэл хүчинтэй.`:'';vn.style.display=vip50?'block':'none';}
   ovOpen('vipModal');
 }
 function closeVipModal(){ovClose('vipModal');}
@@ -2266,10 +2288,11 @@ async function admTab(t,btn){
     </div>
     <div class="av-check">${x.g==='f'?(x.waived?'👩🎁 Энэ бүсгүйг <b>хураамжгүй</b> болгосон. Зургийг хараад баталгаажуул.':'👩 Зургийг хараад <b>бүсгүй мөн эсэх</b> + <b>50% хураамж төлсөн</b> эсэхийг шалгаад баталгаажуул.'):'👨 <b>Төлбөр төлсөн</b> эсэх + зургийг шалгаад баталгаажуул.'}</div>
     ${x.g==='f'?`<button class="btn" style="width:100%;margin-bottom:8px;background:${x.waived?'var(--gray-bg)':'rgba(255,200,90,.18)'};color:${x.waived?'var(--gray)':'#c9961e'};font-weight:700;border:none;border-radius:30px;padding:10px;" onclick="admWaiveVerify(${i})">${x.waived?'💰 Хураамж сэргээх':'🎁 Хураамжгүй болгох'}</button>`:''}
+    <button class="btn" style="width:100%;margin-bottom:8px;background:rgba(201,150,30,.16);color:#a87a12;font-weight:700;border:none;border-radius:30px;padding:10px;" onclick="admGiftPromoV(${i})">🎁 Урамшуулал бэлэглэх (1 цаг)</button>
     <button class="btn" style="width:100%;margin-bottom:8px;background:var(--gray-bg);color:var(--red);font-weight:700;border:none;border-radius:30px;padding:10px;" onclick="admChatVerify(${i})">💬 Чат бичих / төлбөр сануулах</button>
     <div class="av-actions"><button class="av-no" onclick="rejectUser(${i})">✕ Татгалзах</button><button class="av-ok" onclick="approveUser(${i})">✓ Зөвшөөрөх</button></div>
   </div>`).join(''):empty('Баталгаажуулалт хүлээж буй хэрэглэгч алга');}
-  else if(t==='users'){html+=admData.users.length?admData.users.map((x,i)=>`<div class="adm-card" style="cursor:pointer;${x.blocked?'opacity:.55':''}" onclick="admViewUser(${i})"><div class="ph" style="${photoBg(x.ph)}"></div><div class="b"><div class="nm">${x.n}</div><div class="meta">${x.m}</div></div><span class="adm-pill ${x.blocked?'warn':'ok'}">${x.blocked?'Блоклогдсон':'Идэвхтэй'}</span><div class="acts"><button class="ok-b" onclick="event.stopPropagation();admChatUser(${i})" title="Чат бичих">💬</button><button class="${x.blocked?'ok-b':'no-b'}" onclick="event.stopPropagation();toggleBlock(${i})" title="${x.blocked?'Блокоос гаргах':'Блоклох'}">${x.blocked?'🔓':'🚫'}</button></div></div>`).join(''):empty('Бүртгэлтэй хэрэглэгч алга');}
+  else if(t==='users'){html+=admData.users.length?admData.users.map((x,i)=>`<div class="adm-card" style="cursor:pointer;${x.blocked?'opacity:.55':''}" onclick="admViewUser(${i})"><div class="ph" style="${photoBg(x.ph)}"></div><div class="b"><div class="nm">${x.n}</div><div class="meta">${x.m}</div></div><span class="adm-pill ${x.blocked?'warn':'ok'}">${x.blocked?'Блоклогдсон':'Идэвхтэй'}</span><div class="acts"><button class="ok-b" style="background:rgba(201,150,30,.18);color:#a87a12" onclick="event.stopPropagation();admGiftPromoU(${i})" title="Урамшуулал бэлэглэх">🎁</button><button class="ok-b" onclick="event.stopPropagation();admChatUser(${i})" title="Чат бичих">💬</button><button class="${x.blocked?'ok-b':'no-b'}" onclick="event.stopPropagation();toggleBlock(${i})" title="${x.blocked?'Блокоос гаргах':'Блоклох'}">${x.blocked?'🔓':'🚫'}</button></div></div>`).join(''):empty('Бүртгэлтэй хэрэглэгч алга');}
   else if(t==='dates'){
     html+=`<button class="btn" style="width:100%;margin-bottom:14px;background:linear-gradient(135deg,#c9961e,#e0b020);color:#fff;font-weight:700;border:none;border-radius:30px;padding:13px;" onclick="admRemindWomen()">🛡️ Бүх эмэгтэйд аюулгүй байдлын сануулга илгээх</button>`;
     const blindRow=b=>{const pr=[b.pref.age?b.pref.age+' нас':'',b.pref.height?b.pref.height+'см+':'',b.pref.weight?b.pref.weight+'кг':''].filter(Boolean).join(', ');return {pr,html:`<div class="ph" style="${photoBg(b.ph)}"></div><div class="b"><div class="nm">${b.name||'?'}${b.age?', '+b.age:''}</div><div class="meta">${b.city||''} · хүсэл: ${pr||'заагаагүй'}</div></div>`};};
@@ -2406,6 +2429,22 @@ async function admChatUser(i){
   openChat(idx);
 }
 function admOpenChat(i){_adminChatReturn=true;route('mainapp');openChat(i);}
+let _promoTarget=null;
+function admGiftPromo(id,name){_promoTarget={id,name};const n=document.getElementById('promoName');if(n)n.textContent=name||'Хэрэглэгч';ovOpen('promoModal');}
+function admGiftPromoV(i){const x=admData.verify[i];if(!x)return;admGiftPromo(x.id,x.name);}
+function admGiftPromoU(i){const x=admData.users[i];if(!x)return;admGiftPromo(x.id,x.n||x.name);}
+function closePromo(){ovClose('promoModal');}
+async function sendPromo(type){
+  if(!_promoTarget)return;
+  const exp=new Date(Date.now()+60*60*1000).toISOString();
+  const {error}=await sb.from('profiles').update({promo:{type,exp}}).eq('id',_promoTarget.id);
+  if(error){if(/column|schema cache|does not exist|find the/i.test(error.message||''))toast('⚠️ promo баганы SQL ажиллуулна уу');else toast('Алдаа: '+error.message);return;}
+  const label=type==='reg50'?'бүртгэлийн хураамжийн 50% хямдрал':'VIP эрхийн 50% хямдрал';
+  const d=new Date(exp);const clk=String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
+  try{await sb.from('messages').insert({from_id:me.id,to_id:_promoTarget.id,text:'🎁 Танд ТУСГАЙ УРАМШУУЛАЛ! '+label+' олголоо. Зөвхөн 1 цагийн дотор буюу '+clk+' цаг хүртэл хүчинтэй — яаралтай ашиглаарай! 💕'});}catch(e){}
+  closePromo();
+  toast('🎁 Урамшуулал илгээлээ ('+clk+' хүртэл хүчинтэй)');
+}
 async function admWaiveVerify(i){
   const x=admData.verify[i];if(!x)return;
   const nw=!x.waived;
@@ -2696,7 +2735,7 @@ function fallbackCopy(t){try{const ta=document.createElement('textarea');ta.valu
 fillAimags();renderBank();
 applyTheme();
 try{window.addEventListener('pointerdown',function(){try{_actx=_actx||new(window.AudioContext||window.webkitAudioContext)();if(_actx.state==='suspended')_actx.resume();}catch(e){}});}catch(e){}
-const APP_VERSION='v67';
+const APP_VERSION='v68';
 try{document.getElementById('verBadge').textContent='Хоёулаа Болзий '+APP_VERSION;}catch(_){}
 loadSettings();
 restoreSession();
