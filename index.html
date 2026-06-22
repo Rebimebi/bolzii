@@ -585,6 +585,8 @@ body.dark .date-remind-top{background:linear-gradient(135deg,#3a2e12,#2c2410);co
       <div class="sub">Танилцахаас болзоо хүртэл — бүгдийг нь бид зохион байгуулна.<br>Чи зүгээр л бэлдээд ир.</div>
     </div>
 
+    <div id="regPromoBanner" style="display:none;position:relative;z-index:5;margin-top:18px;background:linear-gradient(135deg,#c9961e,#e0b020);color:#fff;border-radius:16px;padding:14px 16px;font-size:15px;font-weight:800;line-height:1.4;text-align:center;box-shadow:0 12px 28px -12px rgba(201,150,30,.7);"></div>
+
     <div class="women-free">👩 Бүсгүйчүүд хураамжийн <b>зөвхөн 50%</b> төлж, <b>VIP эрхийг ҮНЭГҮЙ</b> авна!</div>
 
     <div class="cta">
@@ -749,16 +751,16 @@ body.dark .date-remind-top{background:linear-gradient(135deg,#3a2e12,#2c2410);co
         <div class="verify-note" style="background:rgba(226,62,87,.1);color:var(--red-deep)">👩 Бүсгүйчүүд бүртгэлийн хураамжийн <b>зөвхөн 50%</b>-ийг төлнө. VIP эрх <b>ҮНЭГҮЙ</b>. (Админ хүсвэл хураамжгүй болгож магадгүй.)</div>
       </div>
       <div id="paidArea">
-        <div class="form-group"><label>Гишүүнчлэлийн багц</label>
-          <div class="plan on" id="planFree" onclick="pickPlan('free')"><div><b>Энгийн гишүүн</b><span>Зөвхөн бүртгэлийн хураамж</span></div><div class="pr" id="planFreePr">5,000₮</div></div>
-          <div class="plan" id="planVip" onclick="pickPlan('vip')"><div><b>VIP эрх 👑</b><span>Хэн лайк дарсныг хар · хязгааргүй swipe</span></div><div class="pr"><span id="planVipPr">+19,900₮</span><small>/сар</small></div></div>
+        <div class="form-group"><label>Бүртгэлийн хураамж</label>
+          <div class="plan on" id="planFree" style="cursor:default"><div><b>Бүртгэлийн хураамж</b><span>Аппд нэгдэхэд нэг удаа төлнө</span></div><div class="pr" id="planFreePr">5,000₮</div></div>
+          <div style="display:flex;gap:10px;background:rgba(255,200,90,.12);border:1px solid rgba(201,150,30,.25);border-radius:12px;padding:11px 13px;margin-top:10px;font-size:12px;color:#a87a12;line-height:1.5;"><span style="font-size:18px">👑</span><span><b>VIP эрх бол тусдаа, ЗААВАЛ БИШ.</b> Энэ нь бүртгэлийн хураамжид <b>ороогүй</b>. Аппд орсныхоо дараа хүсвэл доторх «VIP болох» товчоор сонгож авна.</span></div>
         </div>
         <div class="form-group"><label>Төлбөрийн данс</label>
           <div class="bank-box">
             <div class="bank-row"><span>Банк</span><b id="bkBank">Хаан банк</b></div>
             <div class="bank-row"><span>Данс</span><b id="bkAccount">5041 234 567</b><button class="copy-acc" onclick="copyAccount()">📋 Хуулах</button></div>
             <div class="bank-row"><span>Хүлээн авагч</span><b id="bkRecipient">Хоёулаа Болзий ХХК</b></div>
-            <div class="bank-amt"><span>Төлөх дүн</span><b id="payAmount">5,000₮</b></div>
+            <div class="bank-amt"><span>Төлөх дүн (зөвхөн бүртгэл)</span><b id="payAmount">5,000₮</b></div>
             <div class="bank-note">⚠️ Гүйлгээний утга дээр <b>бүртгүүлсэн утасны дугаараа</b> бичнэ үү. Төлбөр баталгаажмагц бүртгэл идэвхжинэ.</div>
           </div>
         </div>
@@ -1189,18 +1191,32 @@ function activePromo(p){
   try{let pr=p&&p.promo;if(!pr)return null;const o=typeof pr==='string'?JSON.parse(pr):pr;if(!o||!o.type||!o.exp)return null;if(new Date(o.exp).getTime()<Date.now())return null;return o;}catch(e){return null;}
 }
 function promoClock(o){try{const d=new Date(o.exp);return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');}catch(e){return'';}}
+let _paidNotified=false;
+async function notifyPaid(){
+  if(_paidNotified){toast('✅ Та аль хэдийн мэдэгдсэн байна. Админ шалгаж байгаа тул түр хүлээнэ үү.');return;}
+  if(!me){toast('Алдаа гарлаа');return;}
+  let adminId=null;
+  try{const {data}=await sb.from('profiles').select('id').eq('is_admin',true).limit(1).maybeSingle();adminId=data&&data.id;}catch(e){}
+  if(!adminId){toast('Админтай холбогдож чадсангүй. Түр хүлээгээд дахин оролдоно уу.');return;}
+  const txt='✅ Сайн байна уу. Би бүртгэлийн хураамжаа аль хэдийн шилжүүлсэн боловч бүртгэл маань идэвхжээгүй байна. Шалгаж баталгаажуулж өгнө үү. Баярлалаа! 🙏'+(me.phone?(' (Утас: '+me.phone+')'):'');
+  try{const {error}=await sb.from('messages').insert({from_id:me.id,to_id:adminId,text:txt});if(error){toast('Илгээж чадсангүй: '+error.message);return;}}catch(e){toast('Алдаа гарлаа');return;}
+  _paidNotified=true;
+  toast('✅ Админд мэдэгдэл илгээлээ. Төлбөрийг чинь шалгаад удахгүй баталгаажуулна.');
+}
 function showPending(){
   const pay=document.getElementById('pendingPay');if(!pay)return;
   if(!me){pay.innerHTML='';return;}
   if(me.gender==='f'&&me.fee_waived){
-    pay.innerHTML=`<div class="pend-pay"><div class="pp-title">🎁 Танд хураамжгүй!</div><div class="pp-note">Админ танд бүртгэлийн хураамжгүйгээр зөвшөөрсөн байна. Та төлбөргүйгээр баталгаажих тул түр хүлээнэ үү.</div></div>`;
+    pay.innerHTML=`<div class="pend-pay"><div class="pp-title">🎁 Танд хураамжгүй!</div><div class="pp-note">Админ танд бүртгэлийн хураамжгүйгээр зөвшөөрсөн байна. Та төлбөргүйгээр баталгаажих тул түр хүлээнэ үү.</div><button class="btn" style="width:100%;margin-top:14px;background:linear-gradient(135deg,#1faa59,#23c06a);color:#fff;font-weight:700;border:none;border-radius:30px;padding:13px;font-size:13px;line-height:1.45;cursor:pointer" onclick="notifyPaid()">⏳ Удаан хүлээж байна уу? Энд дарж админд сануулаарай</button></div>`;
     return;
   }
-  const base=me.gender==='f'?Math.round((settings.fee||0)/2):settings.fee;
+  let base=me.gender==='f'?Math.round((settings.fee||0)/2):settings.fee;
+  const gPromo=regPromoActive();
+  if(gPromo)base=Math.round(base*0.5);
   const pr=activePromo(me);
   const reg50=pr&&pr.type==='reg50';
   const fee=reg50?Math.round(base*0.5):base;
-  const promoBanner=reg50?`<div class="pp-warn" style="background:linear-gradient(135deg,#c9961e,#e0b020);color:#fff;border:none">🎁 ТУСГАЙ УРАМШУУЛАЛ: бүртгэлийн хураамж <b>нэмж 50% хямдарлаа</b>! Зөвхөн <b>${promoClock(pr)}</b> цаг хүртэл хүчинтэй — яаралтай төлөөрэй.</div>`:'';
+  const promoBanner=(gPromo||reg50)?`<div class="pp-warn" style="background:linear-gradient(135deg,#c9961e,#e0b020);color:#fff;border:none">🔥 ${gPromo?'ХЯМДРАЛЫН АЯН: бүртгэлийн хураамж <b>50% буурсан</b>!':''}${reg50?` 🎁 Танд нэмж <b>50% урамшуулал</b> (${promoClock(pr)} цаг хүртэл)!`:''} Яаралтай төлөөрэй.</div>`:'';
   pay.innerHTML=`<div class="pend-pay">
       <div class="pp-title">💳 Эхлээд төлбөрөө төлнө үү</div>
       ${promoBanner}
@@ -1208,9 +1224,10 @@ function showPending(){
       <div class="pp-row"><span>Данс</span><b>${settings.account}</b><button class="copy-acc" onclick="copyAccount()">📋 Хуулах</button></div>
       <div class="pp-row"><span>Хүлээн авагч</span><b>${settings.recipient}</b></div>
       <div class="pp-row"><span>Бүртгэлийн дүн</span><b>${fmt(fee)}${reg50?` <small style="color:#c9961e">🎁 урамшуулал</small>`:(me.gender==='f'?' <small style="color:var(--gray-2)">(50%)</small>':'')}</b></div>
-      ${me.gender==='m'?`<div class="pp-row"><span>VIP эрх (заавал биш)</span><b>+${fmt(settings.vip)}/сар</b></div>`:''}
       <div class="pp-warn">⚠️ Төлбөр хийгээгүй бол бүртгэл <b>баталгаажихгүй</b>.</div>
-      <div class="pp-note">Гүйлгээний утга дээр <b>бүртгүүлсэн утасны дугаараа</b> заавал бичээрэй.${me.gender==='m'?' VIP авах бол утгад <b>"VIP"</b> гэж нэмж бичнэ.':''} Төлбөр + админ баталгаажуулсны дараа орно.</div>
+      <div class="pp-note" style="background:rgba(255,200,90,.12);color:#a87a12;border-radius:10px;padding:9px 11px;margin-top:8px">👑 <b>VIP эрх энд ороогүй.</b> Энэ бол зөвхөн бүртгэлийн хураамж. VIP-г хүсвэл апп идэвхжсэний дараа доторх «VIP болох» товчоор тусдаа авна.</div>
+      <div class="pp-note">Гүйлгээний утга дээр <b>бүртгүүлсэн утасны дугаараа</b> заавал бичээрэй. Төлбөр + админ баталгаажуулсны дараа орно.</div>
+      <button class="btn" style="width:100%;margin-top:14px;background:linear-gradient(135deg,#1faa59,#23c06a);color:#fff;font-weight:700;border:none;border-radius:30px;padding:13px;font-size:13px;line-height:1.45;cursor:pointer" onclick="notifyPaid()">✅ Төлбөрөө шилжүүлсэн ч бүртгэл идэвхжихгүй байна уу?<br>Энд дарж админд мэдэгдээрэй</button>
     </div>`;
 }
 async function recheckPending(){
@@ -1673,11 +1690,11 @@ function fillSoums(){
 function openRules(){ovOpen('rulesModal');}
 function closeRules(){ovClose('rulesModal');}
 function agreeRules(){rulesAgreed=true;const b=document.getElementById('ruleBox');b.classList.add('done');document.getElementById('ruleState').textContent='✓ Дүрэмтэй танилцсан';closeRules();validateReg();}
-function regFee(){return regGender==='f'?Math.round((settings.fee||0)/2):(settings.fee||0);}
+function regFee(){let f=regGender==='f'?Math.round((settings.fee||0)/2):(settings.fee||0);if(regPromoActive())f=Math.round(f*0.5);return f;}
 function pickPlan(p){
   selectedPlan=p;
-  document.getElementById('planFree').classList.toggle('on',p==='free');
-  document.getElementById('planVip').classList.toggle('on',p==='vip');
+  const pf=document.getElementById('planFree');if(pf)pf.classList.toggle('on',p==='free');
+  const pv=document.getElementById('planVip');if(pv)pv.classList.toggle('on',p==='vip');
   const amt=document.getElementById('payAmount');
   if(amt)amt.textContent=fmt(p==='vip'?regFee()+settings.vip:regFee());
 }
@@ -2202,6 +2219,7 @@ async function adminLogin(){
 /* ============================================================ ADMIN SETTINGS / DATA ============================================================ */
 let settings={bank:'Хаан банк',account:'5041 234 567',recipient:'Хоёулаа Болзий ХХК',fee:5000,vip:19900,
   phone:'+976 8800-0000',email:'help@bolzii.mn',facebook:'',instagram:'@bolzii.mn',
+  regpromo:{active:false,text:''},
   datePkgs:[
     {name:'Энгийн болзоо',price:100000,desc:'Ресторан/кафе захиалга, ширээ бэлдэх, цаг тохируулах'},
     {name:'Романтик болзоо',price:200000,desc:'Дээрх + цэцэг, тусгай ширээ, лаа болон чимэглэл'},
@@ -2213,8 +2231,8 @@ function fmt(n){return Number(n).toLocaleString('en-US')+'₮';}
 function renderBank(){
   const set=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v;};
   set('bkBank',settings.bank);set('bkAccount',settings.account);set('bkRecipient',settings.recipient);
-  set('planFreePr',fmt(settings.fee));set('planVipPr','+'+fmt(settings.vip));set('vipCardPr',fmt(settings.vip));
-  const amt=document.getElementById('payAmount');if(amt)amt.textContent=fmt(selectedPlan==='vip'?settings.fee+settings.vip:settings.fee);
+  set('planFreePr',fmt(regFee()));set('vipCardPr',fmt(settings.vip));
+  const amt=document.getElementById('payAmount');if(amt)amt.textContent=fmt(regFee());
 }
 function renderContact(){
   const an=document.getElementById('infoAnnounce');
@@ -2349,6 +2367,12 @@ async function admTab(t,btn){
     ${settings.datePkgs.map((p,i)=>`<div style="border:1px solid var(--gray-bg);border-radius:14px;padding:11px;margin-bottom:10px;"><div class="form-group" style="margin-bottom:10px"><label>Багц ${i+1} — нэр</label><input id="setPkgN${i}" value="${p.name}"></div><div class="form-group" style="margin-bottom:0"><label>Үнэ (₮)</label><input id="setPkg${i}" type="number" value="${p.price}"></div></div>`).join('')}
     <div style="font-family:var(--display);font-size:17px;color:var(--red-deep);font-weight:600;margin:18px 0 14px;">📢 Зарлал / Мэдээлэл</div>
     <div class="form-group"><label>Бүх хэрэглэгчид харагдах зарлал</label><textarea id="setAnnounce" rows="3" style="width:100%;resize:vertical;font-family:var(--body);font-size:14px;padding:12px;border-radius:12px;border:1px solid var(--gray-bg);background:var(--card);color:var(--text);" placeholder="Жишээ: Шинэ оны хямдрал эхэллээ! VIP эрх 50% хямдартай.">${(settings.announce&&settings.announce.text)?(settings.announce.text+'').replace(/</g,'&lt;'):''}</textarea></div>
+    <div class="form-group" style="background:rgba(201,150,30,.08);border:1px solid rgba(201,150,30,.25);border-radius:14px;padding:14px;">
+      <label style="color:#a87a12;font-weight:800">🔥 Бүртгэлийн хямдралын аян</label>
+      <label style="display:flex;align-items:center;gap:10px;font-size:13.5px;font-weight:600;cursor:pointer;margin:8px 0 10px"><input type="checkbox" id="setPromoActive" ${regPromoActive()?'checked':''} style="width:20px;height:20px;accent-color:#c9961e"> Идэвхжүүлэх — бүх хүнд бүртгэлийн хураамж <b>автоматаар 50%</b> хямдарна</label>
+      <input id="setPromoText" value="${(((settings.regpromo&&settings.regpromo.text)||'')+'').replace(/"/g,'&quot;')}" placeholder="Зөвхөн өнөөдөр — бүртгэлийн хураамж 50% ХЯМДРАЛ! 🔥" style="width:100%;padding:11px;border-radius:10px;border:1px solid var(--gray-bg);background:var(--card);color:var(--text);font-family:var(--body);font-size:13.5px;">
+      <p style="font-size:11px;color:var(--gray-2);margin:8px 0 0;line-height:1.5">Идэвхтэй үед нүүр хуудсанд зарлал гарч, бүртгүүлэх хүн бүрт хямдрал автоматаар тооцогдоно. Аяныг зогсооход чагтыг авна.</p>
+    </div>
     <p style="font-size:11.5px;color:var(--gray-2);margin:-4px 0 12px;line-height:1.5;">Хадгалахад бүх хэрэглэгчид мэдэгдэл болон «Бусад мэдээлэл» хэсэгт харагдана. Хоосон үлдээвэл зарлал устана.</p>
     <button class="btn btn-primary" style="width:100%" onclick="saveSettings()">💾 Хадгалах</button>
     <p style="font-size:12px;color:var(--gray-2);font-weight:500;margin-top:12px;line-height:1.5;">Энд хийсэн өөрчлөлт бүх хэрэглэгчид шууд тусна (өгөгдлийн санд хадгалагдана).</p>`;
@@ -2370,10 +2394,19 @@ async function loadSettings(){
       settings.fee=data.fee;settings.vip=data.vip;
       if(data.contact&&typeof data.contact==='object'){settings.phone=data.contact.phone||settings.phone;settings.email=data.contact.email||settings.email;settings.facebook=data.contact.facebook||'';settings.instagram=data.contact.instagram||settings.instagram;}
       if(data.announce&&typeof data.announce==='object')settings.announce=data.announce;
+      if(data.regpromo&&typeof data.regpromo==='object')settings.regpromo=data.regpromo;
       if(Array.isArray(data.packages)) data.packages.forEach((p,i)=>{if(settings.datePkgs[i]){settings.datePkgs[i].name=p.name;settings.datePkgs[i].price=p.price;}});
     }
   }catch(e){console.error('loadSettings',e);}
-  renderBank();renderPkgs();renderContact();checkAnnounce();
+  renderBank();renderPkgs();renderContact();checkAnnounce();renderRegPromo();
+}
+function regPromoActive(){return !!(settings.regpromo&&settings.regpromo.active);}
+function renderRegPromo(){
+  const b=document.getElementById('regPromoBanner');if(!b)return;
+  if(regPromoActive()){
+    b.style.display='block';
+    b.innerHTML='🔥 '+((settings.regpromo&&settings.regpromo.text)||'Зөвхөн өнөөдөр — бүртгэлийн хураамж 50% ХЯМДРАЛ!');
+  }else{b.style.display='none';b.innerHTML='';}
 }
 async function saveSettings(){
   const g=id=>document.getElementById(id).value;
@@ -2397,14 +2430,17 @@ async function saveSettings(){
   const annEl=document.getElementById('setAnnounce');
   if(annEl){const txt=annEl.value.trim();const prev=(settings.announce&&settings.announce.text)||'';if(txt!==prev){settings.announce=txt?{text:txt,ts:Date.now()}:null;}}
   const announce=settings.announce||null;
-  let {error}=await sb.from('settings').update({bank:settings.bank,account:settings.account,recipient:settings.recipient,fee:settings.fee,vip:settings.vip,packages,contact,announce}).eq('id',1);
+  const pa=document.getElementById('setPromoActive');const ptx=document.getElementById('setPromoText');
+  settings.regpromo={active:pa?!!pa.checked:false,text:ptx?ptx.value.trim():'',off:50};
+  const regpromo=settings.regpromo;
+  let {error}=await sb.from('settings').update({bank:settings.bank,account:settings.account,recipient:settings.recipient,fee:settings.fee,vip:settings.vip,packages,contact,announce,regpromo}).eq('id',1);
   if(error&&/column|schema cache|does not exist|find the/i.test(error.message||'')){
-    // contact/announce багана үүсээгүй бол түүнгүйгээр хадгална
+    // contact/announce/regpromo багана үүсээгүй бол түүнгүйгээр хадгална
     ({error}=await sb.from('settings').update({bank:settings.bank,account:settings.account,recipient:settings.recipient,fee:settings.fee,vip:settings.vip,packages}).eq('id',1));
-    if(!error)toast('⚠️ Холбоо/зарлал хадгалахын тулд contact, announce баганы SQL ажиллуулна уу');
+    if(!error)toast('⚠️ Холбоо/зарлал/хямдрал хадгалахын тулд contact, announce, regpromo баганы SQL ажиллуулна уу');
   }
   if(error){toast('Хадгалахад алдаа: '+error.message);return;}
-  renderBank();renderPkgs();renderContact();
+  renderBank();renderPkgs();renderContact();renderRegPromo();
   toast('💾 Тохиргоо хадгалагдлаа');
 }
 function admAct(btn,msg){btn.closest('.adm-card').style.opacity='.4';toast(msg);}
@@ -2753,7 +2789,7 @@ function fallbackCopy(t){try{const ta=document.createElement('textarea');ta.valu
 fillAimags();renderBank();
 applyTheme();
 try{window.addEventListener('pointerdown',function(){try{_actx=_actx||new(window.AudioContext||window.webkitAudioContext)();if(_actx.state==='suspended')_actx.resume();}catch(e){}});}catch(e){}
-const APP_VERSION='v70';
+const APP_VERSION='v73';
 try{document.getElementById('verBadge').textContent='Хоёулаа Болзий '+APP_VERSION;}catch(_){}
 loadSettings();
 restoreSession();
