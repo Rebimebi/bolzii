@@ -1065,7 +1065,8 @@ body.dark .date-remind-top{background:linear-gradient(135deg,#3a2e12,#2c2410);co
         <button class="back" onclick="closeChat()"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#3a2128" stroke-width="2.4"><path d="M15 18l-6-6 6-6"/></svg></button>
         <div class="ph" id="cvPh"></div>
         <div><div class="nme" id="cvName"></div><div class="st">Онлайн</div></div>
-        <button class="datebtn" onclick="scheduleFromChat()">📅 Болзоо</button>
+        <button class="datebtn" id="chatGiftBtn" style="display:none;background:rgba(201,150,30,.18);color:#a87a12" onclick="admGiftFromChat()">🎁 Урамшуулал</button>
+        <button class="datebtn" id="chatDateBtn" onclick="scheduleFromChat()">📅 Болзоо</button>
       </div>
       <div class="msgs" id="cvMsgs"></div>
       <div class="chat-input">
@@ -2020,6 +2021,7 @@ async function openChat(i){
   c.unread=0;bumpUnread();renderMatches();markRead(c.id);
   document.getElementById('cvName').textContent=c.n;
   document.getElementById('cvPh').style.cssText='background-size:cover;background-position:center;'+(c.ph?`background-image:url('${imgUrl(c.ph)}')`:'background:linear-gradient(135deg,var(--red),var(--pink))');
+  const _adm=!!(me&&me.is_admin);const gb=document.getElementById('chatGiftBtn');if(gb)gb.style.display=_adm?'inline-flex':'none';const db=document.getElementById('chatDateBtn');if(db)db.style.display=_adm?'none':'inline-flex';
   ovOpen('chatView');
   document.getElementById('cvMsgs').innerHTML='<div style="text-align:center;color:var(--gray-2);font-size:13px;margin-top:30px;">Ачааллаж байна…</div>';
   try{
@@ -2030,7 +2032,22 @@ async function openChat(i){
   }catch(e){console.error('loadMsgs',e);}
   renderMsgs();
 }
-function renderMsgs(){const c=chats[curChat];if(!c)return;document.getElementById('cvMsgs').innerHTML=c.msgs.length?c.msgs.map(m=>`<div class="bub ${m.me?'me':'them'}">${m.t}</div>`).join(''):`<div style="text-align:center;color:var(--gray-2);font-size:13px;margin-top:30px;">Найз боллоо! Эхний мессежээ бичээрэй 👋</div>`;const m=document.getElementById('cvMsgs');m.scrollTop=m.scrollHeight;}
+function renderMsgs(){const c=chats[curChat];if(!c)return;document.getElementById('cvMsgs').innerHTML=c.msgs.length?c.msgs.map(m=>{const isPromo=!m.me&&/ТУСГАЙ УРАМШУУЛАЛ/.test(m.t||'');const btn=isPromo?`<div style="display:flex;flex-direction:column;gap:7px;margin:-2px 0 12px;align-items:flex-start"><button onclick="payFromPromo()" style="background:linear-gradient(135deg,#c9961e,#e0b020);color:#fff;border:none;border-radius:30px;padding:11px 18px;font-weight:700;font-size:13px;cursor:pointer;font-family:var(--body);box-shadow:0 3px 10px rgba(201,150,30,.35)">💳 Хямдралтайгаар төлбөр төлөх</button><button onclick="requestPromoRenew()" style="background:none;border:none;color:#a87a12;font-size:12px;font-weight:600;text-decoration:underline;cursor:pointer;font-family:var(--body);padding:0 4px">Хугацаа нь дууссан уу? Дахин сэргээхийг хүсэх 🔄</button></div>`:'';return `<div class="bub ${m.me?'me':'them'}">${m.t}</div>`+btn;}).join(''):`<div style="text-align:center;color:var(--gray-2);font-size:13px;margin-top:30px;">Найз боллоо! Эхний мессежээ бичээрэй 👋</div>`;const m=document.getElementById('cvMsgs');m.scrollTop=m.scrollHeight;}
+async function payFromPromo(){
+  try{await loadMe();}catch(e){}
+  const pr=activePromo(me);
+  if(!pr){toast('Урамшууллын хугацаа дууссан байна 😔 «Дахин сэргээхийг хүсэх»-ийг дарж болно.');return;}
+  ovClose('chatView');
+  if(pr.type==='vip50'){becomeVip();}
+  else{route('pending');showPending();}
+}
+async function requestPromoRenew(){
+  const c=chats[curChat];if(!c||!c.id){toast('Алдаа гарлаа');return;}
+  const txt='🔄 Сайн байна уу. Би урамшууллын зурвасаа хугацаанд нь хараагүй өнгөрүүлчихсэн байна. Боломжтой бол дахин сэргээж өгөхийг хүсэж байна. Баярлалаа! 💕';
+  try{const {error}=await sb.from('messages').insert({from_id:me.id,to_id:c.id,text:txt});if(error){toast('Илгээж чадсангүй: '+error.message);return;}}catch(e){toast('Алдаа гарлаа');return;}
+  c.msgs.push({me:1,t:txt});c.last=txt;renderMsgs();
+  toast('🔄 Хүсэлт илгээлээ. Админ хариу өгөх болно.');
+}
 async function sendMsg(){
   const inp=document.getElementById('cvInput'),t=inp.value.trim();if(!t)return;
   const c=chats[curChat];if(!c){toast('Чат сонгоно уу');return;}
@@ -2429,6 +2446,7 @@ async function admChatUser(i){
   openChat(idx);
 }
 function admOpenChat(i){_adminChatReturn=true;route('mainapp');openChat(i);}
+function admGiftFromChat(){const c=chats[curChat];if(!c||!c.id){toast('Алдаа');return;}admGiftPromo(c.id,c.n);}
 let _promoTarget=null;
 function admGiftPromo(id,name){_promoTarget={id,name};const n=document.getElementById('promoName');if(n)n.textContent=name||'Хэрэглэгч';ovOpen('promoModal');}
 function admGiftPromoV(i){const x=admData.verify[i];if(!x)return;admGiftPromo(x.id,x.name);}
@@ -2735,7 +2753,7 @@ function fallbackCopy(t){try{const ta=document.createElement('textarea');ta.valu
 fillAimags();renderBank();
 applyTheme();
 try{window.addEventListener('pointerdown',function(){try{_actx=_actx||new(window.AudioContext||window.webkitAudioContext)();if(_actx.state==='suspended')_actx.resume();}catch(e){}});}catch(e){}
-const APP_VERSION='v68';
+const APP_VERSION='v70';
 try{document.getElementById('verBadge').textContent='Хоёулаа Болзий '+APP_VERSION;}catch(_){}
 loadSettings();
 restoreSession();
