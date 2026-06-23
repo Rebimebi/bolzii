@@ -535,6 +535,9 @@ body.dark .date-remind-top{background:linear-gradient(135deg,#3a2e12,#2c2410);co
 .adm-card .ok-b{background:rgba(47,168,116,.15);color:var(--ok);}
 .adm-card .no-b{background:rgba(226,62,87,.12);color:var(--red);}
 .adm-pill{font-size:10.5px;font-weight:800;padding:4px 9px;border-radius:20px;}
+.adm-filter{display:flex;gap:7px;margin-bottom:14px;}
+.adm-filter button{flex:1;padding:9px 4px;border-radius:20px;border:1px solid var(--gray-bg);background:var(--card);color:var(--gray);font-family:var(--body);font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;}
+.adm-filter button.on{background:linear-gradient(135deg,var(--red),var(--pink));color:#fff;border-color:transparent;}
 .adm-pill.warn{background:rgba(246,196,83,.2);color:#a07400;}
 .adm-pill.ok{background:rgba(47,168,116,.15);color:var(--ok);}
 /* verification detail card */
@@ -2165,6 +2168,7 @@ function openChatById(id){
 /* ---- Realtime (чат + найзын хүсэлт шууд) ---- */
 let rtChannel=null;
 let _adminId=null;
+let _userFilter='all';
 let _blockWatch=null;
 function startBlockWatch(){
   clearInterval(_blockWatch);
@@ -2420,7 +2424,7 @@ async function admTab(t,btn){
     try{
       const [v,u]=await Promise.all([
         sb.from('profiles').select('*').eq('verified',false).eq('blocked',false).order('created_at',{ascending:false}),
-        sb.from('profiles').select('*').eq('verified',true)
+        sb.from('profiles').select('*').or('verified.eq.true,blocked.eq.true')
       ]);
       admData.verify=(v.data||[]).filter(x=>!x.is_admin).map(x=>({id:x.id,name:x.name,g:x.gender,age:x.age||'-',height:x.height,weight:x.weight,phone:x.phone,city:x.city,soum:x.soum,bio:x.bio,tags:x.tags,ph:x.photo_url||'',photos:x.photos||[],waived:!!x.fee_waived,plan:x.gender==='f'?'Бүсгүй · 🎁 ҮНЭГҮЙ':'Эрэгтэй · бүтэн хураамж'}));
       admData.users=(u.data||[]).filter(x=>!x.is_admin).map(x=>({...x,n:x.name,m:`${x.age||''} · ${x.city||''}`,ph:x.photo_url||'',blocked:!!x.blocked}));
@@ -2512,7 +2516,12 @@ async function admTab(t,btn){
       html+=`<p style="font-size:11.5px;color:var(--gray-2);margin:16px 4px 0;line-height:1.65">«Сайт үзсэн» = аппыг нээсэн зочдын тоо (нэг төхөөрөмж нэг удаа тоологдоно). «Бүртгүүлсэн» = бүртгэлээ үүсгэсэн хүн. «Баталгаажсан» = төлбөр төлж таны зөвшөөрсөн хүн. Зочдын тоо энэ шинэчлэлээс хойш цуглуулагдана.</p>`;
     }
   }
-  else if(t==='users'){html+=admData.users.length?admData.users.map((x,i)=>`<div class="adm-card" style="cursor:pointer;${x.blocked?'opacity:.55':''}" onclick="admViewUser(${i})"><div class="ph" style="${photoBg(x.ph)}"></div><div class="b"><div class="nm">${x.n}</div><div class="meta">${x.m}</div></div><span class="adm-pill ${x.blocked?'warn':'ok'}">${x.blocked?'Блоклогдсон':'Идэвхтэй'}</span><div class="acts"><button class="ok-b" style="background:rgba(201,150,30,.18);color:#a87a12" onclick="event.stopPropagation();admGiftPromoU(${i})" title="Урамшуулал бэлэглэх">🎁</button><button class="ok-b" onclick="event.stopPropagation();admChatUser(${i})" title="Чат бичих">💬</button><button class="${x.blocked?'ok-b':'no-b'}" onclick="event.stopPropagation();toggleBlock(${i})" title="${x.blocked?'Блокоос гаргах':'Блоклох'}">${x.blocked?'🔓':'🚫'}</button></div></div>`).join(''):empty('Бүртгэлтэй хэрэглэгч алга');}
+  else if(t==='users'){
+    const total=admData.users.length,activeCount=admData.users.filter(u=>!u.blocked).length,blockedCount=admData.users.filter(u=>u.blocked).length;
+    html+=`<div class="adm-filter"><button class="${_userFilter==='all'?'on':''}" onclick="setUserFilter('all')">Бүгд ${total}</button><button class="${_userFilter==='active'?'on':''}" onclick="setUserFilter('active')">Идэвхтэй ${activeCount}</button><button class="${_userFilter==='blocked'?'on':''}" onclick="setUserFilter('blocked')">🚫 Блок ${blockedCount}</button></div>`;
+    const filt=admData.users.map((x,i)=>({x,i})).filter(({x})=>_userFilter==='active'?!x.blocked:_userFilter==='blocked'?x.blocked:true);
+    html+=filt.length?filt.map(({x,i})=>`<div class="adm-card" style="cursor:pointer;${x.blocked?'opacity:.65':''}" onclick="admViewUser(${i})"><div class="ph" style="${photoBg(x.ph)}"></div><div class="b"><div class="nm">${x.n}</div><div class="meta">${x.blocked&&x.block_reason?('🚫 '+x.block_reason):x.m}</div></div><span class="adm-pill ${x.blocked?'warn':'ok'}">${x.blocked?'Блоклогдсон':'Идэвхтэй'}</span><div class="acts">${x.blocked?'':`<button class="ok-b" style="background:rgba(201,150,30,.18);color:#a87a12" onclick="event.stopPropagation();admGiftPromoU(${i})" title="Урамшуулал бэлэглэх">🎁</button>`}<button class="ok-b" onclick="event.stopPropagation();admChatUser(${i})" title="Чат бичих">💬</button><button class="${x.blocked?'ok-b':'no-b'}" onclick="event.stopPropagation();toggleBlock(${i})" title="${x.blocked?'Блокоос гаргах':'Блоклох'}">${x.blocked?'🔓':'🚫'}</button></div></div>`).join(''):empty(_userFilter==='blocked'?'Блоклогдсон хэрэглэгч алга 🎉':'Хэрэглэгч алга');
+  }
   else if(t==='dates'){
     html+=`<button class="btn" style="width:100%;margin-bottom:14px;background:linear-gradient(135deg,#c9961e,#e0b020);color:#fff;font-weight:700;border:none;border-radius:30px;padding:13px;" onclick="admRemindWomen()">🛡️ Бүх эмэгтэйд аюулгүй байдлын сануулга илгээх</button>`;
     const blindRow=b=>{const pr=[b.pref.age?b.pref.age+' нас':'',b.pref.height?b.pref.height+'см+':'',b.pref.weight?b.pref.weight+'кг':''].filter(Boolean).join(', ');return {pr,html:`<div class="ph" style="${photoBg(b.ph)}"></div><div class="b"><div class="nm">${b.name||'?'}${b.age?', '+b.age:''}</div><div class="meta">${b.city||''} · хүсэл: ${pr||'заагаагүй'}</div></div>`};};
@@ -2564,6 +2573,7 @@ async function admTab(t,btn){
   }
   body.innerHTML=html;
 }
+function setUserFilter(f){_userFilter=f;if(_admCurTab==='users')admTab('users');}
 async function toggleBlock(i){
   const x=admData.users[i];if(!x)return;
   if(x.blocked){
@@ -2998,7 +3008,7 @@ function fallbackCopy(t){try{const ta=document.createElement('textarea');ta.valu
 fillAimags();renderBank();
 applyTheme();
 try{window.addEventListener('pointerdown',function(){try{_actx=_actx||new(window.AudioContext||window.webkitAudioContext)();if(_actx.state==='suspended')_actx.resume();}catch(e){}});}catch(e){}
-const APP_VERSION='v83';
+const APP_VERSION='v84';
 try{document.getElementById('verBadge').textContent='Хоёулаа Болзий '+APP_VERSION;}catch(_){}
 loadSettings();
 restoreSession();
