@@ -664,6 +664,7 @@ body.dark .date-remind-top{background:linear-gradient(135deg,#3a2e12,#2c2410);co
     <div class="rm-head"><span>Утсандаа суулгах</span><button onclick="closeInstall()">✕</button></div>
     <div class="rm-body">
       <p class="lead">Хоёулаа Болзий-г апп шиг утсандаа суулгаад, нүүр дэлгэцээсээ шууд нээж ашиглаарай.</p>
+      <div class="pp-warn" style="margin-bottom:14px">⚠️ <b>Чухал:</b> Facebook, Instagram доторх хөтчид суулгах боломжгүй. Эхлээд баруун дээд <b>⋯</b> цэс → «Open in browser» сонгож, <b>Safari</b> (iPhone) / <b>Chrome</b> (Android)-аар нээгээрэй.</div>
       <h3>iPhone (Safari)</h3>
       <div class="rule-item"><div class="num">1</div><div>Энэ хуудсыг <b>Safari</b> хөтчөөр нээнэ.</div></div>
       <div class="rule-item"><div class="num">2</div><div>Доод талын <b>Хуваалцах</b> ⬆️ товчийг дарна.</div></div>
@@ -1231,6 +1232,13 @@ body.dark .date-remind-top{background:linear-gradient(135deg,#3a2e12,#2c2410);co
     <div class="mon-head"><button class="mon-back" onclick="closeMonitor()">‹</button><div><div class="mon-h-title" id="monTitle"></div><div class="mon-h-sub">Зөвхөн харах · аюулгүй байдлын хяналт</div></div></div>
     <div class="mon-msgs" id="monMsgs"></div>
   </div>
+  <div id="iabBanner" style="display:none;position:fixed;top:0;left:0;right:0;z-index:10000;background:#1877f2;color:#fff;padding:10px 14px;font-size:12.5px;line-height:1.45;text-align:center;box-shadow:0 2px 10px rgba(0,0,0,.2);">
+    ⚠️ Аппыг утсандаа суулгаж, бүрэн ашиглахын тулд <b>Safari</b> (iPhone) эсвэл <b>Chrome</b> (Android) хөтчөөр нээнэ үү. Баруун дээд <b>⋯</b> → «Open in browser».
+    <span style="display:inline-block;margin-top:6px">
+      <button onclick="copyAppLink()" style="background:#fff;color:#1877f2;border:none;border-radius:14px;padding:5px 11px;font-weight:700;font-size:12px;cursor:pointer">🔗 Холбоос хуулах</button>
+      <button onclick="this.closest('#iabBanner').style.display='none'" style="margin-left:6px;background:rgba(255,255,255,.25);color:#fff;border:none;border-radius:14px;padding:5px 9px;font-size:12px;cursor:pointer">Хаах ✕</button>
+    </span>
+  </div>
   <div class="toast" id="toast"></div>
 </div>
 
@@ -1462,6 +1470,7 @@ async function initApp(){
   setupRealtime();
   startBlockWatch();
   startTrialWatch();
+  startMsgPoll();
   await loadDates();
   renderPkgs();renderBlind();renderAvailWomen();renderPublicDates();bumpUnread();
   if(me){applyProfileUI();}
@@ -2287,6 +2296,7 @@ function setupRealtime(){
     rtChannel=sb.channel('rt-'+me.id)
       .on('postgres_changes',{event:'INSERT',schema:'public',table:'messages',filter:'to_id=eq.'+me.id},payload=>{
         const m=payload.new;if(!m)return;
+        if(m.id)_notifiedIds[m.id]=1;
         const c=chats.find(x=>x.id===m.from_id);
         const open=document.getElementById('chatView').classList.contains('open')&&chats[curChat]&&chats[curChat].id===m.from_id;
         if(c){
@@ -2312,7 +2322,7 @@ function setupRealtime(){
       .subscribe();
   }catch(e){console.error('realtime',e);}
 }
-function teardownRealtime(){try{if(rtChannel){sb.removeChannel(rtChannel);rtChannel=null;}}catch(e){}try{clearInterval(_blockWatch);_blockWatch=null;}catch(e){}try{clearInterval(_trialInt);_trialInt=null;}catch(e){}}
+function teardownRealtime(){try{if(rtChannel){sb.removeChannel(rtChannel);rtChannel=null;}}catch(e){}try{clearInterval(_blockWatch);_blockWatch=null;}catch(e){}try{clearInterval(_trialInt);_trialInt=null;}catch(e){}try{clearInterval(_msgPoll);_msgPoll=null;}catch(e){}}
 
 /* ============================================================ DATES (app organizes) ============================================================ */
 async function loadDates(){
@@ -2389,6 +2399,32 @@ function openChatByName(n){const i=chats.findIndex(c=>c.n===n);if(i>=0){tab('mat
 
 /* ============================================================ TABS / BADGES ============================================================ */
 let _trialInt=null,_trialLocked=false;
+let _msgPoll=null,_lastMsgCheck=null,_notifiedIds={};
+function startMsgPoll(){
+  clearInterval(_msgPoll);
+  _lastMsgCheck=new Date().toISOString();
+  _msgPoll=setInterval(checkNewMsgs,15000);
+}
+async function checkNewMsgs(){
+  if(!me||me.is_admin||me.blocked||document.hidden)return;
+  try{
+    const since=_lastMsgCheck||new Date(Date.now()-120000).toISOString();
+    const {data}=await sb.from('messages').select('id,from_id,text,created_at').eq('to_id',me.id).gt('created_at',since).order('created_at',{ascending:true});
+    if(!data||!data.length)return;
+    _lastMsgCheck=data[data.length-1].created_at;
+    let any=false;
+    data.forEach(m=>{
+      if(_notifiedIds[m.id])return;_notifiedIds[m.id]=1;
+      const chOpen=document.getElementById('chatView').classList.contains('open')&&chats[curChat]&&chats[curChat].id===m.from_id;
+      if(chOpen)return;
+      any=true;
+      const c=chats.find(x=>x.id===m.from_id);
+      if(c){c.last=m.text;c.time='Одоо';c.unread=(c.unread||0)+1;notify('💬','Шинэ зурвас',(c.n||'')+': '+m.text);}
+      else{notify('💬','Шинэ зурвас','Танд шинэ зурвас ирлээ');try{loadContacts();}catch(e){}}
+    });
+    if(any){try{renderMatches();bumpUnread();}catch(e){}}
+  }catch(e){}
+}
 function startTrialWatch(){
   clearInterval(_trialInt);_trialLocked=false;
   _trialInt=setInterval(trialTick,1000);trialTick();
@@ -3142,8 +3178,16 @@ function copyText(t){t=(t||'').trim();if(!t){toast('Данс хоосон бай
 function fallbackCopy(t){try{const ta=document.createElement('textarea');ta.value=t;ta.style.position='fixed';ta.style.opacity='0';document.body.appendChild(ta);ta.focus();ta.select();document.execCommand('copy');document.body.removeChild(ta);toast('📋 Данс хуулагдлаа');}catch(e){toast('Хуулж чадсангүй: '+t);}}
 fillAimags();renderBank();
 applyTheme();
-try{window.addEventListener('pointerdown',function(){try{_actx=_actx||new(window.AudioContext||window.webkitAudioContext)();if(_actx.state==='suspended')_actx.resume();}catch(e){}});}catch(e){}
-const APP_VERSION='v90';
+let _audioUnlocked=false;
+function unlockAudio(){
+  try{
+    _actx=_actx||new(window.AudioContext||window.webkitAudioContext)();
+    if(_actx.state==='suspended')_actx.resume();
+    if(!_audioUnlocked){const b=_actx.createBuffer(1,1,22050),s=_actx.createBufferSource();s.buffer=b;s.connect(_actx.destination);s.start(0);_audioUnlocked=true;}
+  }catch(e){}
+}
+try{window.addEventListener('pointerdown',unlockAudio,{passive:true});window.addEventListener('touchstart',unlockAudio,{passive:true});window.addEventListener('click',unlockAudio,{passive:true});}catch(e){}
+const APP_VERSION='v92';
 try{document.getElementById('verBadge').textContent='Хоёулаа Болзий '+APP_VERSION;}catch(_){}
 loadSettings();
 restoreSession();
@@ -3173,9 +3217,13 @@ function installNow(){
   if(deferredPrompt){deferredPrompt.prompt();deferredPrompt.userChoice.then(()=>{deferredPrompt=null;const b=document.getElementById('installBtn');if(b)b.style.display='none';closeInstall();});}
   else{closeInstall();}
 }
+function inAppBrowser(){const ua=navigator.userAgent||'';return /FBAN|FBAV|FB_IAB|FBIOS|Instagram|Messenger|MessengerForiOS|Line\/|MicroMessenger|TikTok|Twitter|Snapchat/i.test(ua);}
+function copyAppLink(){const u='https://bolzii.vercel.app';try{navigator.clipboard.writeText(u).then(()=>toast('🔗 Холбоос хуулагдлаа — Safari/Chrome-д буулгаарай'),()=>toast(u));}catch(e){toast(u);}}
 function isIOSDevice(){return /iphone|ipad|ipod/i.test(navigator.userAgent||'')&&!window.MSStream;}
 function isStandalonePWA(){return (window.matchMedia&&window.matchMedia('(display-mode: standalone)').matches)||navigator.standalone===true;}
 window.addEventListener('load',()=>{try{if((isIOSDevice()||/android/i.test(navigator.userAgent||''))&&!isStandalonePWA()){const b=document.getElementById('installBtn');if(b)b.style.display='block';}}catch(e){}});
+window.addEventListener('load',()=>{try{if(inAppBrowser()){const b=document.getElementById('iabBanner');if(b)b.style.display='block';}}catch(e){}});
+document.addEventListener('visibilitychange',()=>{try{if(document.visibilityState==='visible'&&me&&!me.is_admin&&!me.blocked){loadContacts();if(typeof loadFriendReqs==='function')loadFriendReqs();if(typeof loadNotifs==='function')loadNotifs();}}catch(e){}});
 window.addEventListener('appinstalled',()=>{const b=document.getElementById('installBtn');if(b)b.style.display='none';toast('🎉 Апп амжилттай суулаа!');});
 if('serviceWorker' in navigator){
   let _swReloaded=false;
