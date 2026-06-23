@@ -557,6 +557,11 @@ body.dark .date-remind-top{background:linear-gradient(135deg,#3a2e12,#2c2410);co
 .wa-partners{display:flex;gap:7px;padding:10px 12px;overflow-x:auto;background:var(--card);border-bottom:1px solid var(--gray-bg);flex:0 0 auto;}
 .wa-partner{flex:0 0 auto;padding:7px 13px;border-radius:18px;border:1px solid var(--gray-bg);background:var(--cream);color:var(--gray);font-family:var(--body);font-size:12.5px;font-weight:700;cursor:pointer;white-space:nowrap;}
 .wa-partner.on{background:linear-gradient(135deg,var(--red),var(--pink));color:#fff;border-color:transparent;}
+#waReqs{background:rgba(168,85,154,.07);border-bottom:1px solid var(--gray-bg);padding:10px 12px;flex:0 0 auto;max-height:34vh;overflow-y:auto;}
+.wa-reqs-t{font-size:11.5px;font-weight:800;color:#8a4080;margin-bottom:8px;letter-spacing:.02em;}
+.wa-req{display:flex;align-items:center;justify-content:space-between;gap:10px;background:var(--card);border-radius:11px;padding:9px 12px;margin-bottom:7px;}
+.wa-req span{font-size:13.5px;font-weight:600;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.wa-req button{flex:0 0 auto;background:linear-gradient(135deg,#1faa59,#23c06a);color:#fff;border:none;border-radius:16px;padding:7px 13px;font-family:var(--body);font-size:12px;font-weight:700;cursor:pointer;}
 .adm-pill.warn{background:rgba(246,196,83,.2);color:#a07400;}
 .adm-pill.ok{background:rgba(47,168,116,.15);color:var(--ok);}
 /* verification detail card */
@@ -1233,6 +1238,7 @@ body.dark .date-remind-top{background:linear-gradient(135deg,#3a2e12,#2c2410);co
   </div>
   <div class="mon-view" id="waView">
     <div class="mon-head"><button class="mon-back" onclick="closeWa()">‹</button><div><div class="mon-h-title" id="waTitle"></div><div class="mon-h-sub">Бүсгүйн өмнөөс хариулах</div></div></div>
+    <div id="waReqs" style="display:none"></div>
     <div class="wa-partners" id="waPartners"></div>
     <div class="mon-msgs" id="waMsgs"></div>
     <div style="display:flex;gap:8px;padding:12px;background:var(--card);border-top:1px solid var(--gray-bg);flex:0 0 auto;">
@@ -2583,12 +2589,12 @@ async function admTab(t,btn){
     try{const {data:s}=await sb.from('stats').select('views').eq('id',1).maybeSingle();admData.stats.views=(s&&s.views)||0;}catch(e){admData.stats.viewsErr=(e&&e.message)||'';}
   }
   if(t==='monitor'){
-    admData.monitor=[];admData.monitorErr='';admData.monFriends=[];admData.monFriendsErr='';
+    admData.monitor=[];admData.monitorErr='';admData.monFriends=[];admData.monFriendsErr='';admData.monWomen=[];
     let pmap={};
     try{
       const [mr,pr]=await Promise.all([
         sb.from('messages').select('from_id,to_id,text,created_at').order('created_at',{ascending:true}),
-        sb.from('profiles').select('id,name,is_admin,photo_url')
+        sb.from('profiles').select('id,name,is_admin,photo_url,gender')
       ]);
       if(mr.error)throw mr.error;
       (pr.data||[]).forEach(p=>pmap[p.id]=p);
@@ -2606,6 +2612,8 @@ async function admTab(t,btn){
       const {data:fr,error:fe}=await sb.from('friend_requests').select('from_id,to_id,status,created_at').order('created_at',{ascending:false});
       if(fe)throw fe;
       admData.monFriends=(fr||[]).map(f=>({from:pmap[f.from_id]||{name:'?'},to:pmap[f.to_id]||{name:'?'},status:f.status||'pending',at:f.created_at}));
+      const pendCnt={};(fr||[]).forEach(f=>{if((f.status||'pending')==='pending')pendCnt[f.to_id]=(pendCnt[f.to_id]||0)+1;});
+      admData.monWomen=Object.values(pmap).filter(p=>p.gender==='f'&&!p.is_admin).map(p=>({id:p.id,name:p.name||'?',photo_url:p.photo_url||'',pending:pendCnt[p.id]||0})).sort((a,b)=>(b.pending-a.pending)||(a.name||'').localeCompare(b.name||''));
     }catch(e){admData.monFriendsErr=(e&&e.message)||'тодорхойгүй';}
   }
   if(t==='dates'){
@@ -2683,7 +2691,7 @@ async function admTab(t,btn){
     const total=admData.users.length,activeCount=admData.users.filter(u=>!u.blocked).length,blockedCount=admData.users.filter(u=>u.blocked).length;
     html+=`<div class="adm-filter"><button class="${_userFilter==='all'?'on':''}" onclick="setUserFilter('all')">Бүгд ${total}</button><button class="${_userFilter==='active'?'on':''}" onclick="setUserFilter('active')">Идэвхтэй ${activeCount}</button><button class="${_userFilter==='blocked'?'on':''}" onclick="setUserFilter('blocked')">🚫 Блок ${blockedCount}</button></div>`;
     const filt=admData.users.map((x,i)=>({x,i})).filter(({x})=>_userFilter==='active'?!x.blocked:_userFilter==='blocked'?x.blocked:true);
-    html+=filt.length?filt.map(({x,i})=>`<div class="adm-card" style="cursor:pointer;${x.blocked?'opacity:.65':''}" onclick="admViewUser(${i})"><div class="ph" style="${photoBg(x.ph)}"></div><div class="b"><div class="nm">${x.n}</div><div class="meta">${x.blocked&&x.block_reason?('🚫 '+x.block_reason):x.m}</div></div><span class="adm-pill ${x.blocked?'warn':'ok'}">${x.blocked?'Блоклогдсон':'Идэвхтэй'}</span><div class="acts">${x.blocked?'':`<button class="ok-b" style="background:rgba(201,150,30,.18);color:#a87a12" onclick="event.stopPropagation();admGiftPromoU(${i})" title="Урамшуулал бэлэглэх">🎁</button>`}${(x.gender==='f'&&!x.blocked)?`<button class="ok-b" style="background:rgba(168,85,154,.16);color:#a8559a" onclick="event.stopPropagation();admActAsWoman(${i})" title="Бүсгүйн өмнөөс бичих">✍️</button>`:''}<button class="ok-b" onclick="event.stopPropagation();admChatUser(${i})" title="Чат бичих">💬</button><button class="${x.blocked?'ok-b':'no-b'}" onclick="event.stopPropagation();toggleBlock(${i})" title="${x.blocked?'Блокоос гаргах':'Блоклох'}">${x.blocked?'🔓':'🚫'}</button></div></div>`).join(''):empty(_userFilter==='blocked'?'Блоклогдсон хэрэглэгч алга 🎉':'Хэрэглэгч алга');
+    html+=filt.length?filt.map(({x,i})=>`<div class="adm-card" style="cursor:pointer;${x.blocked?'opacity:.65':''}" onclick="admViewUser(${i})"><div class="ph" style="${photoBg(x.ph)}"></div><div class="b"><div class="nm">${x.n}</div><div class="meta">${x.blocked&&x.block_reason?('🚫 '+x.block_reason):x.m}</div></div><span class="adm-pill ${x.blocked?'warn':'ok'}">${x.blocked?'Блоклогдсон':'Идэвхтэй'}</span><div class="acts">${x.blocked?'':`<button class="ok-b" style="background:rgba(201,150,30,.18);color:#a87a12" onclick="event.stopPropagation();admGiftPromoU(${i})" title="Урамшуулал бэлэглэх">🎁</button>`}<button class="ok-b" onclick="event.stopPropagation();admChatUser(${i})" title="Чат бичих">💬</button><button class="${x.blocked?'ok-b':'no-b'}" onclick="event.stopPropagation();toggleBlock(${i})" title="${x.blocked?'Блокоос гаргах':'Блоклох'}">${x.blocked?'🔓':'🚫'}</button></div></div>`).join(''):empty(_userFilter==='blocked'?'Блоклогдсон хэрэглэгч алга 🎉':'Хэрэглэгч алга');
   }
   else if(t==='dates'){
     html+=`<button class="btn" style="width:100%;margin-bottom:14px;background:linear-gradient(135deg,#c9961e,#e0b020);color:#fff;font-weight:700;border:none;border-radius:30px;padding:13px;" onclick="admRemindWomen()">🛡️ Бүх эмэгтэйд аюулгүй байдлын сануулга илгээх</button>`;
@@ -2706,8 +2714,11 @@ async function admTab(t,btn){
   }
   else if(t==='monitor'){
     html+=`<div style="background:var(--pink-bg);border-radius:12px;padding:11px 14px;font-size:12px;color:var(--red-deep);line-height:1.5;margin-bottom:14px">🔍 <b>Аюулгүй байдлын хяналт.</b> Хэрэглэгчдийн чат болон найзын хүсэлтийг харах боломжтой. Үүнийг үйлчилгээний нөхцөлдөө <b>ил тод</b> бичихийг зөвлөж байна.</div>`;
-    html+=`<div class="adm-filter"><button class="${_monView==='chats'?'on':''}" onclick="setMonView('chats')">💬 Чатууд ${(admData.monitor||[]).length}</button><button class="${_monView==='friends'?'on':''}" onclick="setMonView('friends')">🤝 Найзын хүсэлт ${(admData.monFriends||[]).length}</button></div>`;
-    if(_monView==='friends'){
+    html+=`<div class="adm-filter"><button class="${_monView==='chats'?'on':''}" onclick="setMonView('chats')">💬 Чатууд ${(admData.monitor||[]).length}</button><button class="${_monView==='friends'?'on':''}" onclick="setMonView('friends')">🤝 Найзын хүсэлт ${(admData.monFriends||[]).length}</button><button class="${_monView==='women'?'on':''}" onclick="setMonView('women')">👩 Бүсгүйн өмнөөс ${(admData.monWomen||[]).length}</button></div>`;
+    if(_monView==='women'){
+      html+=`<div style="background:rgba(168,85,154,.1);border-radius:12px;padding:11px 14px;font-size:12px;color:#8a4080;line-height:1.5;margin-bottom:12px">👩 Бүсгүйг сонгоод түүний <b>найзын хүсэлтийг зөвшөөрч</b>, <b>өмнөөс нь чат бичнэ</b>. 🔔 тэмдэг = хүлээгдэж буй хүсэлттэй.</div>`;
+      html+=(admData.monWomen&&admData.monWomen.length)?admData.monWomen.map(w=>`<div class="adm-card" style="cursor:pointer" onclick="admActAsWomanById('${w.id}','${(w.name||'').replace(/'/g,'')}')"><div class="ph" style="${photoBg(w.photo_url||'')}"></div><div class="b"><div class="nm">${esc(w.name||'?')}</div><div class="meta">${w.pending?('🔔 '+w.pending+' найзын хүсэлт'):'өмнөөс нь чатлах'}</div></div>${w.pending?`<span class="adm-pill warn">${w.pending}</span>`:'<span style="color:var(--gray-2);font-size:20px;font-weight:300">›</span>'}</div>`).join(''):empty('Бүсгүй хэрэглэгч алга');
+    }else if(_monView==='friends'){
       if(admData.monFriendsErr)html+=`<div style="background:rgba(226,62,87,.1);color:var(--red);border-radius:12px;padding:11px 14px;font-size:12px;margin-bottom:12px;line-height:1.5">⚠️ Алдаа: ${esc(admData.monFriendsErr)}<br>«fr_admin_read» SQL-г ажиллуулсан эсэхээ шалгана уу.</div>`;
       const stMap={pending:['Хүлээгдэж буй','warn'],accepted:['Зөвшөөрсөн','ok'],declined:['Татгалзсан','no'],rejected:['Татгалзсан','no']};
       html+=(admData.monFriends&&admData.monFriends.length)?admData.monFriends.map(f=>{const st=stMap[f.status]||[f.status,'warn'];return `<div class="adm-card"><div class="ph" style="${photoBg(f.from.photo_url||'')}"></div><div class="b"><div class="nm">${esc(f.from.name||'?')} → ${esc(f.to.name||'?')}</div><div class="meta">${msgTime(f.at)}</div></div><span class="adm-pill ${st[1]}">${st[0]}</span></div>`;}).join(''):(admData.monFriendsErr?'':empty('Найзын хүсэлт алга'));
@@ -2758,28 +2769,62 @@ function openMonitor(i){
   if(box)setTimeout(()=>{box.scrollTop=box.scrollHeight;},30);
 }
 function closeMonitor(){ovClose('monitorView');}
-let _waWoman=null,_waPartnerId=null,_waPartners=[];
-async function admActAsWoman(i){
-  const x=admData.users[i];if(!x)return;
-  _waWoman={id:x.id,name:x.n||x.name||'Бүсгүй'};_waPartnerId=null;_waPartners=[];
+let _waWoman=null,_waPartnerId=null,_waPartners=[],_waReqs=[];
+function admActAsWoman(i){const x=admData.users&&admData.users[i];if(x)admActAsWomanById(x.id,x.n||x.name);}
+async function admActAsWomanById(id,name){
+  _waWoman={id,name:name||'Бүсгүй'};_waPartnerId=null;_waPartners=[];_waReqs=[];
   const tt=document.getElementById('waTitle');if(tt)tt.textContent='👩 '+_waWoman.name+' өмнөөс';
+  const rq=document.getElementById('waReqs');if(rq){rq.style.display='none';rq.innerHTML='';}
   document.getElementById('waPartners').innerHTML='<div style="padding:10px 12px;color:var(--gray);font-size:12.5px">Ачааллаж байна…</div>';
-  document.getElementById('waMsgs').innerHTML='<div style="padding:20px;text-align:center;color:var(--gray);font-size:13px">Хэнтэй чатлахаа дээрээс сонгоно уу</div>';
+  document.getElementById('waMsgs').innerHTML='<div style="padding:20px;text-align:center;color:var(--gray);font-size:13px">Хүсэлт зөвшөөрөх эсвэл партнёр сонгоно уу</div>';
   ovOpen('waView');
+  await waLoadReqs();
   await waLoadPartners();
+}
+async function waLoadReqs(){
+  try{
+    const {data}=await sb.from('friend_requests').select('id,from_id,created_at').eq('to_id',_waWoman.id).eq('status','pending').order('created_at',{ascending:false});
+    const ids=(data||[]).map(r=>r.from_id);
+    let names={};
+    if(ids.length){const {data:ps}=await sb.from('profiles').select('id,name').in('id',ids);(ps||[]).forEach(p=>names[p.id]=p.name);}
+    _waReqs=(data||[]).map(r=>({reqId:r.id,from:r.from_id,name:names[r.from_id]||'Хэрэглэгч'}));
+    waRenderReqs();
+  }catch(e){const rq=document.getElementById('waReqs');if(rq)rq.style.display='none';}
+}
+function waRenderReqs(){
+  const box=document.getElementById('waReqs');if(!box)return;
+  if(!_waReqs.length){box.style.display='none';box.innerHTML='';return;}
+  box.style.display='block';
+  box.innerHTML='<div class="wa-reqs-t">🔔 ХҮЛЭЭГДЭЖ БУЙ НАЙЗЫН ХҮСЭЛТ</div>'+_waReqs.map(r=>`<div class="wa-req"><span>👋 ${esc(r.name)}</span><button onclick="waAcceptReq('${r.reqId}','${r.from}','${(r.name||'').replace(/'/g,'')}')">✅ Зөвшөөрөх</button></div>`).join('');
+}
+async function waAcceptReq(reqId,fromId,fromName){
+  try{
+    const {data,error}=await sb.from('friend_requests').update({status:'accepted'}).eq('id',reqId).select();
+    if(error){if(/policy|permission|row-level/i.test(error.message||''))toast('⚠️ fr_admin_update SQL ажиллуулна уу');else toast('Алдаа: '+error.message);return;}
+    if(!data||!data.length){toast('Хүсэлт олдсонгүй');await waLoadReqs();return;}
+    toast('✓ Зөвшөөрлөө — одоо '+(fromName||'')+'-тэй чатлаж болно');
+    await waLoadReqs();await waLoadPartners();
+    if(fromId)waSelectPartnerById(fromId);
+  }catch(e){toast('Алдаа гарлаа');}
 }
 async function waLoadPartners(){
   try{
-    const {data}=await sb.from('messages').select('from_id,to_id,text,created_at').or(`from_id.eq.${_waWoman.id},to_id.eq.${_waWoman.id}`).order('created_at',{ascending:true});
+    const [mr,fr]=await Promise.all([
+      sb.from('messages').select('from_id,to_id,text,created_at').or(`from_id.eq.${_waWoman.id},to_id.eq.${_waWoman.id}`).order('created_at',{ascending:true}),
+      sb.from('friend_requests').select('from_id,to_id').or(`from_id.eq.${_waWoman.id},to_id.eq.${_waWoman.id}`).eq('status','accepted')
+    ]);
     const partners={};
-    (data||[]).forEach(m=>{const other=m.from_id===_waWoman.id?m.to_id:m.from_id;if(!partners[other])partners[other]={id:other,msgs:[]};partners[other].msgs.push(m);});
+    (mr.data||[]).forEach(m=>{const other=m.from_id===_waWoman.id?m.to_id:m.from_id;if(!partners[other])partners[other]={id:other,msgs:[]};partners[other].msgs.push(m);});
+    (fr.data||[]).forEach(f=>{const other=f.from_id===_waWoman.id?f.to_id:f.from_id;if(other&&!partners[other])partners[other]={id:other,msgs:[]};});
     const ids=Object.keys(partners);
     let names={};
     if(ids.length){const {data:ps}=await sb.from('profiles').select('id,name').in('id',ids);(ps||[]).forEach(p=>names[p.id]=p.name);}
-    _waPartners=ids.map(id=>({id,name:names[id]||'Хэрэглэгч',msgs:partners[id].msgs,_at:partners[id].msgs[partners[id].msgs.length-1].created_at})).sort((a,b)=>new Date(b._at)-new Date(a._at));
+    _waPartners=ids.map(id=>({id,name:names[id]||'Хэрэглэгч',msgs:partners[id].msgs,_at:partners[id].msgs.length?partners[id].msgs[partners[id].msgs.length-1].created_at:'0'})).sort((a,b)=>new Date(b._at)-new Date(a._at));
     waRenderPartners();
+    if(_waPartnerId)waRenderMsgs();
   }catch(e){document.getElementById('waPartners').innerHTML='<div style="padding:10px 12px;color:var(--red);font-size:12px">Алдаа: '+esc(e.message||'')+'</div>';}
 }
+function waSelectPartnerById(id){const idx=_waPartners.findIndex(p=>p.id===id);if(idx>=0)waSelectPartner(idx);}
 function waRenderPartners(){
   const box=document.getElementById('waPartners');if(!box)return;
   box.innerHTML=_waPartners.length?_waPartners.map((p,i)=>`<button class="wa-partner${p.id===_waPartnerId?' on':''}" onclick="waSelectPartner(${i})">${esc(p.name)}</button>`).join(''):'<div style="padding:10px 12px;color:var(--gray);font-size:12.5px">Энэ бүсгүйд яриа алга</div>';
@@ -3276,7 +3321,7 @@ function unlockAudio(){
   }catch(e){}
 }
 try{window.addEventListener('pointerdown',unlockAudio,{passive:true});window.addEventListener('touchstart',unlockAudio,{passive:true});window.addEventListener('click',unlockAudio,{passive:true});}catch(e){}
-const APP_VERSION='v94';
+const APP_VERSION='v95';
 try{document.getElementById('verBadge').textContent='Хоёулаа Болзий '+APP_VERSION;}catch(_){}
 loadSettings();
 restoreSession();
