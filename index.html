@@ -1118,6 +1118,16 @@ body.dark .date-remind-top{background:linear-gradient(135deg,#3a2e12,#2c2410);co
       <button class="keep" onclick="sayHi()">Эхлээд чатлах</button>
     </div>
 
+    <div class="tab" id="t-blocked">
+      <div class="scroll" style="display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;">
+        <div style="font-size:60px;margin-bottom:6px">⛔</div>
+        <h2 style="font-family:var(--display);font-size:24px;color:var(--ink);margin:4px 0 10px;font-weight:600">Бүртгэл хязгаарлагдсан</h2>
+        <p style="font-size:14px;color:var(--gray);line-height:1.6;max-width:300px;margin-bottom:14px">Таны бүртгэлийг түр хязгаарласан байна. Та зөвхөн админтай чатлах боломжтой.</p>
+        <div id="blkReason" style="display:none;background:var(--pink-bg);color:var(--red-deep);border-radius:12px;padding:11px 16px;font-size:13.5px;font-weight:700;max-width:300px;margin-bottom:20px"></div>
+        <button class="btn btn-primary" style="width:100%;max-width:280px;margin-bottom:10px" onclick="tab('matches')">💬 Админтай чатлах</button>
+        <button class="btn" style="width:100%;max-width:280px;background:var(--gray-bg);color:var(--gray)" onclick="logout()">Гарах</button>
+      </div>
+    </div>
     <nav class="nav">
       <button class="active" onclick="tab('discover',this)"><svg width="24" height="24" viewBox="0 0 24 24" stroke-width="2"><path d="M12 21s-7.5-4.7-10-9.3C.5 8.4 2 5 5.4 5c2 0 3.3 1.1 4.6 2.7C11.3 6.1 12.6 5 14.6 5 18 5 19.5 8.4 18 11.7 15.5 16.3 12 21 12 21z"/></svg>Нээх</button>
       <button onclick="tab('dates',this)"><span class="ct"><svg width="24" height="24" viewBox="0 0 24 24" stroke-width="2" fill="none"><rect x="3" y="4" width="18" height="18" rx="3"/><path d="M3 9h18M8 2v4M16 2v4"/></svg><span class="dot" id="navDates">1</span></span>Болзоо</button>
@@ -1228,7 +1238,7 @@ async function enterApp(){
     try{await sb.from('profiles').update({warning:null}).eq('id',me.id);me.warning=null;}catch(e){}
   }
   if(me.is_admin){route('adminPanel');admTab('verify');return;}
-  if(me.blocked){forceBlocked();return;}
+  if(me.blocked){route('mainapp');try{await initApp();}catch(e){}showBlockedTab();ensureNotifPermission();return;}
   route('mainapp');try{await initApp();}catch(e){console.error('initApp',e);}ensureNotifPermission();
   if(isLocked())setTimeout(()=>{try{toast('🔒 Зарим боломж түгжээтэй — баталгаажуулна уу');}catch(e){}},900);
 }
@@ -2090,6 +2100,13 @@ async function loadContacts(){
     const {data:un,error:ue}=await sb.from('messages').select('from_id').eq('to_id',me.id).eq('read',false);
     if(!ue){const counts={};(un||[]).forEach(m=>{counts[m.from_id]=(counts[m.from_id]||0)+1;});chats.forEach(c=>{c.unread=counts[c.id]||0;});}
   }catch(e){}
+  if(me.blocked){
+    try{
+      const {data:adm}=await sb.from('profiles').select('id,name,photo_url').eq('is_admin',true).limit(1).maybeSingle();
+      if(adm){_adminId=adm.id;const ex=chats.find(c=>c.id===adm.id)||{};chats=[{id:adm.id,n:adm.name||'Админ',ph:adm.photo_url||'',last:ex.last||'',time:ex.time||'',_at:ex._at||'',msgs:ex.msgs||[],loaded:ex.loaded||false,unread:ex.unread||0}];}
+      else chats=[];
+    }catch(e){}
+  }
   renderMatches();bumpUnread();
 }
 function renderMatches(){
@@ -2097,13 +2114,13 @@ function renderMatches(){
   const cl=document.getElementById('chatList');if(cl)cl.innerHTML=chats.length?chats.map((c,i)=>`<div class="chat-row" onclick="openChat(${i})"><div class="ph" style="${photoBg(c.ph)}"></div><div class="body"><div class="top"><span class="nme">${c.n}</span><span class="tm">${c.time}</span></div><div class="msg">${c.last||'Найз боллоо — сайн уу гэж бичээрэй 👋'}</div></div>${c.unread?`<span class="badge-unread">${c.unread}</span>`:''}</div>`).join(''):`<div style="text-align:center;color:var(--gray-2);font-size:13px;padding:30px 10px;">Одоогоор чат алга. Хэн нэгэнтэй найзлаж эсвэл тохирвол энд харагдана.</div>`;
 }
 async function openChat(i){
-  if(blockedStop())return;
+  if(me&&me.blocked){const c0=chats[i];if(!c0||c0.id!==_adminId)return;}
   ensureNotifPermission();
   curChat=i;const c=chats[i];if(!c)return;
   c.unread=0;bumpUnread();renderMatches();markRead(c.id);
   document.getElementById('cvName').textContent=c.n;
   document.getElementById('cvPh').style.cssText='background-size:cover;background-position:center;'+(c.ph?`background-image:url('${imgUrl(c.ph)}')`:'background:linear-gradient(135deg,var(--red),var(--pink))');
-  const _adm=!!(me&&me.is_admin);const gb=document.getElementById('chatGiftBtn');if(gb)gb.style.display=_adm?'inline-flex':'none';const db=document.getElementById('chatDateBtn');if(db)db.style.display=_adm?'none':'inline-flex';
+  const _adm=!!(me&&me.is_admin);const gb=document.getElementById('chatGiftBtn');if(gb)gb.style.display=_adm?'inline-flex':'none';const db=document.getElementById('chatDateBtn');if(db)db.style.display=(_adm||(me&&me.blocked))?'none':'inline-flex';
   ovOpen('chatView');
   document.getElementById('cvMsgs').innerHTML='<div style="text-align:center;color:var(--gray-2);font-size:13px;margin-top:30px;">Ачааллаж байна…</div>';
   try{
@@ -2131,9 +2148,9 @@ async function requestPromoRenew(){
   toast('🔄 Хүсэлт илгээлээ. Админ хариу өгөх болно.');
 }
 async function sendMsg(){
-  if(blockedStop())return;
   const inp=document.getElementById('cvInput'),t=inp.value.trim();if(!t)return;
   const c=chats[curChat];if(!c){toast('Чат сонгоно уу');return;}
+  if(me&&me.blocked&&c.id!==_adminId){toast('Зөвхөн админтай чатлах боломжтой');return;}
   inp.value='';
   c.msgs.push({me:1,t});c.last=t;c.time='Одоо';renderMsgs();renderMatches();
   try{const {error}=await sb.from('messages').insert({from_id:me.id,to_id:c.id,text:t});if(error)toast('Илгээхэд алдаа: '+error.message);}
@@ -2147,6 +2164,7 @@ function openChatById(id){
 }
 /* ---- Realtime (чат + найзын хүсэлт шууд) ---- */
 let rtChannel=null;
+let _adminId=null;
 let _blockWatch=null;
 function startBlockWatch(){
   clearInterval(_blockWatch);
@@ -2157,9 +2175,9 @@ function startBlockWatch(){
 }
 function forceBlocked(){
   if(me)me.blocked=true;
-  try{const bv=document.getElementById('blockView');if(bv)bv.classList.add('open');}catch(e){}
-  try{document.getElementById('blockMain').style.display='flex';document.getElementById('blockChat').style.display='none';}catch(e){}
-  try{const r=document.getElementById('blockReason');if(r){const rs=me&&me.block_reason;r.style.display=rs?'block':'none';r.textContent=rs?('Шалтгаан: '+rs):'';}}catch(e){}
+  try{loadContacts();}catch(e){}
+  try{route('mainapp');}catch(e){}
+  try{showBlockedTab();}catch(e){}
 }
 function blockedStop(){if(me&&me.blocked){forceBlocked();return true;}return false;}
 let _bcAdmin=null,_bcPoll=null;
@@ -2305,7 +2323,23 @@ function openLockedModal(){
   if(m)m.textContent=(me&&me.gender==='f')?'Бүсгүйчүүд үнэгүй! Админ таны зургийг хараад баталгаажуулмагц нэвтрэх эрх нээгдэнэ.':'Та бүртгэлийн хураамжаа төлснөөр админ нэвтрэх эрх олгоно.';
   ovOpen('lockedModal');
 }
+function showBlockedTab(){
+  document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+  const bt=document.getElementById('t-blocked');if(bt)bt.classList.add('active');
+  const r=document.getElementById('blkReason');if(r){const rs=me&&me.block_reason;r.style.display=rs?'block':'none';r.textContent=rs?('Шалтгаан: '+rs):'';}
+}
 function tab(name,btn){
+  if(me&&me.blocked){
+    clearOverlays();
+    document.querySelectorAll('.nav button').forEach(b=>b.classList.remove('active'));
+    if(btn)btn.classList.add('active');else{const map={discover:0,dates:1,matches:2,profile:4};const nb=document.querySelectorAll('.nav button')[map[name]];if(nb)nb.classList.add('active');}
+    if(name==='matches'){
+      document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+      document.getElementById('t-matches').classList.add('active');
+      try{loadContacts();renderMatches();}catch(e){}
+    }else{showBlockedTab();}
+    return;
+  }
   if(isLocked()&&name!=='discover'&&name!=='matches'){openLockedModal();return;}
   clearOverlays();
   document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
@@ -2941,6 +2975,7 @@ function attachNotifSwipe(){
   });
 }
 async function openNotifs(){
+  if(me&&me.blocked){showBlockedTab();document.querySelectorAll('.nav button').forEach(b=>b.classList.remove('active'));const nb=document.querySelectorAll('.nav button')[3];if(nb)nb.classList.add('active');return;}
   if(isLocked()){openLockedModal();return;}
   ovOpen('notifPanel');
   renderNotifs();
@@ -2963,7 +2998,7 @@ function fallbackCopy(t){try{const ta=document.createElement('textarea');ta.valu
 fillAimags();renderBank();
 applyTheme();
 try{window.addEventListener('pointerdown',function(){try{_actx=_actx||new(window.AudioContext||window.webkitAudioContext)();if(_actx.state==='suspended')_actx.resume();}catch(e){}});}catch(e){}
-const APP_VERSION='v82';
+const APP_VERSION='v83';
 try{document.getElementById('verBadge').textContent='Хоёулаа Болзий '+APP_VERSION;}catch(_){}
 loadSettings();
 restoreSession();
