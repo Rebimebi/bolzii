@@ -1,5 +1,5 @@
 /* Хоёулаа Болзий — Service Worker */
-const CACHE = 'bolzii-v92';
+const CACHE = 'bolzii-v94';
 const ASSETS = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', e => {
@@ -60,6 +60,7 @@ self.addEventListener('push', e => {
       badge: './icon-192.png',
       tag: data.tag || 'bolzii',
       renotify: true,
+      vibrate: [90, 40, 90],
       data: data
     })
   );

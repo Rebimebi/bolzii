@@ -554,6 +554,9 @@ body.dark .date-remind-top{background:linear-gradient(135deg,#3a2e12,#2c2410);co
 .mon-bub{display:inline-block;padding:9px 13px;border-radius:14px;font-size:13.5px;line-height:1.45;background:var(--gray-bg);color:var(--ink);text-align:left;word-wrap:break-word;}
 .mon-msg.r .mon-bub{background:linear-gradient(135deg,var(--red),var(--pink));color:#fff;}
 .mon-time{font-size:10px;color:var(--gray-2);margin-top:2px;}
+.wa-partners{display:flex;gap:7px;padding:10px 12px;overflow-x:auto;background:var(--card);border-bottom:1px solid var(--gray-bg);flex:0 0 auto;}
+.wa-partner{flex:0 0 auto;padding:7px 13px;border-radius:18px;border:1px solid var(--gray-bg);background:var(--cream);color:var(--gray);font-family:var(--body);font-size:12.5px;font-weight:700;cursor:pointer;white-space:nowrap;}
+.wa-partner.on{background:linear-gradient(135deg,var(--red),var(--pink));color:#fff;border-color:transparent;}
 .adm-pill.warn{background:rgba(246,196,83,.2);color:#a07400;}
 .adm-pill.ok{background:rgba(47,168,116,.15);color:var(--ok);}
 /* verification detail card */
@@ -1228,6 +1231,15 @@ body.dark .date-remind-top{background:linear-gradient(135deg,#3a2e12,#2c2410);co
       <div class="bc-input"><input id="bcInput" placeholder="Зурвас бичих…" onkeydown="if(event.key==='Enter')bcSend()"><button onclick="bcSend()">➤</button></div>
     </div>
   </div>
+  <div class="mon-view" id="waView">
+    <div class="mon-head"><button class="mon-back" onclick="closeWa()">‹</button><div><div class="mon-h-title" id="waTitle"></div><div class="mon-h-sub">Бүсгүйн өмнөөс хариулах</div></div></div>
+    <div class="wa-partners" id="waPartners"></div>
+    <div class="mon-msgs" id="waMsgs"></div>
+    <div style="display:flex;gap:8px;padding:12px;background:var(--card);border-top:1px solid var(--gray-bg);flex:0 0 auto;">
+      <input id="waInput" placeholder="Бүсгүйн өмнөөс бичих…" onkeydown="if(event.key==='Enter')waSend()" style="flex:1;padding:11px 15px;border-radius:22px;border:1px solid var(--gray-bg);background:var(--cream);color:var(--ink);font-family:var(--body);font-size:14px;outline:none;">
+      <button onclick="waSend()" style="width:44px;height:44px;border-radius:50%;border:none;background:linear-gradient(135deg,var(--red),var(--pink));color:#fff;font-size:17px;cursor:pointer;flex:0 0 auto;">➤</button>
+    </div>
+  </div>
   <div class="mon-view" id="monitorView">
     <div class="mon-head"><button class="mon-back" onclick="closeMonitor()">‹</button><div><div class="mon-h-title" id="monTitle"></div><div class="mon-h-sub">Зөвхөн харах · аюулгүй байдлын хяналт</div></div></div>
     <div class="mon-msgs" id="monMsgs"></div>
@@ -1249,6 +1261,7 @@ body.dark .date-remind-top{background:linear-gradient(135deg,#3a2e12,#2c2410);co
    ============================================================ */
 const SB_URL='https://kypwjajzhmmbnurtkexu.supabase.co';
 const SB_KEY='sb_publishable_A_vkQLuUaEUXFWBjQY_zEQ_Q1x0G5JY';
+const VAPID_PUBLIC='BGdgGFLU59TgjBCyjnoL5K4adVlGDT3w1894EYb_SMP4HMxICRqHhUQkMd_2tw9mAUXca7D0po6Gm6XKhALi2ZA';
 const sb=window.supabase.createClient(SB_URL,SB_KEY);
 let me=null;  // нэвтэрсэн хэрэглэгчийн профайл
 function phEmail(ph){return normPhone(ph)+'@bolzii.app';}
@@ -1424,7 +1437,7 @@ let dates=[];
 /* ============================================================ ROUTER ============================================================ */
 /* ---- Утасны "буцах" товчоор апп-аас гарахгүй: нээлттэй давхаргыг хаана ---- */
 let _ovStack=[],_fromPop=false,_ignorePop=false;
-const _OVL_IDS=['detailView','chatView','monitorView','lockView','vipModal','promoModal','blockReasonModal','pwModal','payView','blindView','admUserView','notifPanel','lightbox','rulesModal','installModal','guideModal','blindRegModal','lockedModal'];
+const _OVL_IDS=['detailView','chatView','monitorView','waView','lockView','vipModal','promoModal','blockReasonModal','pwModal','payView','blindView','admUserView','notifPanel','lightbox','rulesModal','installModal','guideModal','blindRegModal','lockedModal'];
 function ovOpen(id){const e=document.getElementById(id);if(!e)return;e.classList.add('open');_ovStack.push(id);try{history.pushState({ov:id},'');}catch(_){}}
 function ovClose(id){const e=document.getElementById(id);if(e)e.classList.remove('open');const k=_ovStack.lastIndexOf(id);if(k<0)return;_ovStack.splice(k,1);if(!_fromPop){_ignorePop=true;try{history.back();}catch(_){_ignorePop=false;}}}
 function clearOverlays(){_OVL_IDS.forEach(id=>{const e=document.getElementById(id);if(e)e.classList.remove('open');});_ovStack=[];}
@@ -2670,7 +2683,7 @@ async function admTab(t,btn){
     const total=admData.users.length,activeCount=admData.users.filter(u=>!u.blocked).length,blockedCount=admData.users.filter(u=>u.blocked).length;
     html+=`<div class="adm-filter"><button class="${_userFilter==='all'?'on':''}" onclick="setUserFilter('all')">Бүгд ${total}</button><button class="${_userFilter==='active'?'on':''}" onclick="setUserFilter('active')">Идэвхтэй ${activeCount}</button><button class="${_userFilter==='blocked'?'on':''}" onclick="setUserFilter('blocked')">🚫 Блок ${blockedCount}</button></div>`;
     const filt=admData.users.map((x,i)=>({x,i})).filter(({x})=>_userFilter==='active'?!x.blocked:_userFilter==='blocked'?x.blocked:true);
-    html+=filt.length?filt.map(({x,i})=>`<div class="adm-card" style="cursor:pointer;${x.blocked?'opacity:.65':''}" onclick="admViewUser(${i})"><div class="ph" style="${photoBg(x.ph)}"></div><div class="b"><div class="nm">${x.n}</div><div class="meta">${x.blocked&&x.block_reason?('🚫 '+x.block_reason):x.m}</div></div><span class="adm-pill ${x.blocked?'warn':'ok'}">${x.blocked?'Блоклогдсон':'Идэвхтэй'}</span><div class="acts">${x.blocked?'':`<button class="ok-b" style="background:rgba(201,150,30,.18);color:#a87a12" onclick="event.stopPropagation();admGiftPromoU(${i})" title="Урамшуулал бэлэглэх">🎁</button>`}<button class="ok-b" onclick="event.stopPropagation();admChatUser(${i})" title="Чат бичих">💬</button><button class="${x.blocked?'ok-b':'no-b'}" onclick="event.stopPropagation();toggleBlock(${i})" title="${x.blocked?'Блокоос гаргах':'Блоклох'}">${x.blocked?'🔓':'🚫'}</button></div></div>`).join(''):empty(_userFilter==='blocked'?'Блоклогдсон хэрэглэгч алга 🎉':'Хэрэглэгч алга');
+    html+=filt.length?filt.map(({x,i})=>`<div class="adm-card" style="cursor:pointer;${x.blocked?'opacity:.65':''}" onclick="admViewUser(${i})"><div class="ph" style="${photoBg(x.ph)}"></div><div class="b"><div class="nm">${x.n}</div><div class="meta">${x.blocked&&x.block_reason?('🚫 '+x.block_reason):x.m}</div></div><span class="adm-pill ${x.blocked?'warn':'ok'}">${x.blocked?'Блоклогдсон':'Идэвхтэй'}</span><div class="acts">${x.blocked?'':`<button class="ok-b" style="background:rgba(201,150,30,.18);color:#a87a12" onclick="event.stopPropagation();admGiftPromoU(${i})" title="Урамшуулал бэлэглэх">🎁</button>`}${(x.gender==='f'&&!x.blocked)?`<button class="ok-b" style="background:rgba(168,85,154,.16);color:#a8559a" onclick="event.stopPropagation();admActAsWoman(${i})" title="Бүсгүйн өмнөөс бичих">✍️</button>`:''}<button class="ok-b" onclick="event.stopPropagation();admChatUser(${i})" title="Чат бичих">💬</button><button class="${x.blocked?'ok-b':'no-b'}" onclick="event.stopPropagation();toggleBlock(${i})" title="${x.blocked?'Блокоос гаргах':'Блоклох'}">${x.blocked?'🔓':'🚫'}</button></div></div>`).join(''):empty(_userFilter==='blocked'?'Блоклогдсон хэрэглэгч алга 🎉':'Хэрэглэгч алга');
   }
   else if(t==='dates'){
     html+=`<button class="btn" style="width:100%;margin-bottom:14px;background:linear-gradient(135deg,#c9961e,#e0b020);color:#fff;font-weight:700;border:none;border-radius:30px;padding:13px;" onclick="admRemindWomen()">🛡️ Бүх эмэгтэйд аюулгүй байдлын сануулга илгээх</button>`;
@@ -2745,6 +2758,56 @@ function openMonitor(i){
   if(box)setTimeout(()=>{box.scrollTop=box.scrollHeight;},30);
 }
 function closeMonitor(){ovClose('monitorView');}
+let _waWoman=null,_waPartnerId=null,_waPartners=[];
+async function admActAsWoman(i){
+  const x=admData.users[i];if(!x)return;
+  _waWoman={id:x.id,name:x.n||x.name||'Бүсгүй'};_waPartnerId=null;_waPartners=[];
+  const tt=document.getElementById('waTitle');if(tt)tt.textContent='👩 '+_waWoman.name+' өмнөөс';
+  document.getElementById('waPartners').innerHTML='<div style="padding:10px 12px;color:var(--gray);font-size:12.5px">Ачааллаж байна…</div>';
+  document.getElementById('waMsgs').innerHTML='<div style="padding:20px;text-align:center;color:var(--gray);font-size:13px">Хэнтэй чатлахаа дээрээс сонгоно уу</div>';
+  ovOpen('waView');
+  await waLoadPartners();
+}
+async function waLoadPartners(){
+  try{
+    const {data}=await sb.from('messages').select('from_id,to_id,text,created_at').or(`from_id.eq.${_waWoman.id},to_id.eq.${_waWoman.id}`).order('created_at',{ascending:true});
+    const partners={};
+    (data||[]).forEach(m=>{const other=m.from_id===_waWoman.id?m.to_id:m.from_id;if(!partners[other])partners[other]={id:other,msgs:[]};partners[other].msgs.push(m);});
+    const ids=Object.keys(partners);
+    let names={};
+    if(ids.length){const {data:ps}=await sb.from('profiles').select('id,name').in('id',ids);(ps||[]).forEach(p=>names[p.id]=p.name);}
+    _waPartners=ids.map(id=>({id,name:names[id]||'Хэрэглэгч',msgs:partners[id].msgs,_at:partners[id].msgs[partners[id].msgs.length-1].created_at})).sort((a,b)=>new Date(b._at)-new Date(a._at));
+    waRenderPartners();
+  }catch(e){document.getElementById('waPartners').innerHTML='<div style="padding:10px 12px;color:var(--red);font-size:12px">Алдаа: '+esc(e.message||'')+'</div>';}
+}
+function waRenderPartners(){
+  const box=document.getElementById('waPartners');if(!box)return;
+  box.innerHTML=_waPartners.length?_waPartners.map((p,i)=>`<button class="wa-partner${p.id===_waPartnerId?' on':''}" onclick="waSelectPartner(${i})">${esc(p.name)}</button>`).join(''):'<div style="padding:10px 12px;color:var(--gray);font-size:12.5px">Энэ бүсгүйд яриа алга</div>';
+}
+function waSelectPartner(i){
+  const p=_waPartners[i];if(!p)return;
+  _waPartnerId=p.id;waRenderPartners();waRenderMsgs();
+}
+function waRenderMsgs(){
+  const box=document.getElementById('waMsgs');if(!box)return;
+  const p=_waPartners.find(x=>x.id===_waPartnerId);
+  if(!p){box.innerHTML='<div style="padding:20px;text-align:center;color:var(--gray);font-size:13px">Хэнтэй чатлахаа дээрээс сонгоно уу</div>';return;}
+  box.innerHTML=p.msgs.map(m=>{const mine=m.from_id===_waWoman.id;return `<div class="mon-msg ${mine?'r':'l'}"><div class="mon-bub">${esc(m.text||'')}</div><div class="mon-time">${mine?(_waWoman.name+' · '):''}${msgTime(m.created_at)}</div></div>`;}).join('');
+  setTimeout(()=>{box.scrollTop=box.scrollHeight;},30);
+}
+async function waSend(){
+  if(!_waWoman||!_waPartnerId){toast('Хэнтэй чатлахаа сонгоно уу');return;}
+  const inp=document.getElementById('waInput');const t=(inp&&inp.value||'').trim();if(!t)return;
+  inp.value='';
+  try{
+    const {error}=await sb.from('messages').insert({from_id:_waWoman.id,to_id:_waPartnerId,text:t});
+    if(error){if(/policy|permission|row-level/i.test(error.message||''))toast('⚠️ msg_admin_insert SQL ажиллуулна уу');else toast('Алдаа: '+error.message);return;}
+    const p=_waPartners.find(x=>x.id===_waPartnerId);
+    if(p)p.msgs.push({from_id:_waWoman.id,to_id:_waPartnerId,text:t,created_at:new Date().toISOString()});
+    waRenderMsgs();
+  }catch(e){toast('Алдаа гарлаа');}
+}
+function closeWa(){ovClose('waView');}
 async function toggleBlock(i){
   const x=admData.users[i];if(!x)return;
   if(x.blocked){
@@ -3097,15 +3160,41 @@ function showOSNotification(icon,title,body){
 }
 function ensureNotifPermission(){
   try{
-    if('Notification' in window && Notification.permission==='default'){Notification.requestPermission();}
+    if(!('Notification' in window))return;
+    if(Notification.permission==='default'){Notification.requestPermission().then(p=>{if(p==='granted')enablePush();});}
+    else if(Notification.permission==='granted'){enablePush();}
   }catch(e){}
+}
+function urlBase64ToUint8Array(b64){
+  const pad='='.repeat((4-b64.length%4)%4);
+  const base64=(b64+pad).replace(/-/g,'+').replace(/_/g,'/');
+  const raw=atob(base64);const arr=new Uint8Array(raw.length);
+  for(let i=0;i<raw.length;i++)arr[i]=raw.charCodeAt(i);
+  return arr;
+}
+let _pushBusy=false;
+async function enablePush(){
+  try{
+    if(_pushBusy||!me||me.is_admin)return;
+    if(!('serviceWorker' in navigator)||!('PushManager' in window)||!('Notification' in window))return;
+    if(Notification.permission!=='granted')return;
+    _pushBusy=true;
+    const reg=await navigator.serviceWorker.ready;
+    let sub=await reg.pushManager.getSubscription();
+    if(!sub){sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:urlBase64ToUint8Array(VAPID_PUBLIC)});}
+    const j=sub.toJSON();
+    if(j&&j.endpoint&&j.keys&&j.keys.p256dh&&j.keys.auth){
+      await sb.from('push_subscriptions').upsert({user_id:me.id,endpoint:j.endpoint,p256dh:j.keys.p256dh,auth:j.keys.auth,updated_at:new Date().toISOString()},{onConflict:'user_id,endpoint'});
+    }
+  }catch(e){console.error('enablePush',e);}
+  finally{_pushBusy=false;}
 }
 function enableNotifs(){
   try{
     if(!('Notification' in window)){toast('Энэ төхөөрөмж мэдэгдэл дэмжихгүй байна');return;}
     if(Notification.permission==='granted'){toast('✓ Мэдэгдэл аль хэдийн асаалттай');return;}
     if(Notification.permission==='denied'){toast('Браузерын тохиргооноос мэдэгдлийг зөвшөөрнө үү');return;}
-    Notification.requestPermission().then(p=>{toast(p==='granted'?'🔔 Мэдэгдэл асаалаа!':'Мэдэгдэл идэвхжсэнгүй');});
+    Notification.requestPermission().then(p=>{toast(p==='granted'?'🔔 Мэдэгдэл асаалаа!':'Мэдэгдэл идэвхжсэнгүй');if(p==='granted')enablePush();});
   }catch(e){toast('Алдаа гарлаа');}
 }
 function bumpBell(){
@@ -3187,7 +3276,7 @@ function unlockAudio(){
   }catch(e){}
 }
 try{window.addEventListener('pointerdown',unlockAudio,{passive:true});window.addEventListener('touchstart',unlockAudio,{passive:true});window.addEventListener('click',unlockAudio,{passive:true});}catch(e){}
-const APP_VERSION='v92';
+const APP_VERSION='v94';
 try{document.getElementById('verBadge').textContent='Хоёулаа Болзий '+APP_VERSION;}catch(_){}
 loadSettings();
 restoreSession();
