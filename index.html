@@ -542,6 +542,9 @@ body.dark .date-remind-top{background:linear-gradient(135deg,#3a2e12,#2c2410);co
 .mon-head{display:flex;align-items:center;gap:10px;padding:15px 16px;border-bottom:1px solid var(--gray-bg);background:var(--card);flex:0 0 auto;}
 .mon-h-title{font-weight:800;font-size:15px;color:var(--ink);}
 .mon-back{background:var(--gray-bg);border:none;color:var(--ink);width:34px;height:34px;border-radius:50%;font-size:24px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;flex:0 0 auto;}
+.vip-perks{display:flex;flex-direction:column;gap:9px;margin-bottom:14px;}
+.vip-perk{display:flex;gap:11px;align-items:flex-start;background:rgba(246,196,83,.13);border:1px solid rgba(201,150,30,.22);border-radius:12px;padding:11px 13px;font-size:13px;line-height:1.45;color:var(--ink);}
+.vip-perk span{font-size:18px;flex:0 0 auto;line-height:1.2;}
 .mon-h-sub{font-size:11px;color:var(--gray);}
 .mon-msgs{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:16px;display:flex;flex-direction:column;gap:10px;}
 .mon-msg{max-width:84%;}
@@ -698,7 +701,13 @@ body.dark .date-remind-top{background:linear-gradient(135deg,#3a2e12,#2c2410);co
   <div class="rules-modal" id="vipModal">
     <div class="rm-head"><span>VIP эрх авах 👑</span><button onclick="closeVipModal()">✕</button></div>
     <div class="rm-body">
-      <p class="lead">VIP болсноор: хэн танд таалагдсаныг харах, найзын хүсэлтгүйгээр бусдыг шууд харах, хязгааргүй сонголт.</p>
+      <p class="lead">VIP болсноор онцгой боломжууд нээгдэнэ 👑</p>
+      <div class="vip-perks">
+        <div class="vip-perk"><span>💬</span><div><b>Шууд чатлах</b> — найзын хүсэлт хүлээхгүйгээр хүссэн хүнтэйгээ шууд чат бичнэ.</div></div>
+        <div class="vip-perk"><span>👀</span><div><b>Хэн танд таалагдсаныг</b> бүгдийг харна.</div></div>
+        <div class="vip-perk"><span>🔓</span><div><b>VIP профайлуудыг</b> түгжээгүй шууд харна.</div></div>
+        <div class="vip-perk"><span>♾️</span><div><b>Хязгааргүй</b> таалагдах, сонгох эрх.</div></div>
+      </div>
       <div id="vmPromo" style="display:none;background:linear-gradient(135deg,#c9961e,#e0b020);color:#fff;border-radius:12px;padding:10px 14px;font-size:13px;margin-bottom:12px;line-height:1.5;"></div>
       <div class="pend-pay">
         <div class="pp-title">💳 VIP төлбөр</div>
@@ -840,7 +849,7 @@ body.dark .date-remind-top{background:linear-gradient(135deg,#3a2e12,#2c2410);co
       <div class="feat"><div class="ic">💞</div><div><b>Харилцан сонголт</b><span>Хоёр тал бие биенээ таалбал тохирч, чатлах боломжтой болно.</span></div></div>
       <div class="feat"><div class="ic">📅</div><div><b>Бид болзоог зохион байгуулна</b><span>Газар, цаг санал болгож, хоёр тал баталгаажуулаад, цаг ойртоход сануулна.</span></div></div>
       <div class="feat"><div class="ic">🔔</div><div><b>Сануулга</b><span>Болзооноос 2 цагийн өмнө хоёуланд нь мэдэгдэнэ — чатаар үлдэхгүй, бодит уулзалт.</span></div></div>
-      <div class="feat"><div class="ic">👑</div><div><b>VIP эрх</b><span>VIP хэрэглэгч бусдыг найзын хүсэлтгүй шууд харна. Мөн VIP-ийн профайл хамгаалагдаж, зөвхөн зөвшөөрсөн хүнд харагдана.</span></div></div>
+      <div class="feat"><div class="ic">👑</div><div><b>VIP эрх</b><span>VIP хэрэглэгч хүн болгонтой <b>найзын хүсэлтгүйгээр шууд чатлана</b>, хэн танд таалагдсаныг хардаг, VIP профайлуудыг түгжээгүй харна. VIP-ийн өөрийн профайл ч хамгаалагдаж, зөвхөн зөвшөөрсөн хүнд харагдана.</span></div></div>
       <div class="feat"><div class="ic">👤</div><div><b>Найзын хүсэлт</b><span>Бусдад найзын хүсэлт илгээж, ирсэн хүсэлтийг зурагтай нь хараад зөвшөөрөх/татгалзах боломжтой.</span></div></div>
       <div class="feat"><div class="ic">🎲</div><div><b>Сохор болзоо</b><span>Хэн болохыг урьдчилан мэдэхгүй — апп насанд ойролцоо, эсрэг хүйсийн хүнтэй болзоог зохион байгуулна. Нэр, зураг нь нөгөө тал зөвшөөрсний дараа нээгдэнэ.</span></div></div>
       <div class="feat"><div class="ic">🎀</div><div><b>Болзоо зохион байгуулах багц</b><span>Энгийнээс VIP хүртэл 5 багц — ресторан захиалга, цэцэг, тээвэр, хувийн зохион байгуулагч зэрэг.</span></div></div>
@@ -2014,15 +2023,15 @@ function openProfile(i){
   document.getElementById('dvStats').innerHTML=st.join('');
   document.getElementById('dvBio').textContent=p.bio||'—';
   document.getElementById('dvTags').innerHTML=(p.tags||[]).map(t=>`<span class="tag-d">${t}</span>`).join('');
-  // үйлдэл: найз бол чатлах, эс бол хүсэлт/таалагдах
+  // үйлдэл: найз бол чатлах; VIP бол шууд чатлах; эс бол хүсэлт/таалагдах
   const isFriend=chats.some(c=>c.id===p.id);
-  document.getElementById('dvActions').innerHTML=isLocked()
-    ? `<button class="da-pass" style="flex:1" onclick="closeProfile();openLockedModal()">🔒 Бүртгэлээ баталгаажуулна уу</button>`
-    : (isFriend
-    ? `<button class="da-like" style="flex:1" onclick="closeProfile();openChatById('${p.id}')">💬 Чат бичих</button>`
-    : (sentReqIds.has(p.id)
-      ? `<button class="da-pass" style="flex:1" onclick="cancelFR('${p.id}')">⏳ Хүсэлт цуцлах</button>`
-      : `<button class="da-pass" onclick="sendFriendReq()">👤 Найзын хүсэлт</button><button class="da-like" onclick="likeUser()">❤️ Таалагдлаа</button>`));
+  let actHtml;
+  if(isLocked()){actHtml=`<button class="da-pass" style="flex:1" onclick="closeProfile();openLockedModal()">🔒 Бүртгэлээ баталгаажуулна уу</button>`;}
+  else if(isFriend){actHtml=`<button class="da-like" style="flex:1" onclick="closeProfile();openChatById('${p.id}')">💬 Чат бичих</button>`;}
+  else if(myVip){actHtml=`<button class="da-like" style="flex:1" onclick="startDirectChat('${p.id}')">💬 Шууд чатлах <span style="font-size:11px;opacity:.9">👑 VIP</span></button>`;}
+  else if(sentReqIds.has(p.id)){actHtml=`<button class="da-pass" style="flex:1" onclick="cancelFR('${p.id}')">⏳ Хүсэлт цуцлах</button>`;}
+  else{actHtml=`<button class="da-pass" onclick="sendFriendReq()">👤 Найзын хүсэлт</button><button class="da-like" onclick="likeUser()">❤️ Таалагдлаа</button>`;}
+  document.getElementById('dvActions').innerHTML=actHtml;
   ovOpen('detailView');
 }
 function openLock(i){
@@ -2033,6 +2042,15 @@ function openLock(i){
   ovOpen('lockView');
 }
 function closeLock(){ovClose('lockView');}
+function startDirectChat(id){
+  if(blockedStop())return;
+  if(!myVip){toast('VIP болж хүн болгонтой шууд чатлаарай 👑');becomeVip();return;}
+  const p=people.find(x=>x.id===id)||people[curProfile];if(!p){toast('Алдаа гарлаа');return;}
+  let idx=chats.findIndex(c=>c.id===id);
+  if(idx<0){chats.unshift({id:p.id,n:p.n,ph:p.ph||'',last:'',time:'',_at:'',msgs:[],loaded:false,unread:0});idx=chats.findIndex(c=>c.id===id);}
+  closeProfile();
+  openChat(idx);
+}
 function becomeVip(){
   if(blockedStop())return;
   if(myVip){toast('Та аль хэдийн VIP байна 👑');return;}
@@ -3074,7 +3092,7 @@ function fallbackCopy(t){try{const ta=document.createElement('textarea');ta.valu
 fillAimags();renderBank();
 applyTheme();
 try{window.addEventListener('pointerdown',function(){try{_actx=_actx||new(window.AudioContext||window.webkitAudioContext)();if(_actx.state==='suspended')_actx.resume();}catch(e){}});}catch(e){}
-const APP_VERSION='v87';
+const APP_VERSION='v88';
 try{document.getElementById('verBadge').textContent='Хоёулаа Болзий '+APP_VERSION;}catch(_){}
 loadSettings();
 restoreSession();
