@@ -163,7 +163,7 @@ body{
 .remember-login input{width:17px;height:17px;accent-color:var(--red);cursor:pointer;}
 /* notifications */
 .bell-btn{position:relative;width:38px;height:38px;border-radius:50%;border:none;background:var(--pink-bg);font-size:17px;cursor:pointer;display:flex;align-items:center;justify-content:center;}
-.bell-badge{position:absolute;top:-2px;right:-2px;min-width:17px;height:17px;padding:0 4px;border-radius:9px;background:var(--red);color:#fff;font-size:10px;font-weight:800;display:flex;align-items:center;justify-content:center;border:2px solid var(--bg);}
+.bell-badge{position:absolute;top:-2px;right:-2px;min-width:17px;height:17px;padding:0 4px;border-radius:9px;background:var(--red);color:#fff;font-size:10px;font-weight:800;display:flex;align-items:center;justify-content:center;border:2px solid var(--card);}
 .notif-banner{position:absolute;bottom:calc(96px + env(safe-area-inset-bottom));left:12px;right:12px;z-index:60;display:flex;align-items:center;gap:11px;padding:12px 14px;border-radius:16px;background:var(--card);box-shadow:0 16px 40px -12px rgba(58,33,40,.5);border:1px solid var(--gray-bg);transform:translateY(220%);opacity:0;pointer-events:none;transition:transform .35s cubic-bezier(.2,.9,.3,1.3),opacity .25s;cursor:pointer;}
 .notif-banner.show{transform:translateY(0);opacity:1;pointer-events:auto;}
 .notif-banner .nb-ic{width:38px;height:38px;border-radius:12px;background:linear-gradient(135deg,var(--red),var(--pink));display:flex;align-items:center;justify-content:center;font-size:19px;flex:0 0 auto;}
@@ -537,10 +537,11 @@ body.dark .date-remind-top{background:linear-gradient(135deg,#3a2e12,#2c2410);co
 .adm-pill{font-size:10.5px;font-weight:800;padding:4px 9px;border-radius:20px;}
 .adm-filter{display:flex;gap:7px;margin-bottom:14px;}.adm-filter button{flex:1;padding:9px 4px;border-radius:20px;border:1px solid var(--gray-bg);background:var(--card);color:var(--gray);font-family:var(--body);font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;}
 .adm-filter button.on{background:linear-gradient(135deg,var(--red),var(--pink));color:#fff;border-color:transparent;}
-.mon-view{position:fixed;inset:0;z-index:600;display:none;flex-direction:column;background:var(--bg);}
+.mon-view{position:fixed;inset:0;z-index:600;display:none;flex-direction:column;background:var(--pink-bg);}
 .mon-view.open{display:flex;}
-.mon-head{display:flex;align-items:center;gap:10px;padding:15px 16px;border-bottom:1px solid var(--line);background:var(--card);flex:0 0 auto;}
+.mon-head{display:flex;align-items:center;gap:10px;padding:15px 16px;border-bottom:1px solid var(--gray-bg);background:var(--card);flex:0 0 auto;}
 .mon-h-title{font-weight:800;font-size:15px;color:var(--ink);}
+.mon-back{background:var(--gray-bg);border:none;color:var(--ink);width:34px;height:34px;border-radius:50%;font-size:24px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;flex:0 0 auto;}
 .mon-h-sub{font-size:11px;color:var(--gray);}
 .mon-msgs{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:16px;display:flex;flex-direction:column;gap:10px;}
 .mon-msg{max-width:84%;}
@@ -1217,7 +1218,7 @@ body.dark .date-remind-top{background:linear-gradient(135deg,#3a2e12,#2c2410);co
     </div>
   </div>
   <div class="mon-view" id="monitorView">
-    <div class="mon-head"><button class="bc-back" onclick="closeMonitor()">‹</button><div><div class="mon-h-title" id="monTitle"></div><div class="mon-h-sub">Зөвхөн харах · аюулгүй байдлын хяналт</div></div></div>
+    <div class="mon-head"><button class="mon-back" onclick="closeMonitor()">‹</button><div><div class="mon-h-title" id="monTitle"></div><div class="mon-h-sub">Зөвхөн харах · аюулгүй байдлын хяналт</div></div></div>
     <div class="mon-msgs" id="monMsgs"></div>
   </div>
   <div class="toast" id="toast"></div>
@@ -2186,6 +2187,7 @@ function openChatById(id){
 let rtChannel=null;
 let _adminId=null;
 let _userFilter='all';
+let _monView='chats';
 let _blockWatch=null;
 function startBlockWatch(){
   clearInterval(_blockWatch);
@@ -2463,14 +2465,15 @@ async function admTab(t,btn){
     try{const {data:s}=await sb.from('stats').select('views').eq('id',1).maybeSingle();admData.stats.views=(s&&s.views)||0;}catch(e){admData.stats.viewsErr=(e&&e.message)||'';}
   }
   if(t==='monitor'){
-    admData.monitor=[];admData.monitorErr='';
+    admData.monitor=[];admData.monitorErr='';admData.monFriends=[];admData.monFriendsErr='';
+    let pmap={};
     try{
       const [mr,pr]=await Promise.all([
         sb.from('messages').select('from_id,to_id,text,created_at').order('created_at',{ascending:true}),
         sb.from('profiles').select('id,name,is_admin,photo_url')
       ]);
       if(mr.error)throw mr.error;
-      const pmap={};(pr.data||[]).forEach(p=>pmap[p.id]=p);
+      (pr.data||[]).forEach(p=>pmap[p.id]=p);
       const adminIds=new Set((pr.data||[]).filter(p=>p.is_admin).map(p=>p.id));
       const pairs={};
       (mr.data||[]).forEach(m=>{
@@ -2481,6 +2484,11 @@ async function admTab(t,btn){
       });
       admData.monitor=Object.values(pairs).map(p=>{const last=p.msgs[p.msgs.length-1];return {a:pmap[p.ids[0]]||{id:p.ids[0],name:'?'},b:pmap[p.ids[1]]||{id:p.ids[1],name:'?'},last:last?last.text:'',at:last?last.created_at:'',count:p.msgs.length,msgs:p.msgs};}).sort((x,y)=>new Date(y.at||0)-new Date(x.at||0));
     }catch(e){admData.monitorErr=(e&&e.message)||'тодорхойгүй';}
+    try{
+      const {data:fr,error:fe}=await sb.from('friend_requests').select('from_id,to_id,status,created_at').order('created_at',{ascending:false});
+      if(fe)throw fe;
+      admData.monFriends=(fr||[]).map(f=>({from:pmap[f.from_id]||{name:'?'},to:pmap[f.to_id]||{name:'?'},status:f.status||'pending',at:f.created_at}));
+    }catch(e){admData.monFriendsErr=(e&&e.message)||'тодорхойгүй';}
   }
   if(t==='dates'){
     admData.datesErr='';
@@ -2579,9 +2587,16 @@ async function admTab(t,btn){
     html+=chats.length?chats.map((c,i)=>`<div class="adm-card" style="cursor:pointer" onclick="admOpenChat(${i})"><div class="ph" style="${photoBg(c.ph)}"></div><div class="b"><div class="nm">${c.n||'Хэрэглэгч'}</div><div class="meta">${((c.last||'').slice(0,42))||'Шинэ харилцаа'}</div></div>${c.unread?`<span class="adm-pill warn">${c.unread}</span>`:''}<div class="acts"><button class="ok-b" onclick="event.stopPropagation();admOpenChat(${i})" title="Чат нээх">💬</button></div></div>`).join(''):empty('Одоогоор харилцаа алга. «Хэрэглэгчид» табаас хэрэглэгч сонгоод 💬 дарж чат эхлүүлээрэй.');
   }
   else if(t==='monitor'){
-    html+=`<div style="background:var(--pink-bg);border-radius:12px;padding:11px 14px;font-size:12px;color:var(--red-deep);line-height:1.5;margin-bottom:14px">🔍 <b>Аюулгүй байдлын хяналт.</b> Хэрэглэгч хоорондын чатыг харах боломжтой. Үүнийг үйлчилгээний нөхцөлдөө <b>ил тод</b> бичихийг зөвлөж байна.</div>`;
-    if(admData.monitorErr)html+=`<div style="background:rgba(226,62,87,.1);color:var(--red);border-radius:12px;padding:11px 14px;font-size:12px;margin-bottom:12px;line-height:1.5">⚠️ Алдаа: ${esc(admData.monitorErr)}<br>«msg_admin_read» SQL-г ажиллуулсан эсэхээ шалгана уу.</div>`;
-    html+=(admData.monitor&&admData.monitor.length)?admData.monitor.map((p,i)=>`<div class="adm-card" style="cursor:pointer" onclick="openMonitor(${i})"><div class="ph" style="${photoBg(p.a.photo_url||'')}"></div><div class="b"><div class="nm">${esc(p.a.name||'?')} ↔ ${esc(p.b.name||'?')}</div><div class="meta">${esc((p.last||'').slice(0,42))}${(p.last||'').length>42?'…':''}</div></div><span class="adm-pill ok">${p.count}</span></div>`).join(''):(admData.monitorErr?'':empty('Хэрэглэгч хоорондын чат алга'));
+    html+=`<div style="background:var(--pink-bg);border-radius:12px;padding:11px 14px;font-size:12px;color:var(--red-deep);line-height:1.5;margin-bottom:14px">🔍 <b>Аюулгүй байдлын хяналт.</b> Хэрэглэгчдийн чат болон найзын хүсэлтийг харах боломжтой. Үүнийг үйлчилгээний нөхцөлдөө <b>ил тод</b> бичихийг зөвлөж байна.</div>`;
+    html+=`<div class="adm-filter"><button class="${_monView==='chats'?'on':''}" onclick="setMonView('chats')">💬 Чатууд ${(admData.monitor||[]).length}</button><button class="${_monView==='friends'?'on':''}" onclick="setMonView('friends')">🤝 Найзын хүсэлт ${(admData.monFriends||[]).length}</button></div>`;
+    if(_monView==='friends'){
+      if(admData.monFriendsErr)html+=`<div style="background:rgba(226,62,87,.1);color:var(--red);border-radius:12px;padding:11px 14px;font-size:12px;margin-bottom:12px;line-height:1.5">⚠️ Алдаа: ${esc(admData.monFriendsErr)}<br>«fr_admin_read» SQL-г ажиллуулсан эсэхээ шалгана уу.</div>`;
+      const stMap={pending:['Хүлээгдэж буй','warn'],accepted:['Зөвшөөрсөн','ok'],declined:['Татгалзсан','no'],rejected:['Татгалзсан','no']};
+      html+=(admData.monFriends&&admData.monFriends.length)?admData.monFriends.map(f=>{const st=stMap[f.status]||[f.status,'warn'];return `<div class="adm-card"><div class="ph" style="${photoBg(f.from.photo_url||'')}"></div><div class="b"><div class="nm">${esc(f.from.name||'?')} → ${esc(f.to.name||'?')}</div><div class="meta">${msgTime(f.at)}</div></div><span class="adm-pill ${st[1]}">${st[0]}</span></div>`;}).join(''):(admData.monFriendsErr?'':empty('Найзын хүсэлт алга'));
+    }else{
+      if(admData.monitorErr)html+=`<div style="background:rgba(226,62,87,.1);color:var(--red);border-radius:12px;padding:11px 14px;font-size:12px;margin-bottom:12px;line-height:1.5">⚠️ Алдаа: ${esc(admData.monitorErr)}<br>«msg_admin_read» SQL-г ажиллуулсан эсэхээ шалгана уу.</div>`;
+      html+=(admData.monitor&&admData.monitor.length)?admData.monitor.map((p,i)=>`<div class="adm-card" style="cursor:pointer" onclick="openMonitor(${i})"><div class="ph" style="${photoBg(p.a.photo_url||'')}"></div><div class="b"><div class="nm">${esc(p.a.name||'?')} ↔ ${esc(p.b.name||'?')}</div><div class="meta">${esc((p.last||'').slice(0,42))}${(p.last||'').length>42?'…':''}</div></div><span class="adm-pill ok">${p.count}</span></div>`).join(''):(admData.monitorErr?'':empty('Хэрэглэгч хоорондын чат алга'));
+    }
   }
   else if(t==='settings'){
     html+=`<div style="font-family:var(--display);font-size:17px;color:var(--red-deep);font-weight:600;margin-bottom:14px;">Миний профайл</div>
@@ -2615,6 +2630,7 @@ async function admTab(t,btn){
   body.innerHTML=html;
 }
 function setUserFilter(f){_userFilter=f;if(_admCurTab==='users')admTab('users');}
+function setMonView(v){_monView=v;if(_admCurTab==='monitor')admTab('monitor');}
 function openMonitor(i){
   const p=admData.monitor&&admData.monitor[i];if(!p)return;
   const tt=document.getElementById('monTitle');if(tt)tt.textContent=(p.a.name||'?')+' ↔ '+(p.b.name||'?');
@@ -3058,7 +3074,7 @@ function fallbackCopy(t){try{const ta=document.createElement('textarea');ta.valu
 fillAimags();renderBank();
 applyTheme();
 try{window.addEventListener('pointerdown',function(){try{_actx=_actx||new(window.AudioContext||window.webkitAudioContext)();if(_actx.state==='suspended')_actx.resume();}catch(e){}});}catch(e){}
-const APP_VERSION='v85';
+const APP_VERSION='v87';
 try{document.getElementById('verBadge').textContent='Хоёулаа Болзий '+APP_VERSION;}catch(_){}
 loadSettings();
 restoreSession();
