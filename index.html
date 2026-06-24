@@ -1494,6 +1494,7 @@ async function initApp(){
   await loadFriendReqs();
   await loadContacts();
   setupRealtime();
+  setupAdminWatch();
   startBlockWatch();
   startTrialWatch();
   startMsgPoll();
@@ -1523,7 +1524,8 @@ async function loadFriendReqs(){
     const ids=[...new Set((data||[]).map(r=>r.from_id))];
     let profs={};
     if(ids.length){const {data:ps}=await sb.from('profiles').select('id,name,photo_url').in('id',ids);(ps||[]).forEach(p=>profs[p.id]=p);}
-    friendReqs=(data||[]).map(r=>({reqId:r.id,fromId:r.from_id,n:(profs[r.from_id]||{}).name||'Хэрэглэгч',ph:(profs[r.from_id]||{}).photo_url||''}));
+    const seenFr=new Set();
+    friendReqs=(data||[]).filter(r=>{if(seenFr.has(r.from_id))return false;seenFr.add(r.from_id);return true;}).map(r=>({reqId:r.id,fromId:r.from_id,n:(profs[r.from_id]||{}).name||'Хэрэглэгч',ph:(profs[r.from_id]||{}).photo_url||''}));
   }catch(e){console.error('loadFriendReqs',e);friendReqs=[];}
   try{
     const {data:sent}=await sb.from('friend_requests').select('to_id').eq('from_id',me.id).eq('status','pending');
@@ -2379,7 +2381,27 @@ function setupRealtime(){
       .subscribe();
   }catch(e){console.error('realtime',e);}
 }
-function teardownRealtime(){try{if(rtChannel){sb.removeChannel(rtChannel);rtChannel=null;}}catch(e){}try{clearInterval(_blockWatch);_blockWatch=null;}catch(e){}try{clearInterval(_trialInt);_trialInt=null;}catch(e){}try{clearInterval(_msgPoll);_msgPoll=null;}catch(e){}}
+let _admChannel=null;
+function setupAdminWatch(){
+  teardownAdminWatch();
+  if(!me||!me.is_admin)return;
+  try{
+    _admChannel=sb.channel('adm-watch-'+me.id)
+      .on('postgres_changes',{event:'INSERT',schema:'public',table:'profiles'},payload=>{
+        const p=payload.new;if(!p||p.id===me.id)return;
+        notify('🆕','Шинэ хэрэглэгч',(p.name||'Хэн нэгэн')+' ('+(p.gender==='f'?'эмэгтэй':'эрэгтэй')+') бүртгүүллээ');
+      })
+      .on('postgres_changes',{event:'INSERT',schema:'public',table:'friend_requests'},async payload=>{
+        const r=payload.new;if(!r)return;
+        let fromN='Хэн нэгэн',toN='хэн нэгэн';
+        try{const {data}=await sb.from('profiles').select('id,name').in('id',[r.from_id,r.to_id]);(data||[]).forEach(x=>{if(x.id===r.from_id)fromN=x.name||fromN;if(x.id===r.to_id)toN=x.name||toN;});}catch(e){}
+        notify('🤝','Найзын хүсэлт',fromN+' → '+toN);
+      })
+      .subscribe();
+  }catch(e){console.error('adminwatch',e);}
+}
+function teardownAdminWatch(){try{if(_admChannel){sb.removeChannel(_admChannel);_admChannel=null;}}catch(e){}}
+function teardownRealtime(){try{if(rtChannel){sb.removeChannel(rtChannel);rtChannel=null;}}catch(e){}try{teardownAdminWatch();}catch(e){}try{clearInterval(_blockWatch);_blockWatch=null;}catch(e){}try{clearInterval(_trialInt);_trialInt=null;}catch(e){}try{clearInterval(_msgPoll);_msgPoll=null;}catch(e){}}
 
 /* ============================================================ DATES (app organizes) ============================================================ */
 async function loadDates(){
@@ -2825,7 +2847,7 @@ async function waLoadReqs(){
     const ids=(data||[]).map(r=>r.from_id);
     let names={};
     if(ids.length){const {data:ps}=await sb.from('profiles').select('id,name').in('id',ids);(ps||[]).forEach(p=>names[p.id]=p.name);}
-    _waReqs=(data||[]).map(r=>({reqId:r.id,from:r.from_id,name:names[r.from_id]||'Хэрэглэгч'}));
+    _waReqs=(data||[]).filter((r,i,arr)=>arr.findIndex(x=>x.from_id===r.from_id)===i).map(r=>({reqId:r.id,from:r.from_id,name:names[r.from_id]||'Хэрэглэгч'}));
     waRenderReqs();
   }catch(e){const rq=document.getElementById('waReqs');if(rq)rq.style.display='none';}
 }
@@ -3359,7 +3381,7 @@ function unlockAudio(){
   }catch(e){}
 }
 try{window.addEventListener('pointerdown',unlockAudio,{passive:true});window.addEventListener('touchstart',unlockAudio,{passive:true});window.addEventListener('click',unlockAudio,{passive:true});}catch(e){}
-const APP_VERSION='v96';
+const APP_VERSION='v98';
 try{document.getElementById('verBadge').textContent='Хоёулаа Болзий '+APP_VERSION;}catch(_){}
 loadSettings();
 restoreSession();
