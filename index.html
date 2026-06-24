@@ -1165,7 +1165,16 @@ body.dark .date-remind-top{background:linear-gradient(135deg,#3a2e12,#2c2410);co
         <div style="font-size:60px;margin-bottom:6px">⛔</div>
         <h2 style="font-family:var(--display);font-size:24px;color:var(--ink);margin:4px 0 10px;font-weight:600">Бүртгэл хязгаарлагдсан</h2>
         <p style="font-size:14px;color:var(--gray);line-height:1.6;max-width:300px;margin-bottom:14px">Таны бүртгэлийг түр хязгаарласан байна. Та зөвхөн админтай чатлах боломжтой.</p>
-        <div id="blkReason" style="display:none;background:var(--pink-bg);color:var(--red-deep);border-radius:12px;padding:11px 16px;font-size:13.5px;font-weight:700;max-width:300px;margin-bottom:20px"></div>
+        <div id="blkReason" style="display:none;background:var(--pink-bg);color:var(--red-deep);border-radius:12px;padding:11px 16px;font-size:13.5px;font-weight:700;max-width:300px;margin-bottom:16px"></div>
+        <div id="blkPay" style="display:none;background:var(--cream);border:1px solid var(--gray-bg);border-radius:14px;padding:14px 16px;max-width:300px;margin-bottom:18px;text-align:left">
+          <div style="font-size:13px;font-weight:800;color:var(--ink);margin-bottom:10px;text-align:center">💳 Төлбөрөө төлөөд бүртгэлээ идэвхжүүлээрэй</div>
+          <div class="bank-row"><span>Банк</span><b id="blkBank"></b></div>
+          <div class="bank-row"><span>Данс</span><b id="blkAccount"></b></div>
+          <div class="bank-row"><span>Хүлээн авагч</span><b id="blkRecipient"></b></div>
+          <div class="bank-row"><span>Дүн</span><b id="blkFee"></b></div>
+          <button class="btn btn-primary" style="width:100%;margin-top:10px" onclick="copyAccount()">📋 Дансны дугаар хуулах</button>
+          <div class="bank-note" style="margin-top:8px">⚠️ Гүйлгээний утгад <b>бүртгүүлсэн утасны дугаараа</b> бичнэ үү. Төлбөр баталгаажмагц админ бүртгэлийг тань нээнэ.</div>
+        </div>
         <button class="btn btn-primary" style="width:100%;max-width:280px;margin-bottom:10px" onclick="tab('matches')">💬 Админтай чатлах</button>
         <button class="btn" style="width:100%;max-width:280px;background:var(--gray-bg);color:var(--gray)" onclick="logout()">Гарах</button>
       </div>
@@ -2535,7 +2544,20 @@ function openLockedModal(){
 function showBlockedTab(){
   document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
   const bt=document.getElementById('t-blocked');if(bt)bt.classList.add('active');
-  const r=document.getElementById('blkReason');if(r){const rs=me&&me.block_reason;r.style.display=rs?'block':'none';r.textContent=rs?('Шалтгаан: '+rs):'';}
+  const rs=me&&me.block_reason;
+  const r=document.getElementById('blkReason');if(r){r.style.display=rs?'block':'none';r.textContent=rs?('Шалтгаан: '+rs):'';}
+  const pay=document.getElementById('blkPay');
+  if(pay){
+    const isPay=rs&&/төлбөр|төлөө/i.test(rs);
+    pay.style.display=isPay?'block':'none';
+    if(isPay){
+      const set=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v;};
+      set('blkBank',(settings&&settings.bank)||'');
+      set('blkAccount',(settings&&settings.account)||'');
+      set('blkRecipient',(settings&&settings.recipient)||'');
+      set('blkFee',(settings&&settings.fee)?(fmt(settings.fee)+'₮'):'');
+    }
+  }
 }
 function tab(name,btn){
   if(me&&me.blocked){
@@ -3383,7 +3405,7 @@ function unlockAudio(){
   }catch(e){}
 }
 try{window.addEventListener('pointerdown',unlockAudio,{passive:true});window.addEventListener('touchstart',unlockAudio,{passive:true});window.addEventListener('click',unlockAudio,{passive:true});}catch(e){}
-const APP_VERSION='v100';
+const APP_VERSION='v101';
 try{document.getElementById('verBadge').textContent='Хоёулаа Болзий '+APP_VERSION;}catch(_){}
 loadSettings();
 restoreSession();
