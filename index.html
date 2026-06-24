@@ -374,7 +374,7 @@ body.dark .date-remind-top{background:linear-gradient(135deg,#3a2e12,#2c2410);co
 .toggle.on .track{background:linear-gradient(135deg,var(--red),var(--pink));}
 .toggle.on .knob{left:23px;}
 
-.scroll{flex:1;overflow-y:auto;padding:4px 18px 90px;}
+.scroll{flex:1;overflow-y:auto;padding:4px 18px 120px;}
 .sec-title{font-family:var(--display);font-size:20px;color:var(--red-deep);margin:14px 2px;font-weight:600;}
 .newm{display:flex;gap:13px;overflow-x:auto;padding:2px 2px 12px;}
 .newm::-webkit-scrollbar{display:none;}
@@ -1517,6 +1517,7 @@ async function loadPeople(){
 let allowFR=true;
 let friendReqs=[];
 let sentReqIds=new Set();
+let sentLocal=new Set();
 async function loadFriendReqs(){
   if(!me){friendReqs=[];renderFriendReqs();return;}
   try{
@@ -1529,9 +1530,10 @@ async function loadFriendReqs(){
   }catch(e){console.error('loadFriendReqs',e);friendReqs=[];}
   try{
     const {data:sent}=await sb.from('friend_requests').select('to_id').eq('from_id',me.id).eq('status','pending');
-    sentReqIds=new Set((sent||[]).map(r=>r.to_id));
+    sentReqIds=new Set([...(sent||[]).map(r=>r.to_id),...sentLocal]);
   }catch(e){}
   renderFriendReqs();
+  try{renderGrid();}catch(e){}
 }
 function renderFriendReqs(){
   const w=document.getElementById('frWrap');if(!w)return;
@@ -1545,10 +1547,10 @@ async function quickFR(i,ev){
   if(isLocked()){openLockedModal();return;}
   const p=people[i];if(!me||!p)return;
   if(sentReqIds.has(p.id)){toast('Хүсэлт аль хэдийн илгээсэн');return;}
-  sentReqIds.add(p.id);renderGrid();
+  sentReqIds.add(p.id);sentLocal.add(p.id);renderGrid();
   try{
     const {error}=await sb.from('friend_requests').insert({from_id:me.id,to_id:p.id});
-    if(error&&!/duplicate|unique/i.test(error.message||'')){toast('Алдаа: '+error.message);sentReqIds.delete(p.id);renderGrid();return;}
+    if(error&&!/duplicate|unique/i.test(error.message||'')){toast('Алдаа: '+error.message);sentReqIds.delete(p.id);sentLocal.delete(p.id);renderGrid();return;}
   }catch(e){}
   toast('👤 '+p.n+'-д найзын хүсэлт илгээлээ');
 }
@@ -1575,7 +1577,7 @@ async function sendFriendReq(){
     if(error&&!/duplicate|unique/i.test(error.message||'')){toast('Алдаа: '+error.message);return;}
   }catch(e){}
   toast('👤 '+p.n+'-д найзын хүсэлт илгээлээ');notify('👋','Найзын хүсэлт',p.n+'-д найзын хүсэлт илгээлээ');
-  sentReqIds.add(p.id);
+  sentReqIds.add(p.id);sentLocal.add(p.id);renderGrid();
 }
 async function cancelFR(toId){
   closeProfile();closeLock();
@@ -1584,7 +1586,7 @@ async function cancelFR(toId){
     const {data}=await sb.from('friend_requests').delete().eq('from_id',me.id).eq('to_id',toId).eq('status','pending').select();
     if(!data||!data.length){toast('Цуцлах эрх алдаа — Supabase SQL policy ажиллуулна уу');return;}
   }catch(e){}
-  sentReqIds.delete(toId);
+  sentReqIds.delete(toId);sentLocal.delete(toId);try{renderGrid();}catch(e){}
   toast('Найзын хүсэлтийг цуцаллаа');
 }
 async function acceptFR(i){
@@ -3381,7 +3383,7 @@ function unlockAudio(){
   }catch(e){}
 }
 try{window.addEventListener('pointerdown',unlockAudio,{passive:true});window.addEventListener('touchstart',unlockAudio,{passive:true});window.addEventListener('click',unlockAudio,{passive:true});}catch(e){}
-const APP_VERSION='v98';
+const APP_VERSION='v100';
 try{document.getElementById('verBadge').textContent='Хоёулаа Болзий '+APP_VERSION;}catch(_){}
 loadSettings();
 restoreSession();
