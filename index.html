@@ -3044,8 +3044,9 @@ async function waSend(){
     const {error}=await sb.from('messages').insert({from_id:_waWoman.id,to_id:_waPartnerId,text:t});
     if(error){if(/policy|permission|row-level/i.test(error.message||''))toast('⚠️ msg_admin_insert SQL ажиллуулна уу');else toast('Алдаа: '+error.message);return;}
     const p=_waPartners.find(x=>x.id===_waPartnerId);
-    if(p)p.msgs.push({from_id:_waWoman.id,to_id:_waPartnerId,text:t,created_at:new Date().toISOString()});
-    waRenderMsgs();
+    if(p){p.msgs.push({from_id:_waWoman.id,to_id:_waPartnerId,text:t,created_at:new Date().toISOString()});p._at=new Date().toISOString();}
+    _waPartners.sort((a,b)=>new Date(b._at||0)-new Date(a._at||0));
+    waRenderPartners();waRenderMsgs();
   }catch(e){toast('Алдаа гарлаа');}
 }
 function closeWa(){ovClose('waView');}
@@ -3517,7 +3518,7 @@ function unlockAudio(){
   }catch(e){}
 }
 try{window.addEventListener('pointerdown',unlockAudio,{passive:true});window.addEventListener('touchstart',unlockAudio,{passive:true});window.addEventListener('click',unlockAudio,{passive:true});}catch(e){}
-const APP_VERSION='v104';
+const APP_VERSION='v105';
 try{document.getElementById('verBadge').textContent='Хоёулаа Болзий '+APP_VERSION;}catch(_){}
 loadSettings();
 restoreSession();
