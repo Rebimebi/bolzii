@@ -514,7 +514,7 @@ body.dark .date-remind-top{background:linear-gradient(135deg,#3a2e12,#2c2410);co
 .admin-head{flex:0 0 auto;padding:calc(20px + env(safe-area-inset-top)) 18px 14px;background:var(--card);border-bottom:1px solid rgba(58,33,40,.07);display:flex;align-items:center;justify-content:space-between;}
 .admin-head .ttl{font-family:var(--display);font-size:20px;font-weight:600;color:var(--ink);}
 .admin-head .out{background:var(--gray-bg);border:none;border-radius:30px;padding:8px 14px;font-size:12px;font-weight:700;color:var(--red);cursor:pointer;font-family:var(--body);}
-.admin-tabs{flex:0 0 auto;display:flex;gap:6px;padding:12px 14px;overflow-x:auto;background:var(--card);border-bottom:1px solid rgba(58,33,40,.06);}
+.admin-tabs{flex:0 0 auto;display:flex;flex-wrap:wrap;gap:6px;padding:12px 14px;background:var(--card);border-bottom:1px solid rgba(58,33,40,.06);}
 .admin-tabs::-webkit-scrollbar{display:none;}
 .admin-tabs button{flex:0 0 auto;border:none;background:var(--gray-bg);border-radius:30px;padding:9px 16px;font-size:12.5px;font-weight:700;color:var(--gray);cursor:pointer;font-family:var(--body);}
 .admin-tabs button.on{background:linear-gradient(135deg,var(--red),var(--pink));color:#fff;}
@@ -1507,6 +1507,7 @@ async function initApp(){
   startBlockWatch();
   startTrialWatch();
   startMsgPoll();
+  startAdminPoll();
   await loadDates();
   renderPkgs();renderBlind();renderAvailWomen();renderPublicDates();bumpUnread();
   if(me){applyProfileUI();}
@@ -2257,7 +2258,13 @@ async function loadContacts(){
   }
   renderMatches();bumpUnread();
 }
+function sortChats(){
+  const openId=(curChat>=0&&chats[curChat])?chats[curChat].id:null;
+  chats.sort((a,b)=>{const ta=a._at?new Date(a._at).getTime():0,tb=b._at?new Date(b._at).getTime():0;return tb-ta;});
+  if(openId!=null)curChat=chats.findIndex(c=>c.id===openId);
+}
 function renderMatches(){
+  sortChats();
   const nm=document.getElementById('newMatches');if(nm)nm.innerHTML=chats.slice(0,6).map((c,i)=>`<div class="nm-card" onclick="openChat(${i})"><div class="ph" style="${photoBg(c.ph)}"></div><div class="lbl">${c.n}</div></div>`).join('');
   const cl=document.getElementById('chatList');if(cl)cl.innerHTML=chats.length?chats.map((c,i)=>`<div class="chat-row" onclick="openChat(${i})"><div class="ph" style="${photoBg(c.ph)}"></div><div class="body"><div class="top"><span class="nme">${c.n}</span><span class="tm">${c.time}</span></div><div class="msg">${c.last||'Найз боллоо — сайн уу гэж бичээрэй 👋'}</div></div>${c.unread?`<span class="badge-unread">${c.unread}</span>`:''}</div>`).join(''):`<div style="text-align:center;color:var(--gray-2);font-size:13px;padding:30px 10px;">Одоогоор чат алга. Хэн нэгэнтэй найзлаж эсвэл тохирвол энд харагдана.</div>`;
 }
@@ -2370,7 +2377,7 @@ function setupRealtime(){
         const c=chats.find(x=>x.id===m.from_id);
         const open=document.getElementById('chatView').classList.contains('open')&&chats[curChat]&&chats[curChat].id===m.from_id;
         if(c){
-          c.msgs.push({me:0,t:m.text});c.last=m.text;c.time='Одоо';
+          c.msgs.push({me:0,t:m.text});c.last=m.text;c.time='Одоо';c._at=m.created_at||new Date().toISOString();
           if(open){renderMsgs();markRead(c.id);}else{c.unread=(c.unread||0)+1;notify('💬','Шинэ зурвас',(c.n||'')+': '+m.text);}
           renderMatches();bumpUnread();
         }else{loadContacts();notify('💬','Шинэ зурвас','Танд шинэ зурвас ирлээ');}
@@ -2384,6 +2391,15 @@ function setupRealtime(){
       .on('postgres_changes',{event:'UPDATE',schema:'public',table:'profiles',filter:'id=eq.'+me.id},payload=>{
         const p=payload.new;if(!p)return;
         if(p.blocked){if(me)me.block_reason=p.block_reason;forceBlocked();return;}
+        if(me){
+          const wasVip=!!me.is_vip,wasVer=!!me.verified;
+          me.is_vip=!!p.is_vip;myVip=!!p.is_vip;
+          me.verified=!!p.verified;me.is_admin=!!p.is_admin;
+          if(p.name)me.name=p.name;if(p.photo_url)me.photo_url=p.photo_url;
+          if(me.blocked&&!p.blocked)me.blocked=false;
+          if(p.is_vip&&!wasVip){toast('🎉 Танд VIP эрх идэвхжлээ! Одоо хүн болгонтой шууд чатлаарай 👑');try{updateVipUI();}catch(e){}}
+          if(p.verified&&!wasVer){toast('🎉 Таны бүртгэл баталгаажлаа! Бүх боломж нээгдлээ.');try{startTrialWatch();}catch(e){}try{loadPeople();}catch(e){}}
+        }
         if(p.warning&&me&&p.warning!==me.warning){me.warning=p.warning;notify('⚠️','Админы анхааруулга',p.warning);try{sb.from('profiles').update({warning:null}).eq('id',me.id);me.warning=null;}catch(e){}}
       })
       .on('postgres_changes',{event:'DELETE',schema:'public',table:'friend_requests'},()=>{
@@ -2408,11 +2424,17 @@ function setupAdminWatch(){
         try{const {data}=await sb.from('profiles').select('id,name').in('id',[r.from_id,r.to_id]);(data||[]).forEach(x=>{if(x.id===r.from_id)fromN=x.name||fromN;if(x.id===r.to_id)toN=x.name||toN;});}catch(e){}
         notify('🤝','Найзын хүсэлт',fromN+' → '+toN);
       })
+      .on('postgres_changes',{event:'INSERT',schema:'public',table:'messages'},async payload=>{
+        const m=payload.new;if(!m||m.from_id===me.id||m.to_id===me.id)return;
+        let fromN='Хэн нэгэн',toN='хэн нэгэн';
+        try{const {data}=await sb.from('profiles').select('id,name').in('id',[m.from_id,m.to_id]);(data||[]).forEach(x=>{if(x.id===m.from_id)fromN=x.name||fromN;if(x.id===m.to_id)toN=x.name||toN;});}catch(e){}
+        notify('💬 Чат',fromN+' → '+toN,(m.text||'').slice(0,60));
+      })
       .subscribe();
   }catch(e){console.error('adminwatch',e);}
 }
 function teardownAdminWatch(){try{if(_admChannel){sb.removeChannel(_admChannel);_admChannel=null;}}catch(e){}}
-function teardownRealtime(){try{if(rtChannel){sb.removeChannel(rtChannel);rtChannel=null;}}catch(e){}try{teardownAdminWatch();}catch(e){}try{clearInterval(_blockWatch);_blockWatch=null;}catch(e){}try{clearInterval(_trialInt);_trialInt=null;}catch(e){}try{clearInterval(_msgPoll);_msgPoll=null;}catch(e){}}
+function teardownRealtime(){try{if(rtChannel){sb.removeChannel(rtChannel);rtChannel=null;}}catch(e){}try{teardownAdminWatch();}catch(e){}try{clearInterval(_blockWatch);_blockWatch=null;}catch(e){}try{clearInterval(_trialInt);_trialInt=null;}catch(e){}try{clearInterval(_msgPoll);_msgPoll=null;}catch(e){}try{clearInterval(_admPoll);_admPoll=null;}catch(e){}}
 
 /* ============================================================ DATES (app organizes) ============================================================ */
 async function loadDates(){
@@ -2495,6 +2517,55 @@ function startMsgPoll(){
   _lastMsgCheck=new Date().toISOString();
   _msgPoll=setInterval(checkNewMsgs,15000);
 }
+let _admPoll=null,_admLastProf=null,_admLastFR=null,_admLastMsg=null,_admLastAll=null,_admSeen={};
+function startAdminPoll(){
+  clearInterval(_admPoll);
+  if(!me||!me.is_admin)return;
+  const now=new Date().toISOString();
+  _admLastProf=now;_admLastFR=now;_admLastMsg=now;_admLastAll=now;
+  _admPoll=setInterval(checkAdminEvents,12000);
+}
+async function checkAdminEvents(){
+  if(!me||!me.is_admin||document.hidden)return;
+  try{
+    const {data}=await sb.from('profiles').select('id,name,gender,created_at').gt('created_at',_admLastProf).order('created_at',{ascending:true});
+    if(data&&data.length){_admLastProf=data[data.length-1].created_at;data.forEach(p=>{if(p.id===me.id||_admSeen['p'+p.id])return;_admSeen['p'+p.id]=1;notify('🆕','Шинэ хэрэглэгч',(p.name||'Хэн нэгэн')+' ('+(p.gender==='f'?'эмэгтэй':'эрэгтэй')+') бүртгүүллээ');});}
+  }catch(e){}
+  try{
+    const {data}=await sb.from('friend_requests').select('id,from_id,to_id,created_at').gt('created_at',_admLastFR).order('created_at',{ascending:true});
+    if(data&&data.length){_admLastFR=data[data.length-1].created_at;
+      const ids=[...new Set(data.flatMap(r=>[r.from_id,r.to_id]))];let nm={};
+      if(ids.length){const {data:ps}=await sb.from('profiles').select('id,name').in('id',ids);(ps||[]).forEach(x=>nm[x.id]=x.name);}
+      data.forEach(r=>{if(_admSeen['f'+r.id])return;_admSeen['f'+r.id]=1;notify('🤝','Найзын хүсэлт',(nm[r.from_id]||'?')+' → '+(nm[r.to_id]||'?'));});
+    }
+  }catch(e){}
+  try{
+    const {data}=await sb.from('messages').select('id,from_id,text,created_at').eq('to_id',me.id).gt('created_at',_admLastMsg).order('created_at',{ascending:true});
+    if(data&&data.length){_admLastMsg=data[data.length-1].created_at;
+      const ids=[...new Set(data.map(m=>m.from_id))];let nm={};
+      if(ids.length){const {data:ps}=await sb.from('profiles').select('id,name').in('id',ids);(ps||[]).forEach(x=>nm[x.id]=x.name);}
+      let touched=false;
+      data.forEach(m=>{if(_admSeen['m'+m.id])return;_admSeen['m'+m.id]=1;
+        const c=chats.find(x=>x.id===m.from_id);
+        const chOpen=document.getElementById('chatView').classList.contains('open')&&chats[curChat]&&chats[curChat].id===m.from_id;
+        if(c){c.last=m.text;c.time='Одоо';c._at=m.created_at;if(!chOpen)c.unread=(c.unread||0)+1;touched=true;}else{try{loadContacts();}catch(e){}}
+        if(!chOpen)notify('💬',(nm[m.from_id]||'Шинэ зурвас'),m.text);
+      });
+      if(touched){try{renderMatches();bumpUnread();}catch(e){}}
+    }
+  }catch(e){}
+  try{
+    const {data}=await sb.from('messages').select('id,from_id,to_id,text,created_at').gt('created_at',_admLastAll).order('created_at',{ascending:true});
+    if(data&&data.length){_admLastAll=data[data.length-1].created_at;
+      const others=data.filter(m=>m.from_id!==me.id&&m.to_id!==me.id&&!_admSeen['a'+m.id]);
+      if(others.length){
+        const ids=[...new Set(others.flatMap(m=>[m.from_id,m.to_id]))];let nm={};
+        if(ids.length){const {data:ps}=await sb.from('profiles').select('id,name').in('id',ids);(ps||[]).forEach(x=>nm[x.id]=x.name);}
+        others.forEach(m=>{_admSeen['a'+m.id]=1;notify('💬 Чат',(nm[m.from_id]||'?')+' → '+(nm[m.to_id]||'?'),(m.text||'').slice(0,60));});
+      }
+    }
+  }catch(e){}
+}
 async function checkNewMsgs(){
   if(!me||me.is_admin||me.blocked||document.hidden)return;
   try{
@@ -2509,7 +2580,7 @@ async function checkNewMsgs(){
       if(chOpen)return;
       any=true;
       const c=chats.find(x=>x.id===m.from_id);
-      if(c){c.last=m.text;c.time='Одоо';c.unread=(c.unread||0)+1;notify('💬','Шинэ зурвас',(c.n||'')+': '+m.text);}
+      if(c){c.last=m.text;c.time='Одоо';c._at=m.created_at||new Date().toISOString();c.unread=(c.unread||0)+1;notify('💬','Шинэ зурвас',(c.n||'')+': '+m.text);}
       else{notify('💬','Шинэ зурвас','Танд шинэ зурвас ирлээ');try{loadContacts();}catch(e){}}
     });
     if(any){try{renderMatches();bumpUnread();}catch(e){}}
@@ -2798,6 +2869,7 @@ async function admTab(t,btn){
   }
   else if(t==='monitor'){
     html+=`<div style="background:var(--pink-bg);border-radius:12px;padding:11px 14px;font-size:12px;color:var(--red-deep);line-height:1.5;margin-bottom:14px">🔍 <b>Аюулгүй байдлын хяналт.</b> Хэрэглэгчдийн чат болон найзын хүсэлтийг харах боломжтой. Үүнийг үйлчилгээний нөхцөлдөө <b>ил тод</b> бичихийг зөвлөж байна.</div>`;
+    html+=`<button class="btn" style="width:100%;margin-bottom:10px;background:var(--gray-bg);color:var(--ink);font-size:13px;padding:9px" onclick="admTab('monitor',document.querySelector('.admin-tabs button:nth-child(6)'))">🔄 Шинэчлэх</button>`;
     html+=`<div class="adm-filter"><button class="${_monView==='chats'?'on':''}" onclick="setMonView('chats')">💬 Чатууд ${(admData.monitor||[]).length}</button><button class="${_monView==='friends'?'on':''}" onclick="setMonView('friends')">🤝 Найзын хүсэлт ${(admData.monFriends||[]).length}</button><button class="${_monView==='women'?'on':''}" onclick="setMonView('women')">👩 Бүсгүйн өмнөөс ${(admData.monWomen||[]).length}</button></div>`;
     if(_monView==='women'){
       html+=`<div style="background:rgba(168,85,154,.1);border-radius:12px;padding:11px 14px;font-size:12px;color:#8a4080;line-height:1.5;margin-bottom:12px">👩 Бүсгүйг сонгоод түүний <b>найзын хүсэлтийг зөвшөөрч</b>, <b>өмнөөс нь чат бичнэ</b>. 🔔 тэмдэг = хүлээгдэж буй хүсэлттэй.</div>`;
@@ -3405,7 +3477,7 @@ function unlockAudio(){
   }catch(e){}
 }
 try{window.addEventListener('pointerdown',unlockAudio,{passive:true});window.addEventListener('touchstart',unlockAudio,{passive:true});window.addEventListener('click',unlockAudio,{passive:true});}catch(e){}
-const APP_VERSION='v101';
+const APP_VERSION='v103';
 try{document.getElementById('verBadge').textContent='Хоёулаа Болзий '+APP_VERSION;}catch(_){}
 loadSettings();
 restoreSession();
