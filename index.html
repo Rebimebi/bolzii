@@ -563,6 +563,14 @@ body.dark .date-remind-top{background:linear-gradient(135deg,#3a2e12,#2c2410);co
 .wa-partners{display:flex;gap:7px;padding:10px 12px;overflow-x:auto;background:var(--card);border-bottom:1px solid var(--gray-bg);flex:0 0 auto;}
 .wa-partner{flex:0 0 auto;padding:7px 13px;border-radius:18px;border:1px solid var(--gray-bg);background:var(--cream);color:var(--gray);font-family:var(--body);font-size:12.5px;font-weight:700;cursor:pointer;white-space:nowrap;}
 .wa-partner.on{background:linear-gradient(135deg,var(--red),var(--pink));color:#fff;border-color:transparent;}
+.feed-item{display:flex;gap:10px;align-items:flex-start;background:var(--card);border:1px solid var(--gray-bg);border-radius:12px;padding:10px 12px;margin-bottom:7px;}
+.feed-item.msg{cursor:pointer;}
+.feed-item.msg:active{background:var(--cream);}
+.fi-ic{flex:0 0 auto;font-size:18px;line-height:1.2;}
+.fi-b{flex:1;min-width:0;}
+.fi-t{font-size:13px;color:var(--ink);font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.fi-d{font-size:12px;color:var(--gray);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.fi-tm{flex:0 0 auto;font-size:10px;color:var(--gray-2);white-space:nowrap;}
 #waReqs{background:rgba(168,85,154,.07);border-bottom:1px solid var(--gray-bg);padding:10px 12px;flex:0 0 auto;max-height:34vh;overflow-y:auto;}
 .wa-reqs-t{font-size:11.5px;font-weight:800;color:#8a4080;margin-bottom:8px;letter-spacing:.02em;}
 .wa-req{display:flex;align-items:center;justify-content:space-between;gap:10px;background:var(--card);border-radius:11px;padding:9px 12px;margin-bottom:7px;}
@@ -2321,7 +2329,7 @@ function openChatById(id){
 let rtChannel=null;
 let _adminId=null;
 let _userFilter='all';
-let _monView='chats';
+let _monView='feed';
 let _blockWatch=null;
 function startBlockWatch(){
   clearInterval(_blockWatch);
@@ -2434,7 +2442,7 @@ function setupAdminWatch(){
   }catch(e){console.error('adminwatch',e);}
 }
 function teardownAdminWatch(){try{if(_admChannel){sb.removeChannel(_admChannel);_admChannel=null;}}catch(e){}}
-function teardownRealtime(){try{if(rtChannel){sb.removeChannel(rtChannel);rtChannel=null;}}catch(e){}try{teardownAdminWatch();}catch(e){}try{clearInterval(_blockWatch);_blockWatch=null;}catch(e){}try{clearInterval(_trialInt);_trialInt=null;}catch(e){}try{clearInterval(_msgPoll);_msgPoll=null;}catch(e){}try{clearInterval(_admPoll);_admPoll=null;}catch(e){}}
+function teardownRealtime(){try{if(rtChannel){sb.removeChannel(rtChannel);rtChannel=null;}}catch(e){}try{teardownAdminWatch();}catch(e){}try{clearInterval(_blockWatch);_blockWatch=null;}catch(e){}try{clearInterval(_trialInt);_trialInt=null;}catch(e){}try{clearInterval(_msgPoll);_msgPoll=null;}catch(e){}try{clearInterval(_admPoll);_admPoll=null;}catch(e){}try{stopFeedAuto();}catch(e){}}
 
 /* ============================================================ DATES (app organizes) ============================================================ */
 async function loadDates(){
@@ -2713,7 +2721,7 @@ const admData={
 let _admCurTab='verify';
 function refreshAdm(){admTab(_admCurTab);}
 async function admTab(t,btn){
-  _admCurTab=t;
+  _admCurTab=t;if(t!=='monitor')stopFeedAuto();
   if(btn){document.querySelectorAll('.admin-tabs button').forEach(b=>b.classList.remove('on'));btn.classList.add('on');}
   const body=document.getElementById('admBody');
   body.innerHTML='<div style="text-align:center;color:var(--gray-2);padding:30px;font-size:13px;">Ачааллаж байна…</div>';
@@ -2870,8 +2878,12 @@ async function admTab(t,btn){
   else if(t==='monitor'){
     html+=`<div style="background:var(--pink-bg);border-radius:12px;padding:11px 14px;font-size:12px;color:var(--red-deep);line-height:1.5;margin-bottom:14px">🔍 <b>Аюулгүй байдлын хяналт.</b> Хэрэглэгчдийн чат болон найзын хүсэлтийг харах боломжтой. Үүнийг үйлчилгээний нөхцөлдөө <b>ил тод</b> бичихийг зөвлөж байна.</div>`;
     html+=`<button class="btn" style="width:100%;margin-bottom:10px;background:var(--gray-bg);color:var(--ink);font-size:13px;padding:9px" onclick="admTab('monitor',document.querySelector('.admin-tabs button:nth-child(6)'))">🔄 Шинэчлэх</button>`;
-    html+=`<div class="adm-filter"><button class="${_monView==='chats'?'on':''}" onclick="setMonView('chats')">💬 Чатууд ${(admData.monitor||[]).length}</button><button class="${_monView==='friends'?'on':''}" onclick="setMonView('friends')">🤝 Найзын хүсэлт ${(admData.monFriends||[]).length}</button><button class="${_monView==='women'?'on':''}" onclick="setMonView('women')">👩 Бүсгүйн өмнөөс ${(admData.monWomen||[]).length}</button></div>`;
-    if(_monView==='women'){
+    html+=`<div class="adm-filter"><button class="${_monView==='feed'?'on':''}" onclick="setMonView('feed')">📋 Үйл явдал</button><button class="${_monView==='chats'?'on':''}" onclick="setMonView('chats')">💬 Чатууд ${(admData.monitor||[]).length}</button><button class="${_monView==='friends'?'on':''}" onclick="setMonView('friends')">🤝 Найзын хүсэлт ${(admData.monFriends||[]).length}</button><button class="${_monView==='women'?'on':''}" onclick="setMonView('women')">👩 Бүсгүйн өмнөөс ${(admData.monWomen||[]).length}</button></div>`;
+    if(_monView==='feed'){
+      html+=`<div style="background:var(--pink-bg);border-radius:12px;padding:11px 14px;font-size:12px;color:var(--red-deep);line-height:1.55;margin-bottom:12px">📋 <b>Бүх үйлдэл шууд энд харагдана</b> (автоматаар шинэчлэгдэнэ). 💬 зурвас дээр дарж яриаг бүтнээр үзэж, шаардвал хэрэглэгчийг блоклоорой.</div>`;
+      html+=`<div id="feedList"><div style="text-align:center;color:var(--gray-2);padding:24px;font-size:13px">Ачааллаж байна…</div></div>`;
+      setTimeout(()=>{loadFeed();startFeedAuto();},40);
+    }else if(_monView==='women'){
       html+=`<div style="background:rgba(168,85,154,.1);border-radius:12px;padding:11px 14px;font-size:12px;color:#8a4080;line-height:1.5;margin-bottom:12px">👩 Бүсгүйг сонгоод түүний <b>найзын хүсэлтийг зөвшөөрч</b>, <b>өмнөөс нь чат бичнэ</b>. 🔔 тэмдэг = хүлээгдэж буй хүсэлттэй.</div>`;
       html+=(admData.monWomen&&admData.monWomen.length)?admData.monWomen.map(w=>`<div class="adm-card" style="cursor:pointer" onclick="admActAsWomanById('${w.id}','${(w.name||'').replace(/'/g,'')}')"><div class="ph" style="${photoBg(w.photo_url||'')}"></div><div class="b"><div class="nm">${esc(w.name||'?')}</div><div class="meta">${w.pending?('🔔 '+w.pending+' найзын хүсэлт'):'өмнөөс нь чатлах'}</div></div>${w.pending?`<span class="adm-pill warn">${w.pending}</span>`:'<span style="color:var(--gray-2);font-size:20px;font-weight:300">›</span>'}</div>`).join(''):empty('Бүсгүй хэрэглэгч алга');
     }else if(_monView==='friends'){
@@ -2915,7 +2927,35 @@ async function admTab(t,btn){
   body.innerHTML=html;
 }
 function setUserFilter(f){_userFilter=f;if(_admCurTab==='users')admTab('users');}
-function setMonView(v){_monView=v;if(_admCurTab==='monitor')admTab('monitor');}
+function setMonView(v){_monView=v;if(v!=='feed')stopFeedAuto();if(_admCurTab==='monitor')admTab('monitor');}
+let _feedTimer=null;
+async function loadFeed(){
+  const box=document.getElementById('feedList');if(!box)return;
+  try{
+    const [mr,fr,pr]=await Promise.all([
+      sb.from('messages').select('from_id,to_id,text,created_at').order('created_at',{ascending:false}).limit(60),
+      sb.from('friend_requests').select('from_id,to_id,status,created_at').order('created_at',{ascending:false}).limit(40),
+      sb.from('profiles').select('id,name,gender,is_admin,created_at')
+    ]);
+    const pmap={};(pr.data||[]).forEach(p=>pmap[p.id]=p);
+    const adminIds=new Set((pr.data||[]).filter(p=>p.is_admin).map(p=>p.id));
+    const nameOf=id=>(pmap[id]&&pmap[id].name)||'?';
+    const feed=[];
+    (mr.data||[]).forEach(m=>{if(adminIds.has(m.from_id)||adminIds.has(m.to_id))return;feed.push({type:'msg',at:m.created_at,from:m.from_id,to:m.to_id,a:nameOf(m.from_id),b:nameOf(m.to_id),text:m.text||''});});
+    (fr.data||[]).forEach(f=>{feed.push({type:'fr',at:f.created_at,a:nameOf(f.from_id),b:nameOf(f.to_id),status:f.status});});
+    (pr.data||[]).forEach(p=>{if(!p.is_admin&&p.created_at)feed.push({type:'reg',at:p.created_at,a:nameOf(p.id),gender:p.gender});});
+    feed.sort((x,y)=>new Date(y.at)-new Date(x.at));
+    const top=feed.slice(0,80);
+    box.innerHTML=top.length?top.map(it=>{
+      if(it.type==='msg')return `<div class="feed-item msg" onclick="openFeedConv('${it.from}','${it.to}')"><div class="fi-ic">💬</div><div class="fi-b"><div class="fi-t"><b>${esc(it.a)}</b> → ${esc(it.b)}</div><div class="fi-d">${esc(it.text.slice(0,80))}</div></div><div class="fi-tm">${msgTime(it.at)}</div></div>`;
+      if(it.type==='fr')return `<div class="feed-item"><div class="fi-ic">🤝</div><div class="fi-b"><div class="fi-t"><b>${esc(it.a)}</b> → ${esc(it.b)}</div><div class="fi-d">Найзын хүсэлт${it.status==='accepted'?' · зөвшөөрсөн':(it.status==='declined'||it.status==='rejected'?' · татгалзсан':'')}</div></div><div class="fi-tm">${msgTime(it.at)}</div></div>`;
+      return `<div class="feed-item"><div class="fi-ic">🆕</div><div class="fi-b"><div class="fi-t"><b>${esc(it.a)}</b></div><div class="fi-d">Шинээр бүртгүүллээ (${it.gender==='f'?'эмэгтэй':'эрэгтэй'})</div></div><div class="fi-tm">${msgTime(it.at)}</div></div>`;
+    }).join(''):'<div style="text-align:center;color:var(--gray-2);font-size:13px;padding:30px 10px">Одоогоор үйл явдал алга</div>';
+  }catch(e){box.innerHTML='<div style="color:var(--red);font-size:12px;padding:14px;line-height:1.5">Алдаа: '+esc(e.message||'')+'<br>«msg_admin_read», «fr_admin_read» SQL ажилласан эсэхээ шалгана уу.</div>';}
+}
+function startFeedAuto(){clearInterval(_feedTimer);_feedTimer=setInterval(()=>{if(me&&me.is_admin&&_admCurTab==='monitor'&&_monView==='feed'&&!document.hidden)loadFeed();},12000);}
+function stopFeedAuto(){clearInterval(_feedTimer);_feedTimer=null;}
+function openFeedConv(a,b){const idx=(admData.monitor||[]).findIndex(p=>(p.a.id===a&&p.b.id===b)||(p.a.id===b&&p.b.id===a));if(idx>=0){openMonitor(idx);return;}toast('Яриаг ачаалж байна — 🔄 Шинэчлэх дараад дахин үзнэ үү');}
 function openMonitor(i){
   const p=admData.monitor&&admData.monitor[i];if(!p)return;
   const tt=document.getElementById('monTitle');if(tt)tt.textContent=(p.a.name||'?')+' ↔ '+(p.b.name||'?');
@@ -3477,7 +3517,7 @@ function unlockAudio(){
   }catch(e){}
 }
 try{window.addEventListener('pointerdown',unlockAudio,{passive:true});window.addEventListener('touchstart',unlockAudio,{passive:true});window.addEventListener('click',unlockAudio,{passive:true});}catch(e){}
-const APP_VERSION='v103';
+const APP_VERSION='v104';
 try{document.getElementById('verBadge').textContent='Хоёулаа Болзий '+APP_VERSION;}catch(_){}
 loadSettings();
 restoreSession();
