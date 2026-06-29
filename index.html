@@ -2753,7 +2753,7 @@ async function admTab(t,btn){
   }
   if(t==='monitor'){
     admData.monitor=[];admData.monitorErr='';admData.monFriends=[];admData.monFriendsErr='';admData.monWomen=[];
-    let pmap={};
+    let pmap={},womanLastIn={};
     try{
       const [mr,pr]=await Promise.all([
         sb.from('messages').select('from_id,to_id,text,created_at').order('created_at',{ascending:true}),
@@ -2765,6 +2765,7 @@ async function admTab(t,btn){
       const pairs={};
       (mr.data||[]).forEach(m=>{
         if(adminIds.has(m.from_id)||adminIds.has(m.to_id))return;
+        const toP=pmap[m.to_id];if(toP&&toP.gender==='f'){if(!womanLastIn[m.to_id]||m.created_at>womanLastIn[m.to_id])womanLastIn[m.to_id]=m.created_at;}
         const ids=[m.from_id,m.to_id].sort();const key=ids.join('|');
         if(!pairs[key])pairs[key]={ids,msgs:[]};
         pairs[key].msgs.push(m);
@@ -2776,7 +2777,7 @@ async function admTab(t,btn){
       if(fe)throw fe;
       admData.monFriends=(fr||[]).map(f=>({from:pmap[f.from_id]||{name:'?'},to:pmap[f.to_id]||{name:'?'},status:f.status||'pending',at:f.created_at}));
       const pendCnt={};(fr||[]).forEach(f=>{if((f.status||'pending')==='pending')pendCnt[f.to_id]=(pendCnt[f.to_id]||0)+1;});
-      admData.monWomen=Object.values(pmap).filter(p=>p.gender==='f'&&!p.is_admin).map(p=>({id:p.id,name:p.name||'?',photo_url:p.photo_url||'',pending:pendCnt[p.id]||0})).sort((a,b)=>(b.pending-a.pending)||(a.name||'').localeCompare(b.name||''));
+      admData.monWomen=Object.values(pmap).filter(p=>p.gender==='f'&&!p.is_admin).map(p=>({id:p.id,name:p.name||'?',photo_url:p.photo_url||'',pending:pendCnt[p.id]||0,lastIn:womanLastIn[p.id]||null})).sort((a,b)=>{if(a.lastIn&&b.lastIn)return new Date(b.lastIn)-new Date(a.lastIn);if(a.lastIn)return -1;if(b.lastIn)return 1;return (b.pending-a.pending)||(a.name||'').localeCompare(b.name||'');});
     }catch(e){admData.monFriendsErr=(e&&e.message)||'тодорхойгүй';}
   }
   if(t==='dates'){
@@ -2885,7 +2886,7 @@ async function admTab(t,btn){
       setTimeout(()=>{loadFeed();startFeedAuto();},40);
     }else if(_monView==='women'){
       html+=`<div style="background:rgba(168,85,154,.1);border-radius:12px;padding:11px 14px;font-size:12px;color:#8a4080;line-height:1.5;margin-bottom:12px">👩 Бүсгүйг сонгоод түүний <b>найзын хүсэлтийг зөвшөөрч</b>, <b>өмнөөс нь чат бичнэ</b>. 🔔 тэмдэг = хүлээгдэж буй хүсэлттэй.</div>`;
-      html+=(admData.monWomen&&admData.monWomen.length)?admData.monWomen.map(w=>`<div class="adm-card" style="cursor:pointer" onclick="admActAsWomanById('${w.id}','${(w.name||'').replace(/'/g,'')}')"><div class="ph" style="${photoBg(w.photo_url||'')}"></div><div class="b"><div class="nm">${esc(w.name||'?')}</div><div class="meta">${w.pending?('🔔 '+w.pending+' найзын хүсэлт'):'өмнөөс нь чатлах'}</div></div>${w.pending?`<span class="adm-pill warn">${w.pending}</span>`:'<span style="color:var(--gray-2);font-size:20px;font-weight:300">›</span>'}</div>`).join(''):empty('Бүсгүй хэрэглэгч алга');
+      html+=(admData.monWomen&&admData.monWomen.length)?admData.monWomen.map(w=>`<div class="adm-card" style="cursor:pointer" onclick="admActAsWomanById('${w.id}','${(w.name||'').replace(/'/g,'')}')"><div class="ph" style="${photoBg(w.photo_url||'')}"></div><div class="b"><div class="nm">${esc(w.name||'?')}</div><div class="meta">${w.pending?('🔔 '+w.pending+' найзын хүсэлт'):(w.lastIn?'💬 идэвхтэй яриа':'өмнөөс нь чатлах')}</div></div>${w.pending?`<span class="adm-pill warn">${w.pending}</span>`:(w.lastIn?'<span style="font-size:18px">💬</span>':'<span style="color:var(--gray-2);font-size:20px;font-weight:300">›</span>')}</div>`).join(''):empty('Бүсгүй хэрэглэгч алга');
     }else if(_monView==='friends'){
       if(admData.monFriendsErr)html+=`<div style="background:rgba(226,62,87,.1);color:var(--red);border-radius:12px;padding:11px 14px;font-size:12px;margin-bottom:12px;line-height:1.5">⚠️ Алдаа: ${esc(admData.monFriendsErr)}<br>«fr_admin_read» SQL-г ажиллуулсан эсэхээ шалгана уу.</div>`;
       const stMap={pending:['Хүлээгдэж буй','warn'],accepted:['Зөвшөөрсөн','ok'],declined:['Татгалзсан','no'],rejected:['Татгалзсан','no']};
@@ -3518,7 +3519,7 @@ function unlockAudio(){
   }catch(e){}
 }
 try{window.addEventListener('pointerdown',unlockAudio,{passive:true});window.addEventListener('touchstart',unlockAudio,{passive:true});window.addEventListener('click',unlockAudio,{passive:true});}catch(e){}
-const APP_VERSION='v105';
+const APP_VERSION='v106';
 try{document.getElementById('verBadge').textContent='Хоёулаа Болзий '+APP_VERSION;}catch(_){}
 loadSettings();
 restoreSession();
