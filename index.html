@@ -2442,7 +2442,7 @@ function setupAdminWatch(){
   }catch(e){console.error('adminwatch',e);}
 }
 function teardownAdminWatch(){try{if(_admChannel){sb.removeChannel(_admChannel);_admChannel=null;}}catch(e){}}
-function teardownRealtime(){try{if(rtChannel){sb.removeChannel(rtChannel);rtChannel=null;}}catch(e){}try{teardownAdminWatch();}catch(e){}try{clearInterval(_blockWatch);_blockWatch=null;}catch(e){}try{clearInterval(_trialInt);_trialInt=null;}catch(e){}try{clearInterval(_msgPoll);_msgPoll=null;}catch(e){}try{clearInterval(_admPoll);_admPoll=null;}catch(e){}try{stopFeedAuto();}catch(e){}}
+function teardownRealtime(){try{if(rtChannel){sb.removeChannel(rtChannel);rtChannel=null;}}catch(e){}try{teardownAdminWatch();}catch(e){}try{clearInterval(_blockWatch);_blockWatch=null;}catch(e){}try{clearInterval(_trialInt);_trialInt=null;}catch(e){}try{clearInterval(_msgPoll);_msgPoll=null;}catch(e){}try{clearInterval(_admPoll);_admPoll=null;}catch(e){}try{stopFeedAuto();}catch(e){}try{stopWaPoll();}catch(e){}}
 
 /* ============================================================ DATES (app organizes) ============================================================ */
 async function loadDates(){
@@ -2531,10 +2531,10 @@ function startAdminPoll(){
   if(!me||!me.is_admin)return;
   const now=new Date().toISOString();
   _admLastProf=now;_admLastFR=now;_admLastMsg=now;_admLastAll=now;
-  _admPoll=setInterval(checkAdminEvents,12000);
+  _admPoll=setInterval(checkAdminEvents,8000);
 }
 async function checkAdminEvents(){
-  if(!me||!me.is_admin||document.hidden)return;
+  if(!me||!me.is_admin)return;
   try{
     const {data}=await sb.from('profiles').select('id,name,gender,created_at').gt('created_at',_admLastProf).order('created_at',{ascending:true});
     if(data&&data.length){_admLastProf=data[data.length-1].created_at;data.forEach(p=>{if(p.id===me.id||_admSeen['p'+p.id])return;_admSeen['p'+p.id]=1;notify('🆕','Шинэ хэрэглэгч',(p.name||'Хэн нэгэн')+' ('+(p.gender==='f'?'эмэгтэй':'эрэгтэй')+') бүртгүүллээ');});}
@@ -2573,6 +2573,7 @@ async function checkAdminEvents(){
       }
     }
   }catch(e){}
+  if(_admCurTab==='monitor'&&_monView==='feed'&&!document.hidden){try{loadFeed();}catch(e){}}
 }
 async function checkNewMsgs(){
   if(!me||me.is_admin||me.blocked||document.hidden)return;
@@ -2721,7 +2722,7 @@ const admData={
 let _admCurTab='verify';
 function refreshAdm(){admTab(_admCurTab);}
 async function admTab(t,btn){
-  _admCurTab=t;if(t!=='monitor')stopFeedAuto();
+  _admCurTab=t;if(t!=='monitor')stopFeedAuto();else{try{unlockAudio();}catch(e){}try{startAdminPoll();}catch(e){}}
   if(btn){document.querySelectorAll('.admin-tabs button').forEach(b=>b.classList.remove('on'));btn.classList.add('on');}
   const body=document.getElementById('admBody');
   body.innerHTML='<div style="text-align:center;color:var(--gray-2);padding:30px;font-size:13px;">Ачааллаж байна…</div>';
@@ -2753,7 +2754,7 @@ async function admTab(t,btn){
   }
   if(t==='monitor'){
     admData.monitor=[];admData.monitorErr='';admData.monFriends=[];admData.monFriendsErr='';admData.monWomen=[];
-    let pmap={},womanLastIn={};
+    let pmap={},womanLast={};
     try{
       const [mr,pr]=await Promise.all([
         sb.from('messages').select('from_id,to_id,text,created_at').order('created_at',{ascending:true}),
@@ -2765,7 +2766,8 @@ async function admTab(t,btn){
       const pairs={};
       (mr.data||[]).forEach(m=>{
         if(adminIds.has(m.from_id)||adminIds.has(m.to_id))return;
-        const toP=pmap[m.to_id];if(toP&&toP.gender==='f'){if(!womanLastIn[m.to_id]||m.created_at>womanLastIn[m.to_id])womanLastIn[m.to_id]=m.created_at;}
+        const toP=pmap[m.to_id];if(toP&&toP.gender==='f'){if(!womanLast[m.to_id]||m.created_at>womanLast[m.to_id])womanLast[m.to_id]=m.created_at;}
+        const frP=pmap[m.from_id];if(frP&&frP.gender==='f'){if(!womanLast[m.from_id]||m.created_at>womanLast[m.from_id])womanLast[m.from_id]=m.created_at;}
         const ids=[m.from_id,m.to_id].sort();const key=ids.join('|');
         if(!pairs[key])pairs[key]={ids,msgs:[]};
         pairs[key].msgs.push(m);
@@ -2777,7 +2779,7 @@ async function admTab(t,btn){
       if(fe)throw fe;
       admData.monFriends=(fr||[]).map(f=>({from:pmap[f.from_id]||{name:'?'},to:pmap[f.to_id]||{name:'?'},status:f.status||'pending',at:f.created_at}));
       const pendCnt={};(fr||[]).forEach(f=>{if((f.status||'pending')==='pending')pendCnt[f.to_id]=(pendCnt[f.to_id]||0)+1;});
-      admData.monWomen=Object.values(pmap).filter(p=>p.gender==='f'&&!p.is_admin).map(p=>({id:p.id,name:p.name||'?',photo_url:p.photo_url||'',pending:pendCnt[p.id]||0,lastIn:womanLastIn[p.id]||null})).sort((a,b)=>{if(a.lastIn&&b.lastIn)return new Date(b.lastIn)-new Date(a.lastIn);if(a.lastIn)return -1;if(b.lastIn)return 1;return (b.pending-a.pending)||(a.name||'').localeCompare(b.name||'');});
+      admData.monWomen=Object.values(pmap).filter(p=>p.gender==='f'&&!p.is_admin).map(p=>({id:p.id,name:p.name||'?',photo_url:p.photo_url||'',pending:pendCnt[p.id]||0,lastIn:womanLast[p.id]||null})).sort((a,b)=>{if(a.lastIn&&b.lastIn)return new Date(b.lastIn)-new Date(a.lastIn);if(a.lastIn)return -1;if(b.lastIn)return 1;return (b.pending-a.pending)||(a.name||'').localeCompare(b.name||'');});
     }catch(e){admData.monFriendsErr=(e&&e.message)||'тодорхойгүй';}
   }
   if(t==='dates'){
@@ -3029,6 +3031,25 @@ function waRenderPartners(){
 function waSelectPartner(i){
   const p=_waPartners[i];if(!p)return;
   _waPartnerId=p.id;waRenderPartners();waRenderMsgs();
+  startWaPoll();
+}
+let _waPoll=null;
+function startWaPoll(){clearInterval(_waPoll);_waPoll=setInterval(waRefreshMsgs,5000);}
+function stopWaPoll(){clearInterval(_waPoll);_waPoll=null;}
+async function waRefreshMsgs(){
+  if(!_waWoman||!_waPartnerId||document.hidden)return;
+  const wid=_waWoman.id,pid=_waPartnerId;
+  try{
+    const {data}=await sb.from('messages').select('from_id,to_id,text,created_at').or(`and(from_id.eq.${wid},to_id.eq.${pid}),and(from_id.eq.${pid},to_id.eq.${wid})`).order('created_at',{ascending:true});
+    if(!data)return;
+    const p=_waPartners.find(x=>x.id===pid);if(!p)return;
+    if(data.length!==p.msgs.length){
+      const incoming=data.length>p.msgs.length&&data[data.length-1].from_id===pid;
+      p.msgs=data;p._at=data.length?data[data.length-1].created_at:p._at;
+      if(_waPartnerId===pid)waRenderMsgs();
+      if(incoming){try{playDing();}catch(e){}notify('💬 Шинэ хариу',_waWoman.name+' ← '+(p.name||''),(data[data.length-1].text||'').slice(0,60));}
+    }
+  }catch(e){}
 }
 function waRenderMsgs(){
   const box=document.getElementById('waMsgs');if(!box)return;
@@ -3050,7 +3071,7 @@ async function waSend(){
     waRenderPartners();waRenderMsgs();
   }catch(e){toast('Алдаа гарлаа');}
 }
-function closeWa(){ovClose('waView');}
+function closeWa(){stopWaPoll();ovClose('waView');}
 async function toggleBlock(i){
   const x=admData.users[i];if(!x)return;
   if(x.blocked){
@@ -3519,7 +3540,7 @@ function unlockAudio(){
   }catch(e){}
 }
 try{window.addEventListener('pointerdown',unlockAudio,{passive:true});window.addEventListener('touchstart',unlockAudio,{passive:true});window.addEventListener('click',unlockAudio,{passive:true});}catch(e){}
-const APP_VERSION='v106';
+const APP_VERSION='v108';
 try{document.getElementById('verBadge').textContent='Хоёулаа Болзий '+APP_VERSION;}catch(_){}
 loadSettings();
 restoreSession();
