@@ -2759,7 +2759,7 @@ async function admTab(t,btn){
     let pmap={},womanLast={};
     try{
       const [mr,pr]=await Promise.all([
-        sb.from('messages').select('from_id,to_id,text,created_at').order('created_at',{ascending:true}),
+        sb.from('messages').select('from_id,to_id,text,created_at').order('created_at',{ascending:false}).limit(2000),
         sb.from('profiles').select('id,name,is_admin,photo_url,gender')
       ]);
       if(mr.error)throw mr.error;
@@ -2774,7 +2774,7 @@ async function admTab(t,btn){
         if(!pairs[key])pairs[key]={ids,msgs:[]};
         pairs[key].msgs.push(m);
       });
-      admData.monitor=Object.values(pairs).map(p=>{const last=p.msgs[p.msgs.length-1];return {a:pmap[p.ids[0]]||{id:p.ids[0],name:'?'},b:pmap[p.ids[1]]||{id:p.ids[1],name:'?'},last:last?last.text:'',at:last?last.created_at:'',count:p.msgs.length,msgs:p.msgs};}).sort((x,y)=>new Date(y.at||0)-new Date(x.at||0));
+      admData.monitor=Object.values(pairs).map(p=>{p.msgs.sort((a,b)=>new Date(a.created_at)-new Date(b.created_at));const last=p.msgs[p.msgs.length-1];return {a:pmap[p.ids[0]]||{id:p.ids[0],name:'?'},b:pmap[p.ids[1]]||{id:p.ids[1],name:'?'},last:last?last.text:'',at:last?last.created_at:'',count:p.msgs.length,msgs:p.msgs};}).sort((x,y)=>new Date(y.at||0)-new Date(x.at||0));
     }catch(e){admData.monitorErr=(e&&e.message)||'тодорхойгүй';}
     try{
       const {data:fr,error:fe}=await sb.from('friend_requests').select('from_id,to_id,status,created_at').order('created_at',{ascending:false});
@@ -3011,7 +3011,7 @@ async function waAcceptReq(reqId,fromId,fromName){
 async function waLoadPartners(){
   try{
     const [mr,fr]=await Promise.all([
-      sb.from('messages').select('from_id,to_id,text,created_at').or(`from_id.eq.${_waWoman.id},to_id.eq.${_waWoman.id}`).order('created_at',{ascending:true}),
+      sb.from('messages').select('from_id,to_id,text,created_at').or(`from_id.eq.${_waWoman.id},to_id.eq.${_waWoman.id}`).order('created_at',{ascending:false}).limit(1000),
       sb.from('friend_requests').select('from_id,to_id').or(`from_id.eq.${_waWoman.id},to_id.eq.${_waWoman.id}`).eq('status','accepted')
     ]);
     const partners={};
@@ -3020,7 +3020,7 @@ async function waLoadPartners(){
     const ids=Object.keys(partners);
     let names={};
     if(ids.length){const {data:ps}=await sb.from('profiles').select('id,name').in('id',ids);(ps||[]).forEach(p=>names[p.id]=p.name);}
-    _waPartners=ids.map(id=>({id,name:names[id]||'Хэрэглэгч',msgs:partners[id].msgs,_at:partners[id].msgs.length?partners[id].msgs[partners[id].msgs.length-1].created_at:'0'})).sort((a,b)=>new Date(b._at)-new Date(a._at));
+    _waPartners=ids.map(id=>{partners[id].msgs.sort((a,b)=>new Date(a.created_at)-new Date(b.created_at));return {id,name:names[id]||'Хэрэглэгч',msgs:partners[id].msgs,_at:partners[id].msgs.length?partners[id].msgs[partners[id].msgs.length-1].created_at:'0'};}).sort((a,b)=>new Date(b._at)-new Date(a._at));
     waRenderPartners();
     if(_waPartnerId)waRenderMsgs();
   }catch(e){document.getElementById('waPartners').innerHTML='<div style="padding:10px 12px;color:var(--red);font-size:12px">Алдаа: '+esc(e.message||'')+'</div>';}
@@ -3542,7 +3542,7 @@ function unlockAudio(){
   }catch(e){}
 }
 try{window.addEventListener('pointerdown',unlockAudio,{passive:true});window.addEventListener('touchstart',unlockAudio,{passive:true});window.addEventListener('click',unlockAudio,{passive:true});}catch(e){}
-const APP_VERSION='v109';
+const APP_VERSION='v110';
 try{document.getElementById('verBadge').textContent='Хоёулаа Болзий '+APP_VERSION;}catch(_){}
 loadSettings();
 restoreSession();
