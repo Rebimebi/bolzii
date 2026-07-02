@@ -2535,13 +2535,14 @@ function startAdminPoll(){
 }
 async function checkAdminEvents(){
   if(!me||!me.is_admin)return;
+  let newAct=false;
   try{
     const {data}=await sb.from('profiles').select('id,name,gender,created_at').gt('created_at',_admLastProf).order('created_at',{ascending:true});
     if(data&&data.length){_admLastProf=data[data.length-1].created_at;data.forEach(p=>{if(p.id===me.id||_admSeen['p'+p.id])return;_admSeen['p'+p.id]=1;notify('🆕','Шинэ хэрэглэгч',(p.name||'Хэн нэгэн')+' ('+(p.gender==='f'?'эмэгтэй':'эрэгтэй')+') бүртгүүллээ');});}
   }catch(e){}
   try{
     const {data}=await sb.from('friend_requests').select('id,from_id,to_id,created_at').gt('created_at',_admLastFR).order('created_at',{ascending:true});
-    if(data&&data.length){_admLastFR=data[data.length-1].created_at;
+    if(data&&data.length){_admLastFR=data[data.length-1].created_at;newAct=true;
       const ids=[...new Set(data.flatMap(r=>[r.from_id,r.to_id]))];let nm={};
       if(ids.length){const {data:ps}=await sb.from('profiles').select('id,name').in('id',ids);(ps||[]).forEach(x=>nm[x.id]=x.name);}
       data.forEach(r=>{if(_admSeen['f'+r.id])return;_admSeen['f'+r.id]=1;notify('🤝','Найзын хүсэлт',(nm[r.from_id]||'?')+' → '+(nm[r.to_id]||'?'));});
@@ -2566,7 +2567,7 @@ async function checkAdminEvents(){
     const {data}=await sb.from('messages').select('id,from_id,to_id,text,created_at').gt('created_at',_admLastAll).order('created_at',{ascending:true});
     if(data&&data.length){_admLastAll=data[data.length-1].created_at;
       const others=data.filter(m=>m.from_id!==me.id&&m.to_id!==me.id&&!_admSeen['a'+m.id]);
-      if(others.length){
+      if(others.length){newAct=true;
         const ids=[...new Set(others.flatMap(m=>[m.from_id,m.to_id]))];let nm={};
         if(ids.length){const {data:ps}=await sb.from('profiles').select('id,name').in('id',ids);(ps||[]).forEach(x=>nm[x.id]=x.name);}
         others.forEach(m=>{_admSeen['a'+m.id]=1;notify('💬 Чат',(nm[m.from_id]||'?')+' → '+(nm[m.to_id]||'?'),(m.text||'').slice(0,60));});
@@ -2574,6 +2575,7 @@ async function checkAdminEvents(){
     }
   }catch(e){}
   if(_admCurTab==='monitor'&&_monView==='feed'&&!document.hidden){try{loadFeed();}catch(e){}}
+  if(newAct&&_admCurTab==='monitor'&&!document.hidden&&(_monView==='women'||_monView==='chats'||_monView==='friends')&&!document.getElementById('waView').classList.contains('open')){try{admTab('monitor');}catch(e){}}
 }
 async function checkNewMsgs(){
   if(!me||me.is_admin||me.blocked||document.hidden)return;
@@ -3071,7 +3073,7 @@ async function waSend(){
     waRenderPartners();waRenderMsgs();
   }catch(e){toast('Алдаа гарлаа');}
 }
-function closeWa(){stopWaPoll();ovClose('waView');}
+function closeWa(){stopWaPoll();ovClose('waView');if(_admCurTab==='monitor'&&_monView==='women'){try{admTab('monitor');}catch(e){}}}
 async function toggleBlock(i){
   const x=admData.users[i];if(!x)return;
   if(x.blocked){
@@ -3540,7 +3542,7 @@ function unlockAudio(){
   }catch(e){}
 }
 try{window.addEventListener('pointerdown',unlockAudio,{passive:true});window.addEventListener('touchstart',unlockAudio,{passive:true});window.addEventListener('click',unlockAudio,{passive:true});}catch(e){}
-const APP_VERSION='v108';
+const APP_VERSION='v109';
 try{document.getElementById('verBadge').textContent='Хоёулаа Болзий '+APP_VERSION;}catch(_){}
 loadSettings();
 restoreSession();
