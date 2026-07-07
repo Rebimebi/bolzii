@@ -827,13 +827,10 @@ body.dark .date-remind-top{background:linear-gradient(135deg,#3a2e12,#2c2410);co
         <div class="photo-up" id="rPhotoBox" onclick="document.getElementById('rPhotoInput').click()">📷 Жинхэнэ нүүр зургаа оруулна уу</div>
         <div style="font-size:11.5px;color:var(--gray-2);font-weight:500;margin-top:7px;line-height:1.45;">⚠️ Нүүр зураг нь <b>заавал өөрийн бодит зураг</b> байх ёстой. Бусдын зураг, лого, зурсан зураг хориотой — админ шалгана.</div>
       </div>
-      <div class="form-group"><label>Үйлчилгээний дүрэм</label>
-        <div class="rule-read" id="ruleBox" onclick="openRules()"><span id="ruleState">📜 Дүрэмтэй танилцаж зөвшөөрөх</span><span class="chev">›</span></div>
-      </div>
       <div id="womenFree" style="display:none">
         <div class="verify-note" style="background:rgba(226,62,87,.1);color:var(--red-deep)">👩 Бүсгүйчүүд <b>үнэ төлбөргүй</b> бүртгүүлнэ! VIP эрх ч мөн <b>ҮНЭГҮЙ</b>. Та зөвхөн жинхэнэ нүүр зургаа оруулахад л хангалттай.</div>
       </div>
-      <div id="paidArea">
+      <div id="paidArea" style="display:none">
         <div class="form-group" id="feeGroup"><label>Бүртгэлийн хураамж</label>
           <div class="plan on" id="planFree" style="cursor:default"><div><b>Бүртгэлийн хураамж</b><span>Аппд нэгдэхэд нэг удаа төлнө</span></div><div class="pr" id="planFreePr">5,000₮</div></div>
           <div style="display:flex;gap:10px;background:rgba(255,200,90,.12);border:1px solid rgba(201,150,30,.25);border-radius:12px;padding:11px 13px;margin-top:10px;font-size:12px;color:#a87a12;line-height:1.5;"><span style="font-size:18px">👑</span><span><b>VIP эрх бол тусдаа, ЗААВАЛ БИШ.</b> Энэ нь бүртгэлийн хураамжид <b>ороогүй</b>. Аппд орсныхоо дараа хүсвэл доторх «VIP болох» товчоор сонгож авна.</span></div>
@@ -848,6 +845,7 @@ body.dark .date-remind-top{background:linear-gradient(135deg,#3a2e12,#2c2410);co
           </div>
         </div>
       </div>
+      <div style="font-size:11.5px;color:var(--gray-2);text-align:center;margin-bottom:9px;line-height:1.45">Бүртгүүлснээр та <span onclick="openRules()" style="color:var(--red);text-decoration:underline;cursor:pointer">үйлчилгээний дүрмийг</span> зөвшөөрсөнд тооцно.</div>
       <button class="btn btn-primary" id="regBtn" style="width:100%" onclick="doRegister()" disabled>Бүх талбарыг бөглөнө үү</button>
     </div>
 
@@ -1885,7 +1883,7 @@ function fillSoums(){
 }
 function openRules(){ovOpen('rulesModal');}
 function closeRules(){ovClose('rulesModal');}
-function agreeRules(){rulesAgreed=true;const b=document.getElementById('ruleBox');b.classList.add('done');document.getElementById('ruleState').textContent='✓ Дүрэмтэй танилцсан';closeRules();validateReg();}
+function agreeRules(){rulesAgreed=true;closeRules();validateReg();}
 function regFee(){let f=regGender==='f'?0:(settings.fee||0);if(regPromoActive()&&regGender!=='f')f=Math.round(f*0.5);return f;}
 function pickPlan(p){
   selectedPlan=p;
@@ -1898,7 +1896,7 @@ function seg(btn){btn.parentNode.querySelectorAll('button').forEach(b=>b.classLi
 let regGender='m';
 function pickGender(g,btn){
   regGender=g;seg(btn);
-  document.getElementById('paidArea').style.display='block';
+  document.getElementById('paidArea').style.display='none';
   document.getElementById('womenFree').style.display=g==='f'?'block':'none';
   const vp=document.getElementById('planVip');if(vp)vp.style.display=g==='f'?'none':'';
   const fg=document.getElementById('feeGroup');if(fg)fg.style.display=g==='f'?'none':'block';
@@ -1980,7 +1978,6 @@ function validateReg(){
   else if(val('rPass').length<6)msg='Нууц үг дор хаяж 6 тэмдэгт';
   else if(!val('rAimag'))msg='Аймгаа сонгоно уу';
   else if(!regPhotoFile)msg='Нүүр зургаа оруулна уу';
-  else if(!rulesAgreed)msg='Дүрэмтэй танилцаж зөвшөөрнө үү';
   const ok=!msg;
   const btn=document.getElementById('regBtn');
   if(btn){btn.disabled=!ok;btn.textContent=ok?'Бүртгэл үүсгэх':msg;}
@@ -2040,7 +2037,6 @@ async function doRegister(){
   if(ageN<18){toast('Нас 18-аас дээш байх ёстой');return;}
   if(!document.getElementById('rAimag').value){toast('Аймгаа сонгоно уу');return;}
   if(!regPhotoFile){toast('Нүүр зургаа оруулна уу (заавал)');return;}
-  if(!rulesAgreed){toast('Эхлээд дүрэмтэй танилцана уу');return;}
   toast('Бүртгэж байна…');
   // 1) auth хэрэглэгч үүсгэх (утас → синтетик и-мэйл). Хагас үүссэн бол сэргээнэ.
   let uid=null;
@@ -3588,7 +3584,7 @@ function unlockAudio(){
   }catch(e){}
 }
 try{window.addEventListener('pointerdown',unlockAudio,{passive:true});window.addEventListener('touchstart',unlockAudio,{passive:true});window.addEventListener('click',unlockAudio,{passive:true});}catch(e){}
-const APP_VERSION='v117';
+const APP_VERSION='v118';
 try{document.getElementById('verBadge').textContent='Хоёулаа Болзий '+APP_VERSION;}catch(_){}
 loadSettings();
 restoreSession();
