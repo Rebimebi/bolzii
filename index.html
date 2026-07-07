@@ -645,14 +645,11 @@ body.dark .date-remind-top{background:linear-gradient(135deg,#3a2e12,#2c2410);co
 
     <div id="regPromoBanner" style="display:none;position:relative;z-index:5;margin-top:18px;background:linear-gradient(135deg,#c9961e,#e0b020);color:#fff;border-radius:16px;padding:14px 16px;font-size:15px;font-weight:800;line-height:1.4;text-align:center;box-shadow:0 12px 28px -12px rgba(201,150,30,.7);"></div>
 
-    <div class="women-free">👩 Бүсгүйчүүд <b>үнэ төлбөргүй</b> бүртгүүлж, <b>VIP эрхийг ҮНЭГҮЙ</b> авна!</div>
-
     <div class="cta">
       <button class="btn btn-ghost" onclick="openGuide()">📖 Апп ашиглах заавар</button>
       <button class="btn btn-ghost" style="background:linear-gradient(135deg,#1faa59,#23c06a);color:#fff;border-color:transparent" onclick="route('login')">Нэвтрэх</button>
       <button class="btn btn-primary" onclick="route('register')">Бүртгүүлэх</button>
       <button class="btn btn-ghost" id="installBtn" style="display:none;background:rgba(255,255,255,.55)" onclick="installApp()">📲 Аппаа суулгах</button>
-      <button class="btn btn-ghost" style="background:#1877f2;color:#fff;border-color:transparent" onclick="openFacebook()">📘 Facebook хуудас — мэдээлэл аваарай</button>
     </div>
 
     <div class="landing-links">
@@ -791,7 +788,6 @@ body.dark .date-remind-top{background:linear-gradient(135deg,#3a2e12,#2c2410);co
       <div class="ttl">Бүртгүүлэх</div>
     </div>
     <div class="sub-body">
-      <div class="verify-note">🛡 Зөвхөн <b>өөрийн бодит нүүр зурагтай</b> бүртгэл л баталгаажна. Бүртгэлийн дараа selfie/үнэмлэхээр шалгана — хуурамч профайл нэвтрэхгүй.</div>
       <div class="form-group"><label>Нэр</label><input id="rName" placeholder="Таны нэр"></div>
       <div class="form-group"><label>Хүйс</label>
         <div class="seg"><button class="on" onclick="pickGender('m',this)">Эрэгтэй</button><button onclick="pickGender('f',this)">Эмэгтэй</button></div>
@@ -3584,7 +3580,7 @@ function unlockAudio(){
   }catch(e){}
 }
 try{window.addEventListener('pointerdown',unlockAudio,{passive:true});window.addEventListener('touchstart',unlockAudio,{passive:true});window.addEventListener('click',unlockAudio,{passive:true});}catch(e){}
-const APP_VERSION='v118';
+const APP_VERSION='v121';
 try{document.getElementById('verBadge').textContent='Хоёулаа Болзий '+APP_VERSION;}catch(_){}
 loadSettings();
 restoreSession();
