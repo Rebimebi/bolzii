@@ -1533,7 +1533,7 @@ async function loadPeople(){
     if(error)throw error;
     people.length=0;
     (data||[]).filter(p=>!me||p.id!==me.id).forEach(p=>people.push(mapProfile(p)));
-    people.sort((a,b)=>((a.g==='f')===(b.g==='f'))?0:(a.g==='f'?-1:1));
+    people.sort((a,b)=>{const fa=a.g==='f'?0:1,fb=b.g==='f'?0:1;if(fa!==fb)return fa-fb;return (a.a||999)-(b.a||999);});
   }catch(e){console.error('loadPeople',e);}
   renderGrid();
 }
@@ -2595,8 +2595,6 @@ async function checkAdminEvents(){
       }
     }
   }catch(e){}
-  if(_admCurTab==='monitor'&&_monView==='feed'&&!document.hidden){try{loadFeed();}catch(e){}}
-  if(newAct&&_admCurTab==='monitor'&&!document.hidden&&(_monView==='women'||_monView==='chats'||_monView==='friends')&&!document.getElementById('waView').classList.contains('open')){try{admTab('monitor');}catch(e){}}
 }
 async function checkNewMsgs(){
   if(!me||me.is_admin||me.blocked||document.hidden)return;
@@ -3580,7 +3578,7 @@ function unlockAudio(){
   }catch(e){}
 }
 try{window.addEventListener('pointerdown',unlockAudio,{passive:true});window.addEventListener('touchstart',unlockAudio,{passive:true});window.addEventListener('click',unlockAudio,{passive:true});}catch(e){}
-const APP_VERSION='v121';
+const APP_VERSION='v123';
 try{document.getElementById('verBadge').textContent='Хоёулаа Болзий '+APP_VERSION;}catch(_){}
 loadSettings();
 restoreSession();
