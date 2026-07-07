@@ -3,20 +3,20 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>Хоёулаа Болзий — Жинхэнэ хүмүүс, жинхэнэ болзоо</title>
-<meta name="description" content="Жинхэнэ хүмүүс, жинхэнэ болзоо — баталгаажсан хэрэглэгчтэй Монгол болзооны апп.">
+<title>Хоёулаа Болзий — Танилцаад болзоорой</title>
+<meta name="description" content="Таалагдсан хүнтэйгээ танилцаж, болзоог чинь бид зохион байгуулна.">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://bolzii.vercel.app">
-<meta property="og:title" content="Хоёулаа Болзий — Жинхэнэ хүмүүс, жинхэнэ болзоо">
-<meta property="og:description" content="Баталгаажсан жинхэнэ хүмүүс. Хуурамч профайл байхгүй. Танилцаад зогсохгүй болзоог чинь бид зохион байгуулна.">
+<meta property="og:title" content="Хоёулаа Болзий">
+<meta property="og:description" content="Таалагдсан хүнтэйгээ танилцаж, болзоог чинь бид зохион байгуулна. 💕">
 <meta property="og:image" content="https://bolzii.vercel.app/og.jpg">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta property="og:locale" content="mn_MN">
 <meta property="og:site_name" content="Хоёулаа Болзий">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="Хоёулаа Болзий — Жинхэнэ хүмүүс, жинхэнэ болзоо">
-<meta name="twitter:description" content="Баталгаажсан жинхэнэ хүмүүс. Танилцаад зогсохгүй болзоог чинь бид зохион байгуулна.">
+<meta name="twitter:title" content="Хоёулаа Болзий">
+<meta name="twitter:description" content="Таалагдсан хүнтэйгээ танилцаж, болзоог чинь бид зохион байгуулна. 💕">
 <meta name="twitter:image" content="https://bolzii.vercel.app/og.jpg">
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#e23e57">
@@ -750,9 +750,15 @@ body.dark .date-remind-top{background:linear-gradient(135deg,#3a2e12,#2c2410);co
     <div class="rm-head"><span>🔒 Түгжээтэй</span><button onclick="ovClose('lockedModal')">✕</button></div>
     <div class="rm-body">
       <p class="lead" id="lockedMsg">Та бүртгэлийн хураамжаа төлснөөр админ нэвтрэх эрх олгоно.</p>
-      <div class="pp-note">«Нээх» хэсгээс бусад хэрэглэгчдийг үзэж болно. Чат, болзоо, мэдэгдэл зэрэг боломжийг ашиглахын тулд баталгаажуулалт шаардлагатай.</div>
+      <div id="lockPay" style="display:none">
+        <div class="pp-row"><span>Банк</span><b id="lkBank"></b></div>
+        <div class="pp-row"><span>Данс</span><b id="lkAccount"></b><button class="copy-acc" onclick="copyAccount()">📋 Хуулах</button></div>
+        <div class="pp-row"><span>Хүлээн авагч</span><b id="lkRecipient"></b></div>
+        <div class="pp-row"><span>Бүртгэлийн дүн</span><b id="lkFee"></b></div>
+        <div class="pp-note">Гүйлгээний утгад <b>бүртгүүлсэн утасны дугаараа</b> заавал бичээрэй. Төлбөр + админ баталгаажуулсны дараа бүх боломж нээгдэнэ.</div>
+      </div>
     </div>
-    <div class="rm-foot"><button class="btn btn-primary" style="width:100%" onclick="ovClose('lockedModal');route('pending');showPending();">💳 Төлбөр / Төлөв шалгах</button></div>
+    <div class="rm-foot"><button class="btn btn-primary" style="width:100%" onclick="ovClose('lockedModal');openAdmChatOv();">💬 Админтай холбогдох</button></div>
   </div>
 
   <!-- ============ BLIND DATE REGISTER MODAL ============ -->
@@ -1980,8 +1986,6 @@ function validateReg(){
   else if(!val('rPhone'))msg='Утасны дугаараа оруулна уу';
   else if(val('rPass').length<6)msg='Нууц үг дор хаяж 6 тэмдэгт';
   else if(!val('rAimag'))msg='Аймгаа сонгоно уу';
-  else if(!val('rSoum'))msg='Сум/дүүргээ сонгоно уу';
-  else if(interests<1)msg='Дор хаяж 1 сонирхол сонгоно уу';
   else if(!regPhotoFile)msg='Нүүр зургаа оруулна уу';
   else if(!rulesAgreed)msg='Дүрэмтэй танилцаж зөвшөөрнө үү';
   const ok=!msg;
@@ -2041,9 +2045,7 @@ async function doRegister(){
   if(!pass||pass.length<6){toast('Нууц үг дор хаяж 6 тэмдэгт байх ёстой');return;}
   const ageN=parseInt(document.getElementById('rAge').value)||0;
   if(ageN<18){toast('Нас 18-аас дээш байх ёстой');return;}
-  if(document.querySelectorAll('#register .chip.on').length<1){toast('Дор хаяж нэг сонирхол сонгоно уу');return;}
   if(!document.getElementById('rAimag').value){toast('Аймгаа сонгоно уу');return;}
-  if(!document.getElementById('rSoum').value){toast('Сум/дүүргээ сонгоно уу');return;}
   if(!regPhotoFile){toast('Нүүр зургаа оруулна уу (заавал)');return;}
   if(!rulesAgreed){toast('Эхлээд дүрэмтэй танилцана уу');return;}
   toast('Бүртгэж байна…');
@@ -2291,6 +2293,7 @@ function renderMatches(){
 }
 async function openChat(i){
   if(me&&me.blocked){const c0=chats[i];if(!c0||c0.id!==_adminId)return;}
+  if(isLocked()){const c0=chats[i];if(c0&&_adminId&&c0.id!==_adminId){openLockedModal();return;}}
   ensureNotifPermission();
   curChat=i;const c=chats[i];if(!c)return;
   c.unread=0;bumpUnread();renderMatches();markRead(c.id);
@@ -2553,7 +2556,7 @@ function startAdminPoll(){
   if(!me||!me.is_admin)return;
   const now=new Date().toISOString();
   _admLastProf=now;_admLastFR=now;_admLastMsg=now;_admLastAll=now;
-  _admPoll=setInterval(checkAdminEvents,8000);
+  _admPoll=setInterval(checkAdminEvents,3000);
 }
 async function checkAdminEvents(){
   if(!me||!me.is_admin)return;
@@ -2635,14 +2638,28 @@ function trialTick(){
   }
 }
 function onTrialExpired(){
-  toast('🎁 30 минутын танилцах хугацаа дууслаа. Үргэлжлүүлэхийн тулд бүртгэлийн хураамжаа төлнө үү.');
-  try{route('pending');showPending();}catch(e){}
+  toast('🎁 10 минутын танилцах хугацаа дууслаа. Одоогоор зөвхөн админтай чатлах боломжтой — бүртгэлээ баталгаажуулна уу.');
+  try{renderGrid();renderMatches();}catch(e){}
+  try{tab('matches');}catch(e){}
 }
 function inTrial(){return !!(me&&!me.verified&&!me.is_admin&&me.gender==='m'&&me.trial_until&&new Date(me.trial_until).getTime()>Date.now());}
 function isLocked(){return !!(me&&!me.verified&&!me.is_admin&&!inTrial());}
 function openLockedModal(){
+  const isW=me&&me.gender==='f';
   const m=document.getElementById('lockedMsg');
-  if(m)m.textContent=(me&&me.gender==='f')?'Бүсгүйчүүд үнэгүй! Админ таны зургийг хараад баталгаажуулмагц нэвтрэх эрх нээгдэнэ.':'Та бүртгэлийн хураамжаа төлснөөр админ нэвтрэх эрх олгоно.';
+  if(m)m.textContent=isW?'Бүсгүйчүүд үнэгүй! Админ таны зургийг хараад баталгаажуулмагц бүх боломж нээгдэнэ. Түр хүлээнэ үү 💕':'Танилцах хугацаа дууслаа. Одоогоор зөвхөн админтай чатлах боломжтой. Доорх дансаар бүртгэлийн хураамжаа төлж, админд хандан баталгаажуулна уу.';
+  const pay=document.getElementById('lockPay');
+  if(pay){
+    if(isW){pay.style.display='none';}
+    else{
+      pay.style.display='block';
+      const set=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v;};
+      set('lkBank',(settings&&settings.bank)||'');
+      set('lkAccount',(settings&&settings.account)||'');
+      set('lkRecipient',(settings&&settings.recipient)||'');
+      set('lkFee',(settings&&settings.fee)?(fmt(settings.fee)+'₮'):'');
+    }
+  }
   ovOpen('lockedModal');
 }
 function showBlockedTab(){
@@ -3059,7 +3076,7 @@ function waSelectPartner(i){
   startWaPoll();
 }
 let _waPoll=null;
-function startWaPoll(){clearInterval(_waPoll);_waPoll=setInterval(waRefreshMsgs,5000);}
+function startWaPoll(){clearInterval(_waPoll);_waPoll=setInterval(waRefreshMsgs,3000);}
 function stopWaPoll(){clearInterval(_waPoll);_waPoll=null;}
 async function waRefreshMsgs(){
   if(!_waWoman||!_waPartnerId||document.hidden)return;
@@ -3567,7 +3584,7 @@ function unlockAudio(){
   }catch(e){}
 }
 try{window.addEventListener('pointerdown',unlockAudio,{passive:true});window.addEventListener('touchstart',unlockAudio,{passive:true});window.addEventListener('click',unlockAudio,{passive:true});}catch(e){}
-const APP_VERSION='v113';
+const APP_VERSION='v115';
 try{document.getElementById('verBadge').textContent='Хоёулаа Болзий '+APP_VERSION;}catch(_){}
 loadSettings();
 restoreSession();
