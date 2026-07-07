@@ -2279,7 +2279,7 @@ function sortChats(){
 function renderMatches(){
   sortChats();
   const nm=document.getElementById('newMatches');if(nm)nm.innerHTML=chats.slice(0,6).map((c,i)=>`<div class="nm-card" onclick="openChat(${i})"><div class="ph" style="${photoBg(c.ph)}"></div><div class="lbl">${c.n}</div></div>`).join('');
-  const cl=document.getElementById('chatList');if(cl)cl.innerHTML=chats.length?chats.map((c,i)=>`<div class="chat-row" onclick="openChat(${i})"><div class="ph" style="${photoBg(c.ph)}"></div><div class="body"><div class="top"><span class="nme">${c.n}</span><span class="tm">${c.time}</span></div><div class="msg">${c.last||'Найз боллоо — сайн уу гэж бичээрэй 👋'}</div></div>${c.unread?`<span class="badge-unread">${c.unread}</span>`:''}</div>`).join(''):`<div style="text-align:center;color:var(--gray-2);font-size:13px;padding:30px 10px;">Одоогоор чат алга. Хэн нэгэнтэй найзлаж эсвэл тохирвол энд харагдана.</div>`;
+  const cl=document.getElementById('chatList');if(cl)cl.innerHTML=chats.length?chats.map((c,i)=>`<div class="chat-row" onclick="openChat(${i})"><div class="ph" style="${photoBg(c.ph)}"></div><div class="body"><div class="top"><span class="nme">${c.n}</span><span class="tm">${c.time}</span></div><div class="msg">${(isLocked()&&c.id!==_adminId)?'🔒 Зурвас ирсэн — уншихын тулд бүртгэлээ баталгаажуул':(c.last||'Найз боллоо — сайн уу гэж бичээрэй 👋')}</div></div>${c.unread?`<span class="badge-unread">${c.unread}</span>`:''}</div>`).join(''):`<div style="text-align:center;color:var(--gray-2);font-size:13px;padding:30px 10px;">Одоогоор чат алга. Хэн нэгэнтэй найзлаж эсвэл тохирвол энд харагдана.</div>`;
 }
 async function openChat(i){
   if(me&&me.blocked){const c0=chats[i];if(!c0||c0.id!==_adminId)return;}
@@ -2411,9 +2411,9 @@ function setupRealtime(){
         const open=document.getElementById('chatView').classList.contains('open')&&chats[curChat]&&chats[curChat].id===m.from_id;
         if(c){
           c.msgs.push({me:0,t:m.text});c.last=m.text;c.time='Одоо';c._at=m.created_at||new Date().toISOString();
-          if(open){renderMsgs();markRead(c.id);}else{c.unread=(c.unread||0)+1;notify('💬','Шинэ зурвас',(c.n||'')+': '+m.text);}
+          if(open){renderMsgs();markRead(c.id);}else{c.unread=(c.unread||0)+1;if(isLocked()&&m.from_id!==_adminId)notify('👤','Шинэ зурвас',(c.n||'Хэн нэгэн')+' танд зурвас илгээлээ 🔒');else notify('💬','Шинэ зурвас',(c.n||'')+': '+m.text);}
           renderMatches();bumpUnread();
-        }else{loadContacts();notify('💬','Шинэ зурвас','Танд шинэ зурвас ирлээ');}
+        }else{loadContacts();if(isLocked()&&m.from_id!==_adminId)notify('👤','Шинэ зурвас','Хэн нэгэн танд зурвас илгээлээ 🔒');else notify('💬','Шинэ зурвас','Танд шинэ зурвас ирлээ');}
       })
       .on('postgres_changes',{event:'INSERT',schema:'public',table:'friend_requests',filter:'to_id=eq.'+me.id},()=>{
         loadFriendReqs().then(()=>{try{renderNotifs();}catch(e){}});notify('👋','Найзын хүсэлт','Танд шинэ найзын хүсэлт ирлээ');
@@ -2614,8 +2614,8 @@ async function checkNewMsgs(){
       if(chOpen)return;
       any=true;
       const c=chats.find(x=>x.id===m.from_id);
-      if(c){c.last=m.text;c.time='Одоо';c._at=m.created_at||new Date().toISOString();c.unread=(c.unread||0)+1;notify('💬','Шинэ зурвас',(c.n||'')+': '+m.text);}
-      else{notify('💬','Шинэ зурвас','Танд шинэ зурвас ирлээ');try{loadContacts();}catch(e){}}
+      if(c){c.last=m.text;c.time='Одоо';c._at=m.created_at||new Date().toISOString();c.unread=(c.unread||0)+1;if(isLocked()&&m.from_id!==_adminId)notify('👤','Шинэ зурвас',(c.n||'Хэн нэгэн')+' танд зурвас илгээлээ 🔒');else notify('💬','Шинэ зурвас',(c.n||'')+': '+m.text);}
+      else{if(isLocked()&&m.from_id!==_adminId)notify('👤','Шинэ зурвас','Хэн нэгэн танд зурвас илгээлээ 🔒');else notify('💬','Шинэ зурвас','Танд шинэ зурвас ирлээ');try{loadContacts();}catch(e){}}
     });
     if(any){try{renderMatches();bumpUnread();}catch(e){}}
   }catch(e){}
@@ -3601,7 +3601,7 @@ function unlockAudio(){
   }catch(e){}
 }
 try{window.addEventListener('pointerdown',unlockAudio,{passive:true});window.addEventListener('touchstart',unlockAudio,{passive:true});window.addEventListener('click',unlockAudio,{passive:true});}catch(e){}
-const APP_VERSION='v126';
+const APP_VERSION='v127';
 try{document.getElementById('verBadge').textContent='Хоёулаа Болзий '+APP_VERSION;}catch(_){}
 loadSettings();
 restoreSession();
