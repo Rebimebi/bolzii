@@ -4,11 +4,11 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>Хоёулаа Болзий — Танилцаад болзоорой</title>
-<meta name="description" content="Таалагдсан хүнтэйгээ танилцаж, болзоог чинь бид зохион байгуулна.">
+<meta name="description" content="Тавтай морилно уу 💕 Таны болзоог бид хариуцна.">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://bolzii.vercel.app">
 <meta property="og:title" content="Хоёулаа Болзий">
-<meta property="og:description" content="Таалагдсан хүнтэйгээ танилцаж, болзоог чинь бид зохион байгуулна. 💕">
+<meta property="og:description" content="Тавтай морилно уу 💕">
 <meta property="og:image" content="https://bolzii.vercel.app/og.jpg">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
@@ -16,7 +16,7 @@
 <meta property="og:site_name" content="Хоёулаа Болзий">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Хоёулаа Болзий">
-<meta name="twitter:description" content="Таалагдсан хүнтэйгээ танилцаж, болзоог чинь бид зохион байгуулна. 💕">
+<meta name="twitter:description" content="Тавтай морилно уу 💕">
 <meta name="twitter:image" content="https://bolzii.vercel.app/og.jpg">
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#e23e57">
@@ -758,7 +758,7 @@ body.dark .date-remind-top{background:linear-gradient(135deg,#3a2e12,#2c2410);co
         <div class="pp-note">Гүйлгээний утгад <b>бүртгүүлсэн утасны дугаараа</b> заавал бичээрэй. Төлбөр + админ баталгаажуулсны дараа бүх боломж нээгдэнэ.</div>
       </div>
     </div>
-    <div class="rm-foot"><button class="btn btn-primary" style="width:100%" onclick="ovClose('lockedModal');openAdmChatOv();">💬 Админтай холбогдох</button></div>
+    <div class="rm-foot"><button class="btn btn-primary" style="width:100%" onclick="openAdminChat()">💬 Админтай холбогдох</button></div>
   </div>
 
   <!-- ============ BLIND DATE REGISTER MODAL ============ -->
@@ -944,17 +944,10 @@ body.dark .date-remind-top{background:linear-gradient(135deg,#3a2e12,#2c2410);co
       <p>Таны бүртгэлийг админ хянаж байна. Зөвшөөрсний дараа аппад орох боломжтой болно. Ихэвчлэн 24 цагийн дотор шалгадаг.</p>
       <div id="pendingPay"></div>
       <button class="btn btn-primary" style="width:100%" onclick="recheckPending()">🔄 Дахин шалгах</button>
-      <button class="btn" style="width:100%;margin-top:10px;background:linear-gradient(135deg,var(--red),var(--pink));color:#fff;font-weight:700;border:none;border-radius:30px;padding:13px" onclick="openAdmChatOv()">💬 Админтай холбогдох</button>
+      <button class="btn" style="width:100%;margin-top:10px;background:linear-gradient(135deg,var(--red),var(--pink));color:#fff;font-weight:700;border:none;border-radius:30px;padding:13px" onclick="openAdminChat()">💬 Админтай холбогдох</button>
       <button class="btn btn-ghost" style="width:100%;margin-top:10px" onclick="logout()">Гарах</button>
     </div>
   </section>
-
-  <!-- ============ АДМИН ЧАТ overlay (pending/locked users) ============ -->
-  <div id="admChatOv" style="display:none;position:fixed;inset:0;z-index:4000;background:var(--bg);flex-direction:column;max-width:480px;margin:0 auto;">
-    <div class="bc-head"><button class="bc-back" onclick="closeAdmChatOv()">‹</button><span>💬 Админтай чат</span></div>
-    <div class="bc-msgs" id="acMsgs"></div>
-    <div class="bc-input"><input id="acInput" placeholder="Зурвас бичих…" onkeydown="if(event.key==='Enter')bcSend()"><button onclick="bcSend()">➤</button></div>
-  </div>
 
   <!-- ============ EDIT PROFILE ============ -->
   <section class="page" id="editProfile">
@@ -2246,6 +2239,7 @@ function sayHi(){hideMatch();tab('matches',document.querySelectorAll('.nav butto
 /* ============================================================ MATCHES / CHAT ============================================================ */
 async function loadContacts(){
   if(!me)return;
+  if(!_adminId){try{const {data:_a}=await sb.from('profiles').select('id').eq('is_admin',true).limit(1).maybeSingle();if(_a)_adminId=_a.id;}catch(e){}}
   const otherIds=new Set();
   try{
     const {data:fr}=await sb.from('friend_requests').select('from_id,to_id').or(`from_id.eq.${me.id},to_id.eq.${me.id}`).eq('status','accepted');
@@ -2391,14 +2385,24 @@ async function bcSend(){
   try{const {error}=await sb.from('messages').insert({from_id:me.id,to_id:_bcAdmin,text:t});if(error){toast('Илгээж чадсангүй: '+error.message);return;}}catch(e){toast('Алдаа гарлаа');return;}
   await bcLoad();
 }
-async function openAdmChatOv(){
-  _bcBox='acMsgs';_bcInp='acInput';
-  const ov=document.getElementById('admChatOv');if(ov)ov.style.display='flex';
-  const box=document.getElementById('acMsgs');if(box)box.innerHTML='<div style="text-align:center;opacity:.7;font-size:13px;margin-top:20px">Ачааллаж байна…</div>';
-  if(!_bcAdmin){try{const {data}=await sb.from('profiles').select('id').eq('is_admin',true).limit(1).maybeSingle();_bcAdmin=data&&data.id;}catch(e){}}
-  await bcLoad();clearInterval(_bcPoll);_bcPoll=setInterval(bcLoad,5000);
+async function openAdminChat(){
+  try{ovClose('lockedModal');}catch(e){}
+  try{clearOverlays();}catch(e){}
+  if(!_adminId){try{const {data}=await sb.from('profiles').select('id').eq('is_admin',true).limit(1).maybeSingle();_adminId=data&&data.id;}catch(e){}}
+  route('mainapp');
+  tab('matches');
+  try{await loadContacts();}catch(e){}
+  let idx=chats.findIndex(c=>c.id===_adminId);
+  if(idx<0&&_adminId){
+    let nm='Админ',ph='';
+    try{const {data}=await sb.from('profiles').select('name,photo_url').eq('id',_adminId).maybeSingle();if(data){nm=data.name||'Админ';ph=data.photo_url||'';}}catch(e){}
+    chats.unshift({id:_adminId,n:nm,ph,last:'',time:'',_at:'',msgs:[],loaded:false,unread:0});
+    try{renderMatches();}catch(e){}
+    idx=chats.findIndex(c=>c.id===_adminId);
+  }
+  if(idx>=0)openChat(idx);
+  else toast('Админтай холбогдож чадсангүй. Түр хүлээгээд дахин оролдоно уу.');
 }
-function closeAdmChatOv(){clearInterval(_bcPoll);_bcPoll=null;const ov=document.getElementById('admChatOv');if(ov)ov.style.display='none';}
 function setupRealtime(){
   if(!me)return;
   teardownRealtime();
@@ -3584,7 +3588,7 @@ function unlockAudio(){
   }catch(e){}
 }
 try{window.addEventListener('pointerdown',unlockAudio,{passive:true});window.addEventListener('touchstart',unlockAudio,{passive:true});window.addEventListener('click',unlockAudio,{passive:true});}catch(e){}
-const APP_VERSION='v115';
+const APP_VERSION='v117';
 try{document.getElementById('verBadge').textContent='Хоёулаа Болзий '+APP_VERSION;}catch(_){}
 loadSettings();
 restoreSession();

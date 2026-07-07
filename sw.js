@@ -1,5 +1,5 @@
 /* Хоёулаа Болзий — Service Worker */
-const CACHE = 'bolzii-v115';
+const CACHE = 'bolzii-v117';
 const ASSETS = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', e => {
