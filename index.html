@@ -645,6 +645,8 @@ body.dark .date-remind-top{background:linear-gradient(135deg,#3a2e12,#2c2410);co
 
     <div id="regPromoBanner" style="display:none;position:relative;z-index:5;margin-top:18px;background:linear-gradient(135deg,#c9961e,#e0b020);color:#fff;border-radius:16px;padding:14px 16px;font-size:15px;font-weight:800;line-height:1.4;text-align:center;box-shadow:0 12px 28px -12px rgba(201,150,30,.7);"></div>
 
+    <div id="landingAnnounce" style="display:none;position:relative;z-index:5;margin-top:16px;background:linear-gradient(135deg,rgba(226,62,87,.16),rgba(255,122,162,.10));border:1.5px solid rgba(255,122,162,.45);border-radius:16px;padding:14px 18px;text-align:left;"></div>
+
     <div class="cta">
       <button class="btn btn-ghost" onclick="openGuide()">📖 Апп ашиглах заавар</button>
       <button class="btn btn-ghost" style="background:linear-gradient(135deg,#1faa59,#23c06a);color:#fff;border-color:transparent" onclick="route('login')">Нэвтрэх</button>
@@ -1324,7 +1326,7 @@ async function enterApp(){
     notify('⚠️','Админы анхааруулга',wmsg);
     try{await sb.from('profiles').update({warning:null}).eq('id',me.id);me.warning=null;}catch(e){}
   }
-  if(me.is_admin){route('adminPanel');admTab('verify');return;}
+  if(me.is_admin){route('adminPanel');admTab('verify');try{setupRealtime();}catch(e){}try{setupAdminWatch();}catch(e){}try{startAdminPoll();}catch(e){}try{ensureNotifPermission();}catch(e){}return;}
   if(me.blocked){route('mainapp');try{await initApp();}catch(e){}showBlockedTab();ensureNotifPermission();return;}
   route('mainapp');try{await initApp();}catch(e){console.error('initApp',e);}ensureNotifPermission();
   if(isLocked())setTimeout(()=>{try{toast('🔒 Зарим боломж түгжээтэй — баталгаажуулна уу');}catch(e){}},900);
@@ -1502,8 +1504,8 @@ window.addEventListener('popstate',function(){
   }
   // дэлгэц хооронд буцах
   if(backNav()){try{history.pushState({g:1},'');}catch(_){}return;}
-  // гарах — 2 дарж
-  if(_exitArmed)return;
+  // гарах — 2 удаа хурдан дарж
+  if(_exitArmed){_exitArmed=false;clearTimeout(_exitTimer);try{history.back();}catch(_){}return;}
   _exitArmed=true;try{history.pushState({g:1},'');}catch(_){}
   toast('Гарахын тулд дахин «буцах» дарна уу');
   clearTimeout(_exitTimer);_exitTimer=setTimeout(()=>{_exitArmed=false;},2000);
@@ -1526,6 +1528,7 @@ async function initApp(){
   startBlockWatch();
   startTrialWatch();
   startMsgPoll();
+  startFrPoll();
   startAdminPoll();
   await loadDates();
   renderPkgs();renderBlind();renderAvailWomen();renderPublicDates();bumpUnread();
@@ -2467,7 +2470,7 @@ function setupAdminWatch(){
   }catch(e){console.error('adminwatch',e);}
 }
 function teardownAdminWatch(){try{if(_admChannel){sb.removeChannel(_admChannel);_admChannel=null;}}catch(e){}}
-function teardownRealtime(){try{if(rtChannel){sb.removeChannel(rtChannel);rtChannel=null;}}catch(e){}try{teardownAdminWatch();}catch(e){}try{clearInterval(_blockWatch);_blockWatch=null;}catch(e){}try{clearInterval(_trialInt);_trialInt=null;}catch(e){}try{clearInterval(_msgPoll);_msgPoll=null;}catch(e){}try{clearInterval(_admPoll);_admPoll=null;}catch(e){}try{stopFeedAuto();}catch(e){}try{stopWaPoll();}catch(e){}}
+function teardownRealtime(){try{if(rtChannel){sb.removeChannel(rtChannel);rtChannel=null;}}catch(e){}try{teardownAdminWatch();}catch(e){}try{clearInterval(_blockWatch);_blockWatch=null;}catch(e){}try{clearInterval(_trialInt);_trialInt=null;}catch(e){}try{clearInterval(_msgPoll);_msgPoll=null;}catch(e){}try{clearInterval(_frPoll);_frPoll=null;}catch(e){}try{clearInterval(_admPoll);_admPoll=null;}catch(e){}try{stopFeedAuto();}catch(e){}try{stopWaPoll();}catch(e){}}
 
 /* ============================================================ DATES (app organizes) ============================================================ */
 async function loadDates(){
@@ -2550,13 +2553,39 @@ function startMsgPoll(){
   _lastMsgCheck=new Date().toISOString();
   _msgPoll=setInterval(checkNewMsgs,15000);
 }
+let _frPoll=null,_frSeenIn={},_frSentStatus={},_frInit=false;
+function startFrPoll(){
+  clearInterval(_frPoll);_frSeenIn={};_frSentStatus={};_frInit=false;
+  if(!me||me.is_admin)return;
+  checkFriendReqs();
+  _frPoll=setInterval(checkFriendReqs,20000);
+}
+async function checkFriendReqs(){
+  if(!me||me.is_admin||document.hidden)return;
+  const first=!_frInit;
+  try{
+    const {data}=await sb.from('friend_requests').select('id,from_id').eq('to_id',me.id).eq('status','pending');
+    if(data)for(const r of data){
+      if(_frSeenIn[r.id])continue;_frSeenIn[r.id]=1;
+      if(!first){let nm='Хэн нэгэн';try{const {data:p}=await sb.from('profiles').select('name').eq('id',r.from_id).maybeSingle();if(p&&p.name)nm=p.name;}catch(e){}notify('👋','Найзын хүсэлт',nm+' танд найзын хүсэлт илгээлээ');try{loadFriendReqs();}catch(e){}}
+    }
+  }catch(e){}
+  try{
+    const {data}=await sb.from('friend_requests').select('id,to_id,status').eq('from_id',me.id);
+    if(data)for(const r of data){
+      const prev=_frSentStatus[r.id];_frSentStatus[r.id]=r.status;
+      if(!first&&prev&&prev!=='accepted'&&r.status==='accepted'){let nm='Хэрэглэгч';try{const {data:p}=await sb.from('profiles').select('name').eq('id',r.to_id).maybeSingle();if(p&&p.name)nm=p.name;}catch(e){}notify('🤝','Найз',nm+' таны найзын хүсэлтийг зөвшөөрлөө 🎉');try{loadContacts();loadFriendReqs();}catch(e){}}
+    }
+  }catch(e){}
+  _frInit=true;
+}
 let _admPoll=null,_admLastProf=null,_admLastFR=null,_admLastMsg=null,_admLastAll=null,_admSeen={};
 function startAdminPoll(){
   clearInterval(_admPoll);
   if(!me||!me.is_admin)return;
   const now=new Date().toISOString();
   _admLastProf=now;_admLastFR=now;_admLastMsg=now;_admLastAll=now;
-  _admPoll=setInterval(checkAdminEvents,3000);
+  _admPoll=setInterval(checkAdminEvents,6000);
 }
 async function checkAdminEvents(){
   if(!me||!me.is_admin)return;
@@ -2690,7 +2719,7 @@ function tab(name,btn){
     }else{showBlockedTab();}
     return;
   }
-  if(isLocked()&&name!=='discover'&&name!=='matches'){openLockedModal();return;}
+  if(isLocked()&&name!=='discover'&&name!=='matches'&&name!=='profile'){openLockedModal();return;}
   clearOverlays();
   document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
   document.getElementById('t-'+name).classList.add('active');
@@ -3158,11 +3187,16 @@ async function loadSettings(){
 }
 function regPromoActive(){return !!(settings.regpromo&&settings.regpromo.active);}
 function renderRegPromo(){
-  const b=document.getElementById('regPromoBanner');if(!b)return;
-  if(regPromoActive()){
-    b.style.display='block';
-    b.innerHTML='🔥 '+((settings.regpromo&&settings.regpromo.text)||'Зөвхөн өнөөдөр — бүртгэлийн хураамж 50% ХЯМДРАЛ!');
-  }else{b.style.display='none';b.innerHTML='';}
+  const b=document.getElementById('regPromoBanner');
+  if(b){
+    if(regPromoActive()){b.style.display='block';b.innerHTML='🔥 '+((settings.regpromo&&settings.regpromo.text)||'Зөвхөн өнөөдөр — бүртгэлийн хураамж 50% ХЯМДРАЛ!');}
+    else{b.style.display='none';b.innerHTML='';}
+  }
+  const la=document.getElementById('landingAnnounce');
+  if(la){const a=settings.announce;
+    if(a&&a.text){la.style.display='block';la.innerHTML='<div style="font-weight:800;color:var(--red);margin-bottom:5px;font-size:14px">📢 Зарлал</div><div style="color:var(--ink);font-size:13.5px;line-height:1.5;white-space:pre-wrap">'+(a.text||'').replace(/</g,'&lt;')+'</div>';}
+    else{la.style.display='none';la.innerHTML='';}
+  }
 }
 async function saveSettings(){
   const g=id=>document.getElementById(id).value;
@@ -3601,7 +3635,7 @@ function unlockAudio(){
   }catch(e){}
 }
 try{window.addEventListener('pointerdown',unlockAudio,{passive:true});window.addEventListener('touchstart',unlockAudio,{passive:true});window.addEventListener('click',unlockAudio,{passive:true});}catch(e){}
-const APP_VERSION='v127';
+const APP_VERSION='v132';
 try{document.getElementById('verBadge').textContent='Хоёулаа Болзий '+APP_VERSION;}catch(_){}
 loadSettings();
 restoreSession();
