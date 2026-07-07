@@ -938,9 +938,17 @@ body.dark .date-remind-top{background:linear-gradient(135deg,#3a2e12,#2c2410);co
       <p>Таны бүртгэлийг админ хянаж байна. Зөвшөөрсний дараа аппад орох боломжтой болно. Ихэвчлэн 24 цагийн дотор шалгадаг.</p>
       <div id="pendingPay"></div>
       <button class="btn btn-primary" style="width:100%" onclick="recheckPending()">🔄 Дахин шалгах</button>
+      <button class="btn" style="width:100%;margin-top:10px;background:linear-gradient(135deg,var(--red),var(--pink));color:#fff;font-weight:700;border:none;border-radius:30px;padding:13px" onclick="openAdmChatOv()">💬 Админтай холбогдох</button>
       <button class="btn btn-ghost" style="width:100%;margin-top:10px" onclick="logout()">Гарах</button>
     </div>
   </section>
+
+  <!-- ============ АДМИН ЧАТ overlay (pending/locked users) ============ -->
+  <div id="admChatOv" style="display:none;position:fixed;inset:0;z-index:4000;background:var(--bg);flex-direction:column;max-width:480px;margin:0 auto;">
+    <div class="bc-head"><button class="bc-back" onclick="closeAdmChatOv()">‹</button><span>💬 Админтай чат</span></div>
+    <div class="bc-msgs" id="acMsgs"></div>
+    <div class="bc-input"><input id="acInput" placeholder="Зурвас бичих…" onkeydown="if(event.key==='Enter')bcSend()"><button onclick="bcSend()">➤</button></div>
+  </div>
 
   <!-- ============ EDIT PROFILE ============ -->
   <section class="page" id="editProfile">
@@ -978,7 +986,7 @@ body.dark .date-remind-top{background:linear-gradient(135deg,#3a2e12,#2c2410);co
     <!-- DISCOVER (browse) -->
     <div class="tab active" id="t-discover">
       <div id="trialBanner" style="display:none;background:linear-gradient(135deg,#c9961e,#e0b020);color:#fff;text-align:center;padding:9px 14px;font-size:13px;font-weight:700;"></div>
-      <div class="trust-banner">💕 Таалагдсан хүнтэйгээ тохирвол болзоог чинь бид зохион байгуулна</div>
+      <div class="trust-banner">💕 Тавтай морилно уу! Таалагдсан хүнтэйгээ энд танилцаарай</div>
       <div class="scroll">
         <div class="sec-title">Ойролцоох хүмүүс</div>
         <div style="background:var(--cream);border:1px solid var(--gray-bg);border-radius:12px;padding:10px 13px;font-size:12px;color:var(--gray);line-height:1.55;margin-bottom:13px">👤 <b>«Найз»</b> товч дарж найзын хүсэлт илгээ → тэр зөвшөөрвөл та хоёр <b>чатлана</b>. ❤️ дарж таалагдсанаа илэрхийл.</div>
@@ -1061,7 +1069,7 @@ body.dark .date-remind-top{background:linear-gradient(135deg,#3a2e12,#2c2410);co
         <button class="dv-back" onclick="closeProfile()"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.6"><path d="M15 18l-6-6 6-6"/></svg></button>
         <div class="dv-grad"></div>
         <div class="dv-headline">
-          <div class="dv-name"><span id="dvName"></span><span class="dv-verify" id="dvVerify">✓ Баталгаажсан</span></div>
+          <div class="dv-name"><span id="dvName"></span></div>
           <div class="dv-loc" id="dvLoc"></div>
         </div>
       </div>
@@ -1340,6 +1348,12 @@ async function notifyPaid(){
   try{const {error}=await sb.from('messages').insert({from_id:me.id,to_id:adminId,text:txt});if(error){toast('Илгээж чадсангүй: '+error.message);return;}}catch(e){toast('Алдаа гарлаа');return;}
   _paidNotified=true;
   toast('✅ Админд мэдэгдэл илгээлээ. Төлбөрийг чинь шалгаад удахгүй баталгаажуулна.');
+}
+function trialRow(x){
+  if(x.g!=='m'||!x.trial)return '';
+  const l=new Date(x.trial).getTime()-Date.now();
+  if(l>0){const m=Math.floor(l/60000),s=Math.floor(l%60000/1000);return `<div><span>⏱ Үнэгүй хугацаа</span><b style="color:#c9961e">${m}:${String(s).padStart(2,'0')} үлдсэн</b></div>`;}
+  return `<div><span>⏱ Үнэгүй хугацаа</span><b style="color:var(--red)">⛔ Дууссан</b></div>`;
 }
 function showPending(){
   const pay=document.getElementById('pendingPay');if(!pay)return;
@@ -2077,7 +2091,7 @@ async function doRegister(){
     soum:document.getElementById('rSoum').value,
     bio:document.getElementById('rBio').value.trim(),
     tags:interests, is_vip:(regGender==='f'), verified:false,
-    trial_until:(regGender==='m'?new Date(Date.now()+30*60000).toISOString():null),
+    trial_until:(regGender==='m'?new Date(Date.now()+10*60000).toISOString():null),
     photo_url:photoUrl, photos:photoUrl?[photoUrl]:[]
   };
   let {error:perr}=await sb.from('profiles').upsert(fullProfile);
@@ -2110,7 +2124,6 @@ function renderGrid(){
   g.innerHTML=people.map((p,i)=>`
     <div class="ucard">
       <div class="uphoto" style="${photoBg(p.ph)}" onclick="openProfile(${i})">
-        ${p.v?'<span class="ubadge">✓</span>':''}
         ${p.vip?'<span class="ucrown">👑</span>':''}
         <span class="uloc">📍 ${p.city}</span>
       </div>
@@ -2129,7 +2142,7 @@ function openProfile(i){
   if(p.vip && !myVip){openLock(i);return;}
   document.getElementById('dvHero').style.cssText='background-size:cover;background-position:center;'+(p.ph?`background-image:url('${imgUrl(p.ph)}')`:'background:linear-gradient(135deg,var(--red),var(--pink))');
   document.getElementById('dvName').textContent=`${p.n}, ${p.a}`;
-  document.getElementById('dvVerify').style.display=p.v?'inline-flex':'none';
+  {const _dv=document.getElementById('dvVerify');if(_dv)_dv.style.display='none';}
   document.getElementById('dvLoc').textContent=`📍 ${p.city} · ${p.d}`+(p.h?` · ${p.h}см`:'');
   // зургийн галерей (5 хүртэл)
   const photos=(p.photos&&p.photos.length)?p.photos:(p.ph?[p.ph]:[]);
@@ -2345,8 +2358,9 @@ function forceBlocked(){
   try{showBlockedTab();}catch(e){}
 }
 function blockedStop(){if(me&&me.blocked){forceBlocked();return true;}return false;}
-let _bcAdmin=null,_bcPoll=null;
+let _bcAdmin=null,_bcPoll=null,_bcBox='bcMsgs',_bcInp='bcInput';
 async function openBlockChat(){
+  _bcBox='bcMsgs';_bcInp='bcInput';
   document.getElementById('blockMain').style.display='none';
   document.getElementById('blockChat').style.display='flex';
   const box=document.getElementById('bcMsgs');if(box)box.innerHTML='<div style="text-align:center;opacity:.7;font-size:13px;margin-top:20px">Ачааллаж байна…</div>';
@@ -2359,14 +2373,14 @@ async function bcLoad(){
   if(!me||!_bcAdmin)return;
   try{
     const {data}=await sb.from('messages').select('from_id,text,created_at').or(`and(from_id.eq.${me.id},to_id.eq.${_bcAdmin}),and(from_id.eq.${_bcAdmin},to_id.eq.${me.id})`).order('created_at',{ascending:true});
-    const box=document.getElementById('bcMsgs');if(!box)return;
+    const box=document.getElementById(_bcBox);if(!box)return;
     const msgs=data||[];
     box.innerHTML=msgs.length?msgs.map(m=>`<div class="bc-bub ${m.from_id===me.id?'me':'them'}">${esc(m.text||'')}</div>`).join(''):'<div style="text-align:center;opacity:.75;font-size:13px;margin-top:20px">Админд асууж тодруулах зүйлээ бичээрэй 👇</div>';
     box.scrollTop=box.scrollHeight;
   }catch(e){}
 }
 async function bcSend(){
-  const inp=document.getElementById('bcInput');const t=(inp&&inp.value||'').trim();if(!t)return;
+  const inp=document.getElementById(_bcInp);const t=(inp&&inp.value||'').trim();if(!t)return;
   if(!me){toast('Дахин нэвтэрнэ үү');return;}
   if(!_bcAdmin){try{const {data}=await sb.from('profiles').select('id').eq('is_admin',true).limit(1).maybeSingle();_bcAdmin=data&&data.id;}catch(e){}}
   if(!_bcAdmin){toast('Админтай холбогдож чадсангүй. Түр хүлээгээд дахин оролдоно уу.');return;}
@@ -2374,6 +2388,14 @@ async function bcSend(){
   try{const {error}=await sb.from('messages').insert({from_id:me.id,to_id:_bcAdmin,text:t});if(error){toast('Илгээж чадсангүй: '+error.message);return;}}catch(e){toast('Алдаа гарлаа');return;}
   await bcLoad();
 }
+async function openAdmChatOv(){
+  _bcBox='acMsgs';_bcInp='acInput';
+  const ov=document.getElementById('admChatOv');if(ov)ov.style.display='flex';
+  const box=document.getElementById('acMsgs');if(box)box.innerHTML='<div style="text-align:center;opacity:.7;font-size:13px;margin-top:20px">Ачааллаж байна…</div>';
+  if(!_bcAdmin){try{const {data}=await sb.from('profiles').select('id').eq('is_admin',true).limit(1).maybeSingle();_bcAdmin=data&&data.id;}catch(e){}}
+  await bcLoad();clearInterval(_bcPoll);_bcPoll=setInterval(bcLoad,5000);
+}
+function closeAdmChatOv(){clearInterval(_bcPoll);_bcPoll=null;const ov=document.getElementById('admChatOv');if(ov)ov.style.display='none';}
 function setupRealtime(){
   if(!me)return;
   teardownRealtime();
@@ -2735,7 +2757,7 @@ async function admTab(t,btn){
         sb.from('profiles').select('*').eq('verified',false).eq('blocked',false).order('created_at',{ascending:false}),
         sb.from('profiles').select('*').or('verified.eq.true,blocked.eq.true')
       ]);
-      admData.verify=(v.data||[]).filter(x=>!x.is_admin).map(x=>({id:x.id,name:x.name,g:x.gender,age:x.age||'-',height:x.height,weight:x.weight,phone:x.phone,city:x.city,soum:x.soum,bio:x.bio,tags:x.tags,ph:x.photo_url||'',photos:x.photos||[],waived:!!x.fee_waived,plan:x.gender==='f'?'Бүсгүй · 🎁 ҮНЭГҮЙ':'Эрэгтэй · бүтэн хураамж'}));
+      admData.verify=(v.data||[]).filter(x=>!x.is_admin).map(x=>({id:x.id,name:x.name,g:x.gender,age:x.age||'-',height:x.height,weight:x.weight,phone:x.phone,city:x.city,soum:x.soum,bio:x.bio,tags:x.tags,ph:x.photo_url||'',photos:x.photos||[],waived:!!x.fee_waived,trial:x.trial_until,plan:x.gender==='f'?'Бүсгүй · 🎁 ҮНЭГҮЙ':'Эрэгтэй · бүтэн хураамж'}));
       admData.users=(u.data||[]).filter(x=>!x.is_admin).map(x=>({...x,n:x.name,m:`${x.age||''} · ${x.city||''}`,ph:x.photo_url||'',blocked:!!x.blocked}));
     }catch(e){console.error('admTab load',e);body.innerHTML='<div style="text-align:center;color:var(--red);padding:30px;">Ачаалахад алдаа гарлаа</div>';return;}
   }
@@ -2826,6 +2848,7 @@ async function admTab(t,btn){
       <div><span>Нас</span><b>${x.age}</b></div>
       <div><span>Утас</span><b>${x.phone}</b></div>
       <div><span>Байршил</span><b>${x.city||'-'}${x.soum?', '+x.soum:''}</b></div>
+      ${trialRow(x)}
       ${x.bio?`<div><span>Танилцуулга</span><b>${x.bio}</b></div>`:''}
       ${x.tags&&x.tags.length?`<div><span>Сонирхол</span><b>${x.tags.join(', ')}</b></div>`:''}
     </div>
@@ -3364,6 +3387,7 @@ function admViewPending(i){
       ${x.weight?`<div><span>Жин</span><b>${x.weight}кг</b></div>`:''}
       <div><span>Утас</span><b>${x.phone}</b></div>
       <div><span>Байршил</span><b>${x.city||'-'}${x.soum?', '+x.soum:''}</b></div>
+      ${trialRow(x)}
       ${x.bio?`<div><span>Танилцуулга</span><b>${x.bio}</b></div>`:''}
       ${x.tags&&x.tags.length?`<div><span>Сонирхол</span><b>${x.tags.join(', ')}</b></div>`:''}
     </div>
@@ -3380,7 +3404,8 @@ async function toggleVip(i){
 }
 /* Зураг байхгүй бол градиент фон. Supabase URL (http) бол шууд, эс бол Unsplash угтвар */
 function imgUrl(ph){return ph?(/^https?:/.test(ph)?ph:F+ph):'';}
-function photoBg(ph){return ph?`background-image:url('${imgUrl(ph)}')`:`background:linear-gradient(135deg,var(--red),var(--pink))`;}
+const NOPHOTO_SVG="data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%20300%20400%27%20preserveAspectRatio%3D%27xMidYMid%20slice%27%3E%20%3Cdefs%3E%3ClinearGradient%20id%3D%27g%27%20x1%3D%270%27%20y1%3D%270%27%20x2%3D%271%27%20y2%3D%271%27%3E%3Cstop%20offset%3D%270%27%20stop-color%3D%27%23e23e57%27%2F%3E%3Cstop%20offset%3D%271%27%20stop-color%3D%27%23ff9db1%27%2F%3E%3C%2FlinearGradient%3E%3C%2Fdefs%3E%20%3Crect%20width%3D%27300%27%20height%3D%27400%27%20fill%3D%27url%28%23g%29%27%2F%3E%20%3Cg%20fill%3D%27%23ffffff%27%20fill-opacity%3D%270.26%27%3E%20%3Cpath%20d%3D%27M150%2092%20C104%2092%2083%20138%2083%20194%20C83%20242%2094%20288%2090%20340%20L119%20340%20C122%20302%20119%20266%20124%20236%20L176%20236%20C181%20266%20178%20302%20181%20340%20L210%20340%20C206%20288%20217%20242%20217%20194%20C217%20138%20196%2092%20150%2092%20Z%27%2F%3E%20%3Cpath%20d%3D%27M129%20208%20L129%20252%20C129%20268%20171%20268%20171%20252%20L171%20208%20C206%20233%20236%20280%20241%20400%20L59%20400%20C64%20280%2094%20233%20129%20208%20Z%27%2F%3E%20%3Cellipse%20cx%3D%27150%27%20cy%3D%27168%27%20rx%3D%2745%27%20ry%3D%2754%27%2F%3E%20%3C%2Fg%3E%20%3C%2Fsvg%3E";
+function photoBg(ph){return ph?`background-image:url('${imgUrl(ph)}')`:`background-image:url("${NOPHOTO_SVG}");background-size:cover;background-position:center`;}
 /* Бүртгэлийн хүсэлт зөвшөөрөх / татгалзах */
 async function approveUser(i){
   const x=admData.verify[i];if(!x)return;
@@ -3542,7 +3567,7 @@ function unlockAudio(){
   }catch(e){}
 }
 try{window.addEventListener('pointerdown',unlockAudio,{passive:true});window.addEventListener('touchstart',unlockAudio,{passive:true});window.addEventListener('click',unlockAudio,{passive:true});}catch(e){}
-const APP_VERSION='v110';
+const APP_VERSION='v113';
 try{document.getElementById('verBadge').textContent='Хоёулаа Болзий '+APP_VERSION;}catch(_){}
 loadSettings();
 restoreSession();
