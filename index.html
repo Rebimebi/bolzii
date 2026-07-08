@@ -1155,6 +1155,7 @@ body.dark .date-remind-top{background:linear-gradient(135deg,#3a2e12,#2c2410);co
       <div id="admQuickBar" style="display:none;gap:8px;padding:8px 12px;background:var(--cream);border-bottom:1px solid var(--gray-bg);flex-wrap:wrap">
         <button class="datebtn" style="background:rgba(31,170,89,.16);color:#1f7a54;font-size:12px;padding:7px 12px" onclick="admSendPayInfo()">💳 Төлбөрийн заавар</button>
         <button class="datebtn" style="background:rgba(80,140,255,.15);color:#2f6bd8;font-size:12px;padding:7px 12px" onclick="admSendDateGuide()">📅 Болзооны заавар</button>
+        <button class="datebtn" style="background:linear-gradient(135deg,#e0b020,#c9961e);color:#3a2a08;font-size:12px;padding:7px 12px;font-weight:700" onclick="admSend50Card()">🎁 50% хямдрал</button>
       </div>
       <div class="msgs" id="cvMsgs"></div>
       <div class="chat-input">
@@ -2282,7 +2283,7 @@ function sortChats(){
 function renderMatches(){
   sortChats();
   const nm=document.getElementById('newMatches');if(nm)nm.innerHTML=chats.slice(0,6).map((c,i)=>`<div class="nm-card" onclick="openChat(${i})"><div class="ph" style="${photoBg(c.ph)}"></div><div class="lbl">${c.n}</div></div>`).join('');
-  const cl=document.getElementById('chatList');if(cl)cl.innerHTML=chats.length?chats.map((c,i)=>`<div class="chat-row" onclick="openChat(${i})"><div class="ph" style="${photoBg(c.ph)}"></div><div class="body"><div class="top"><span class="nme">${c.n}</span><span class="tm">${c.time}</span></div><div class="msg">${(isLocked()&&c.id!==_adminId)?'🔒 Зурвас ирсэн — уншихын тулд бүртгэлээ баталгаажуул':(c.last||'Найз боллоо — сайн уу гэж бичээрэй 👋')}</div></div>${c.unread?`<span class="badge-unread">${c.unread}</span>`:''}</div>`).join(''):`<div style="text-align:center;color:var(--gray-2);font-size:13px;padding:30px 10px;">Одоогоор чат алга. Хэн нэгэнтэй найзлаж эсвэл тохирвол энд харагдана.</div>`;
+  const cl=document.getElementById('chatList');if(cl)cl.innerHTML=chats.length?chats.map((c,i)=>`<div class="chat-row" onclick="openChat(${i})"><div class="ph" style="${photoBg(c.ph)}"></div><div class="body"><div class="top"><span class="nme">${c.n}</span><span class="tm">${c.time}</span></div><div class="msg">${(isLocked()&&c.id!==_adminId)?'🔒 Зурвас ирсэн — уншихын тулд бүртгэлээ баталгаажуул':((c.last||'Найз боллоо — сайн уу гэж бичээрэй 👋').replace(/\s*\[\[GIFT50\]\]\s*/g,''))}</div></div>${c.unread?`<span class="badge-unread">${c.unread}</span>`:''}</div>`).join(''):`<div style="text-align:center;color:var(--gray-2);font-size:13px;padding:30px 10px;">Одоогоор чат алга. Хэн нэгэнтэй найзлаж эсвэл тохирвол энд харагдана.</div>`;
 }
 async function openChat(i){
   if(me&&me.blocked){const c0=chats[i];if(!c0||c0.id!==_adminId)return;}
@@ -2303,7 +2304,7 @@ async function openChat(i){
   }catch(e){console.error('loadMsgs',e);}
   renderMsgs();
 }
-function renderMsgs(){const c=chats[curChat];if(!c)return;document.getElementById('cvMsgs').innerHTML=c.msgs.length?c.msgs.map(m=>{const isPromo=!m.me&&/ТУСГАЙ УРАМШУУЛАЛ/.test(m.t||'');const btn=isPromo?`<div style="display:flex;flex-direction:column;gap:7px;margin:-2px 0 12px;align-items:flex-start"><button onclick="payFromPromo()" style="background:linear-gradient(135deg,#c9961e,#e0b020);color:#fff;border:none;border-radius:30px;padding:11px 18px;font-weight:700;font-size:13px;cursor:pointer;font-family:var(--body);box-shadow:0 3px 10px rgba(201,150,30,.35)">💳 Хямдралтайгаар төлбөр төлөх</button><button onclick="requestPromoRenew()" style="background:none;border:none;color:#a87a12;font-size:12px;font-weight:600;text-decoration:underline;cursor:pointer;font-family:var(--body);padding:0 4px">Хугацаа нь дууссан уу? Дахин сэргээхийг хүсэх 🔄</button></div>`:'';return `<div class="bub ${m.me?'me':'them'}">${m.t}</div>`+btn;}).join(''):`<div style="text-align:center;color:var(--gray-2);font-size:13px;margin-top:30px;">Найз боллоо! Эхний мессежээ бичээрэй 👋</div>`;const m=document.getElementById('cvMsgs');m.scrollTop=m.scrollHeight;}
+function renderMsgs(){const c=chats[curChat];if(!c)return;document.getElementById('cvMsgs').innerHTML=c.msgs.length?c.msgs.map(m=>{if(/\[\[GIFT50\]\]/.test(m.t||''))return giftCard50Html();const isPromo=!m.me&&/ТУСГАЙ УРАМШУУЛАЛ/.test(m.t||'');const btn=isPromo?`<div style="display:flex;flex-direction:column;gap:7px;margin:-2px 0 12px;align-items:flex-start"><button onclick="payFromPromo()" style="background:linear-gradient(135deg,#c9961e,#e0b020);color:#fff;border:none;border-radius:30px;padding:11px 18px;font-weight:700;font-size:13px;cursor:pointer;font-family:var(--body);box-shadow:0 3px 10px rgba(201,150,30,.35)">💳 Хямдралтайгаар төлбөр төлөх</button><button onclick="requestPromoRenew()" style="background:none;border:none;color:#a87a12;font-size:12px;font-weight:600;text-decoration:underline;cursor:pointer;font-family:var(--body);padding:0 4px">Хугацаа нь дууссан уу? Дахин сэргээхийг хүсэх 🔄</button></div>`:'';return `<div class="bub ${m.me?'me':'them'}">${m.t}</div>`+btn;}).join(''):`<div style="text-align:center;color:var(--gray-2);font-size:13px;margin-top:30px;">Найз боллоо! Эхний мессежээ бичээрэй 👋</div>`;const m=document.getElementById('cvMsgs');m.scrollTop=m.scrollHeight;}
 async function payFromPromo(){
   try{await loadMe();}catch(e){}
   const pr=activePromo(me);
@@ -3291,6 +3292,32 @@ async function admSendDateGuide(){
   const msg=`📅 Болзоо хэрхэн захиалах вэ?\n\n1️⃣ «Нээх» хэсгээс таалагдсан хүнээ ол.\n2️⃣ ❤️ дарж таалагдсанаа илэрхийл, эсвэл 👤 «Найз» дарж найзын хүсэлт илгээ.\n3️⃣ Тэр хүн зөвшөөрвөл та хоёр чатлана.\n4️⃣ Чат дотор 📅 «Болзоо» товч дарж болзоогоо товло.\n5️⃣ Хоёр тал зөвшөөрөөд төлбөрөө төлмөгц бид газар, цагийг зохион байгуулж, хоёуланд нь мэдэгдэнэ.\n\nАсуух зүйл байвал энд бичээрэй! 💕`;
   await admQuickSend(c,msg);
 }
+async function admSend50Card(){
+  const c=chats[curChat];if(!c||!c.id){toast('Алдаа');return;}
+  const exp=new Date(Date.now()+3650*24*60*60*1000).toISOString();
+  try{const {error}=await sb.from('profiles').update({promo:{type:'reg50',exp}}).eq('id',c.id);if(error&&/column|schema cache|does not exist|find the/i.test(error.message||'')){toast('⚠️ promo баганы SQL ажиллуулна уу');return;}}catch(e){}
+  const half=(settings&&settings.fee)?Math.round(settings.fee/2):0;
+  const txt='🎁 ЗӨВХӨН ТАНД — Бүртгэлийн хураамж 50% ХЯМДРАЛ! Хугацаагүй. Төлөх дүн: '+(half?fmt(half)+'₮':'—')+' [[GIFT50]]';
+  await admQuickSend(c,txt);
+}
+function giftCard50Html(){
+  const b=(settings&&settings.bank)||'—',a=(settings&&settings.account)||'—',r=(settings&&settings.recipient)||'—';
+  const half=(settings&&settings.fee)?fmt(Math.round(settings.fee/2))+'₮':'—';
+  return `<div style="max-width:290px;margin:2px 0 14px;background:linear-gradient(140deg,#241a3e,#4a2f6e 60%,#6e3a5e);border:2px solid #e0b020;border-radius:20px;padding:18px 18px 16px;color:#fff;box-shadow:0 10px 30px -8px rgba(201,150,30,.5);position:relative;overflow:hidden">
+    <div style="position:absolute;top:-20px;right:-20px;width:90px;height:90px;background:radial-gradient(circle,rgba(224,176,32,.35),transparent 70%);border-radius:50%"></div>
+    <div style="font-size:11px;color:#f0c848;font-weight:800;letter-spacing:2px">🎁 ЗӨВХӨН ТАНД</div>
+    <div style="font-size:30px;font-weight:900;margin:4px 0 2px;line-height:1;background:linear-gradient(90deg,#f0c848,#fff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">50% ХЯМДРАЛ</div>
+    <div style="font-size:12.5px;opacity:.85;margin-bottom:13px">Бүртгэлийн хураамж · <b style="color:#f0c848">Хугацаагүй ∞</b></div>
+    <div style="background:rgba(255,255,255,.12);border-radius:14px;padding:13px 14px;font-size:13px;line-height:1.75">
+      <div>🏦 <b>${b}</b></div>
+      <div>💳 <b style="letter-spacing:.5px">${a}</b></div>
+      <div>👤 ${r}</div>
+      <div style="margin-top:5px;padding-top:7px;border-top:1px solid rgba(255,255,255,.15)">💵 Төлөх дүн: <b style="color:#f0c848;font-size:17px">${half}</b></div>
+    </div>
+    <button onclick="copyAccount()" style="width:100%;margin-top:13px;background:linear-gradient(135deg,#f0c848,#c9961e);color:#241a3e;border:none;border-radius:26px;padding:12px;font-weight:900;font-size:14px;cursor:pointer;font-family:var(--body)">📋 Дансны дугаар хуулах</button>
+    <div style="font-size:10.5px;opacity:.7;margin-top:9px;text-align:center;line-height:1.4">Гүйлгээний утгад бүртгүүлсэн утасны дугаараа бичээрэй. Төлбөр баталгаажмагц бүх боломж нээгдэнэ.</div>
+  </div>`;
+}
 function admGiftFromChat(){const c=chats[curChat];if(!c||!c.id){toast('Алдаа');return;}admGiftPromo(c.id,c.n);}
 let _promoTarget=null;
 function admGiftPromo(id,name){_promoTarget={id,name};const n=document.getElementById('promoName');if(n)n.textContent=name||'Хэрэглэгч';ovOpen('promoModal');}
@@ -3635,7 +3662,7 @@ function unlockAudio(){
   }catch(e){}
 }
 try{window.addEventListener('pointerdown',unlockAudio,{passive:true});window.addEventListener('touchstart',unlockAudio,{passive:true});window.addEventListener('click',unlockAudio,{passive:true});}catch(e){}
-const APP_VERSION='v132';
+const APP_VERSION='v133';
 try{document.getElementById('verBadge').textContent='Хоёулаа Болзий '+APP_VERSION;}catch(_){}
 loadSettings();
 restoreSession();
